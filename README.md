@@ -6,8 +6,8 @@
 
 CSS forge is a suite of tools that leverages modern CSS features and conventions to help
 you generate design tokens. All operations happen at build time, so you can use the
-generated tokens in your stylesheets without any runtime overhead. 
-Cssforge accepts a single, serializable configuration object.
+generated tokens in your stylesheets without any runtime overhead. Cssforge accepts a
+single, serializable configuration object.
 
 ## Features
 

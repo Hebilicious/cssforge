@@ -29,12 +29,12 @@ jobs:
         id: changesets
         uses: changesets/action@v1
         with:
-            commit: 'chore(release): update release & CHANGELOG.md'
-            title: '📦 Update Packages Version'
-            publish: npx @changesets/cli version && npx @qingshaner/jsr-release --allowDirty version --sync
-            version: npx @changesets/cli publish
+          commit: "chore(release): update release & CHANGELOG.md"
+          title: "📦 Update Packages Version"
+          publish: npx @changesets/cli version && npx @qingshaner/jsr-release --allowDirty version --sync
+          version: npx @changesets/cli publish
         env:
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Publish to jsr.io
         if: steps.changesets.outputs.published == 'true'

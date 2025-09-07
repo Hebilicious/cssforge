@@ -9,6 +9,7 @@
   "fmt": {
     "lineWidth": 90
   },
+  "nodeModulesDir": "none",
   "imports": {
     "citty": "npm:citty@0.1.6",
     "chokidar": "npm:chokidar@4.0.3",
