@@ -19,6 +19,11 @@ type ForgeValue = {
   [key: string]: ForgeValue | CssValue;
 };
 
+/**
+ * Creates a nested object structure of design tokens from a configuration.
+ * @param config The CSSForge configuration.
+ * @returns A nested object representing the design tokens.
+ */
 export function createForgeValues(config: Partial<CSSForgeConfig>) {
   type Input = readonly [string, CssValue];
 

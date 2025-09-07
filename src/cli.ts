@@ -1,3 +1,10 @@
+/**
+ * This module provides the command-line interface (CLI) for CSSForge.
+ * It allows generating CSS variables from a configuration file, with options
+ * to watch for changes and specify output formats.
+ *
+ * @module
+ */
 import { defineCommand, runMain } from "citty";
 import chokidar from "chokidar";
 import fs from "node:fs/promises";
@@ -12,14 +19,27 @@ const writeFileRecursive = (path: string, data: string) =>
     fs.writeFile(path, data)
   );
 
+/**
+ * Defines the options for the build command.
+ */
 export interface BuildOptions {
+  /** Path to the configuration file. */
   config: string;
+  /** The output mode. */
   mode: "css" | "json" | "ts" | "all";
+  /** Path for the CSS output file. */
   cssOutput: string;
+  /** Path for the JSON output file. */
   jsonOutput: string;
+  /** Path for the TypeScript output file. */
   tsOutput: string;
 }
 
+/**
+ * Builds the CSS, JSON, and/or TypeScript files based on the configuration.
+ * @param options The build options.
+ * @returns A promise that resolves to an object indicating success or failure.
+ */
 export async function build(
   { config, tsOutput, cssOutput, jsonOutput, mode }: BuildOptions,
 ): Promise<{ success: boolean; error?: unknown }> {
@@ -64,10 +84,19 @@ export async function build(
   }
 }
 
+/**
+ * Defines the options for the watch command.
+ */
 export interface WatchOptions extends BuildOptions {
+  /** A callback function to execute on rebuild. */
   onRebuild?: () => void;
 }
 
+/**
+ * Watches the configuration file for changes and rebuilds on modification.
+ * @param options The watch options.
+ * @returns A promise that resolves to a function to stop watching.
+ */
 export async function watch(
   { onRebuild, ...buildOptions }: WatchOptions,
 ): Promise<() => void> {
@@ -167,5 +196,7 @@ if (import.meta.main) {
   runMain(mainCommand);
 }
 
-// Export for programmatic usage
+/**
+ * The main command definition for the CSSForge CLI.
+ */
 export default mainCommand as CommandDef;
