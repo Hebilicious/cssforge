@@ -1,12 +1,20 @@
 {
   "name": "@hebilicious/cssforge",
   "version": "0.0.1",
+  "license": "MIT",
   "exports": {
-    ".": "./mod.ts",
+    ".": "./src/mod.ts",
     "./cli": "./src/cli.ts"
   },
   "fmt": {
     "lineWidth": 90
+  },
+  "imports": {
+    "citty": "npm:citty@0.1.6",
+    "chokidar": "npm:chokidar@4.0.3",
+    "@std/collections": "jsr:@std/collections@^1.1.3",
+    "colorjs.io": "npm:colorjs.io@0.5.2",
+    "utopia-core": "npm:utopia-core@1.6.0"
   },
   "publish": {
     "include": [

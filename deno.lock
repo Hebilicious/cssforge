@@ -1,36 +1,18 @@
 {
   "version": "4",
   "specifiers": {
-    "jsr:@std/assert@*": "1.0.9",
-    "jsr:@std/collections@*": "1.0.10",
-    "jsr:@std/internal@^1.0.5": "1.0.5",
-    "npm:@types/node@*": "22.5.4",
-    "npm:chokidar@*": "4.0.3",
-    "npm:citty@*": "0.1.6",
-    "npm:colorjs.io@*": "0.5.2",
-    "npm:utopia-core@*": "1.6.0"
+    "jsr:@std/collections@^1.1.3": "1.1.3",
+    "npm:chokidar@4.0.3": "4.0.3",
+    "npm:citty@0.1.6": "0.1.6",
+    "npm:colorjs.io@0.5.2": "0.5.2",
+    "npm:utopia-core@1.6.0": "1.6.0"
   },
   "jsr": {
-    "@std/assert@1.0.9": {
-      "integrity": "a9f0c611a869cc791b26f523eec54c7e187aab7932c2c8e8bea0622d13680dcd",
-      "dependencies": [
-        "jsr:@std/internal"
-      ]
-    },
-    "@std/collections@1.0.10": {
-      "integrity": "903af106a3d92970d74e20f7ebff77d9658af9bef4403f1dc42a7801c0575899"
-    },
-    "@std/internal@1.0.5": {
-      "integrity": "54a546004f769c1ac9e025abd15a76b6671ddc9687e2313b67376125650dc7ba"
+    "@std/collections@1.1.3": {
+      "integrity": "bf8b0818886df6a32b64c7d3b037a425111f28278d69fd0995aeb62777c986b0"
     }
   },
   "npm": {
-    "@types/node@22.5.4": {
-      "integrity": "sha512-FDuKUJQm/ju9fT/SeX/6+gBzoPzlVCzfzmGkwKvRHQVxi4BntVbyIwf6a4Xn62mrvndLiml6z/UBXIdEVjQLXg==",
-      "dependencies": [
-        "undici-types"
-      ]
-    },
     "chokidar@4.0.3": {
       "integrity": "sha512-Qgzu8kfBvo+cA4962jnP1KkS6Dop5NS6g7R5LFYJr4b8Ub94PPQXUksCw9PvXoeXPRRddRNC5C1JQUR2SMGtnA==",
       "dependencies": [
@@ -46,17 +28,23 @@
     "colorjs.io@0.5.2": {
       "integrity": "sha512-twmVoizEW7ylZSN32OgKdXRmo1qg+wT5/6C3xu5b9QsWzSFAhHLn2xd8ro0diCsKfCj1RdaTP/nrcW+vAoQPIw=="
     },
-    "consola@3.3.1": {
-      "integrity": "sha512-GyKnPG3/I+a4RtJxgHquJXWr70g9I3c4NT3dvqh0LPHQP2nZFQBOBszb7a5u/pGzqr40AKplQA6UxM1BSynSXg=="
+    "consola@3.4.2": {
+      "integrity": "sha512-5IKcdX0nnYavi6G7TtOhwkYzyjfJlatbjMjuLSfE2kYT5pMDOilZ4OvMhi637CcDICTmz3wARPoyhqyX1Y+XvA=="
     },
-    "readdirp@4.0.2": {
-      "integrity": "sha512-yDMz9g+VaZkqBYS/ozoBJwaBhTbZo3UNYQHNRw1D3UFQB8oHB4uS/tAODO+ZLjGWmUbKnIlOWO+aaIiAxrUWHA=="
-    },
-    "undici-types@6.19.8": {
-      "integrity": "sha512-ve2KP6f/JnbPBFyobGHuerC9g1FYGn/F8n1LWTwNxCEzd6IfqTwUQcNXgEtmmQ6DlRrC1hrSrBnCZPokRrDHjw=="
+    "readdirp@4.1.2": {
+      "integrity": "sha512-GDhwkLfywWL2s6vEjyhri+eXmfH6j1L7JE27WhqLeYzoh/A3DBaYGEj2H/HFZCn/kMfim73FXxEJTw06WtxQwg=="
     },
     "utopia-core@1.6.0": {
       "integrity": "sha512-1t74XWRugoMxwbPufCBlBRBfp4ebwXh9dLRoEEywAroO3prOQUyGykX4G4o5kHyX5PbfB3Zly1AjP2epeq6ycA=="
     }
+  },
+  "workspace": {
+    "dependencies": [
+      "jsr:@std/collections@^1.1.3",
+      "npm:chokidar@4.0.3",
+      "npm:citty@0.1.6",
+      "npm:colorjs.io@0.5.2",
+      "npm:utopia-core@1.6.0"
+    ]
   }
 }

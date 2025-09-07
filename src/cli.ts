@@ -1,10 +1,11 @@
-import { defineCommand, runMain } from "npm:citty";
-import chokidar from "npm:chokidar";
+import { defineCommand, runMain } from "citty";
+import chokidar from "chokidar";
 import fs from "node:fs/promises";
 import { resolve } from "node:path";
 import { generateCSS, generateJSON, generateTS } from "./generator.ts";
 import process from "node:process";
 import type { CSSForgeConfig } from "./config.ts";
+import type { CommandDef } from "citty";
 
 const writeFileRecursive = (path: string, data: string) =>
   fs.mkdir(path.replace(/\/[^/]*$/, ""), { recursive: true }).then(() =>
@@ -21,7 +22,7 @@ export interface BuildOptions {
 
 export async function build(
   { config, tsOutput, cssOutput, jsonOutput, mode }: BuildOptions,
-) {
+): Promise<{ success: boolean; error?: unknown }> {
   try {
     console.log({ config, tsOutput, cssOutput, jsonOutput, mode });
     const absoluteconfig = resolve(process.cwd(), config);
@@ -69,7 +70,7 @@ export interface WatchOptions extends BuildOptions {
 
 export async function watch(
   { onRebuild, ...buildOptions }: WatchOptions,
-) {
+): Promise<() => void> {
   console.log(`👀 Watching ${buildOptions.config} for changes...`);
 
   // Initial build
@@ -167,4 +168,4 @@ if (import.meta.main) {
 }
 
 // Export for programmatic usage
-export default mainCommand;
+export default mainCommand as CommandDef;

@@ -1,4 +1,4 @@
-import { calculateTypeScale, type UtopiaTypeConfig } from "npm:utopia-core";
+import { calculateTypeScale, type UtopiaTypeConfig } from "utopia-core";
 import type { Output, ResolveMap } from "../lib.ts";
 import { validateName } from "../helpers.ts";
 
@@ -22,6 +22,35 @@ export type TypographyConfig = {
   };
 };
 
+/**
+ * Processes the typography configuration to generate CSS variables for type scales and weights.
+ * @example
+ * ```ts
+ * const typography = {
+ *  default: {
+ *    typescale: {
+ *      value: {
+ *        minWidth: 320,
+ *        minFontSize: 14,
+ *        minTypeScale: 1.25,
+ *        maxWidth: 1435,
+ *        maxFontSize: 16,
+ *        maxTypeScale: 1.25,
+ *        positiveSteps: 1,
+ *        negativeSteps: 1,
+ *      },
+ *    },
+ *    weight: {
+ *      value: {
+ *        regular: "400",
+ *      },
+ *    },
+ *  },
+ * };
+ * const output = processTypography(typography);
+ * // output.css: "--typography-default-lg: clamp(1.0938rem, 1.0489rem + 0.2242vw, 1.25rem);\n--typography-default-base: clamp(0.875rem, 0.8391rem + 0.1794vw, 1rem);\n--typography-default-sm: clamp(0.7rem, 0.6713rem + 0.1435vw, 0.8rem);\n--weight-default-regular: 400;"
+ * ```
+ */
 export function processTypography(config: TypographyConfig): Output {
   const cssOutput: string[] = [];
   const resolveMap: ResolveMap = new Map();

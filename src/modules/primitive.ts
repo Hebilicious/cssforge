@@ -35,6 +35,40 @@ export type PrimitiveConfig = {
   [key: string]: Primitive;
 };
 
+/**
+ * Processes the primitive configuration to generate CSS variables.
+ * Primitives can reference other design tokens from colors, typography, and spacing.
+ * @example
+ * ```ts
+ * const config = {
+ *  primitives: {
+ *    button: {
+ *      value: {
+ *        default: {
+ *          value: {
+ *            "background-color": "var(--bg)",
+ *          },
+ *          variables: {
+ *            "bg": "colors.palette.value.red.100",
+ *          },
+ *        },
+ *      },
+ *    },
+ *  },
+ *  colors: {
+ *    palette: {
+ *      value: {
+ *        red: {
+ *          100: { hex: "#ff0000" },
+ *        },
+ *      },
+ *    },
+ *  },
+ * };
+ * const output = processPrimitives(config);
+ * // output.css: "/* button * / ;\n--button-default-background-color: var(--color-red-100);"
+ * ```
+ */
 export function processPrimitives(
   config: {
     primitives: PrimitiveConfig;

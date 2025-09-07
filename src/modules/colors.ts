@@ -1,4 +1,4 @@
-import Color from "npm:colorjs.io";
+import Color from "colorjs.io";
 import { type Output, type ResolveMap, resolveVariable } from "../lib.ts";
 import { validateName } from "../helpers.ts";
 
@@ -83,6 +83,14 @@ export type ColorConfig = {
   };
 };
 
+/**
+ * Gets the color string from a color value object.
+ * @example
+ * ```ts
+ * getColorString({ hex: "#ff0000" }); // "#ff0000"
+ * getColorString({ rgb: [255, 0, 0] }); // "rgb(255,0,0)"
+ * ```
+ */
 function getColorString(value: ColorValue): string {
   if ("hex" in value) {
     return value.hex as string;
@@ -109,6 +117,14 @@ function getColorString(value: ColorValue): string {
   throw new Error("Invalid color value");
 }
 
+/**
+ * Converts a color value to the OKLCH color space.
+ * @example
+ * ```ts
+ * colorValueToOklch({ hex: "#ff0000" }); // "oklch(62.796% 0.25768 29.23388)"
+ * colorValueToOklch("blue"); // "oklch(45.201% 0.31321 264.05202)"
+ * ```
+ */
 function colorValueToOklch(value: ColorValueOrString): string {
   const colorString = typeof value === "string" ? value : getColorString(value);
   const color = new Color(colorString);
@@ -124,6 +140,24 @@ function colorValueToOklch(value: ColorValueOrString): string {
   return `oklch(${Number((l * 100).toFixed(3))}% ${c} ${h}${alpha})`;
 }
 
+/**
+ * Processes the color configuration to generate CSS variables.
+ * This includes palettes, gradients, and themes.
+ * @example
+ * ```ts
+ * const colors = {
+ *  palette: {
+ *    value: {
+ *      red: {
+ *        100: { hex: "#ff0000" }
+ *      }
+ *    }
+ *  }
+ * };
+ * const output = processColors(colors);
+ * // output.css: "/* Palette * /;\n--color-red-100: oklch(62.796% 0.25768 29.23388);"
+ * ```
+ */
 export function processColors(colors: ColorConfig): Output {
   const cssOutput: string[] = [];
   const resolveMap: ResolveMap = new Map();

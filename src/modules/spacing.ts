@@ -13,6 +13,22 @@ export type SpacingConfig = {
   [key: string]: { value: SpacingScale; settings?: PixelSettings };
 };
 
+/**
+ * Processes the spacing configuration to generate CSS variables.
+ * @example
+ * ```ts
+ * const spacing = {
+ *  size: {
+ *    value: {
+ *      1: "0.25rem",
+ *      2: "0.5rem",
+ *    },
+ *  },
+ * };
+ * const output = processSpacing(spacing);
+ * // output.css: "--size-1: 0.25rem;\n--size-2: 0.5rem;"
+ * ```
+ */
 export function processSpacing(spacing: SpacingConfig): Output {
   const cssOutput: string[] = [];
   const resolveMap: ResolveMap = new Map();

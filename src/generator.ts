@@ -6,7 +6,7 @@ import {
   processTypography,
 } from "./mod.ts";
 
-import { deepMerge } from "jsr:@std/collections/deep-merge";
+import { deepMerge } from "@std/collections";
 import type { ResolveMap } from "./lib.ts";
 
 type CssValue = {
@@ -22,6 +22,16 @@ type ForgeValue = {
 export function createForgeValues(config: Partial<CSSForgeConfig>) {
   type Input = readonly [string, CssValue];
 
+  /**
+   * Creates a nested object structure from a path string and a value.
+   * @example
+   * ```ts
+   * const path = ["a", "b", "c"];
+   * const value = { key: "--a-b-c", value: "1rem", variable: "--a-b-c: 1rem;" };
+   * const result = createNestedObject(path, value);
+   * // result: { a: { b: { c: { key: "--a-b-c", value: "1rem", variable: "--a-b-c: 1rem;" } } } }
+   * ```
+   */
   function createNestedObject(path: string[], value: CssValue | ForgeValue): ForgeValue {
     if (path.length === 0) {
       return value as ForgeValue;
@@ -35,6 +45,18 @@ export function createForgeValues(config: Partial<CSSForgeConfig>) {
     };
   }
 
+  /**
+   * Creates a deeply nested object from an array of path-value pairs.
+   * @example
+   * ```ts
+   * const input = [
+   *  ["a.b.c", { key: "--a-b-c", value: "1rem", variable: "--a-b-c: 1rem;" }],
+   *  ["a.b.d", { key: "--a-b-d", value: "2rem", variable: "--a-b-d: 2rem;" }]
+   * ];
+   * const result = createForgeValuesFromKeys(input);
+   * // result: { a: { b: { c: { key: "--a-b-c", value: "1rem", variable: "--a-b-c: 1rem;" }, d: { key: "--a-b-d", value: "2rem", variable: "--a-b-d: 2rem;" } } } }
+   * ```
+   */
   function createForgeValuesFromKeys(input: Input[]): ForgeValue {
     // Reduce the input array into a single merged object
     return input.reduce((acc, [pathString, cssValues]) => {
@@ -73,17 +95,47 @@ export function createForgeValues(config: Partial<CSSForgeConfig>) {
   return forgeValues;
 }
 
+/**
+ * Generates a JSON string from the CSSForge configuration.
+ * This can be used to create a JSON file with all the design tokens.
+ * @example
+ * ```ts
+ * const config = defineConfig({ colors: { palette: { value: { red: { 100: { hex: "#ff0000" } } } } });
+ * const json = generateJSON(config);
+ * // json: "{\n  \"colors\": {\n    \"palette\": {\n      \"value\": {\n        \"red\": {\n          \"100\": {\n            \"key\": \"--color-red-100\",\n            \"value\": \"oklch(62.796% 0.25768 29.23388)\",\n            \"variable\": \"--color-red-100: oklch(62.796% 0.25768 29.23388);\"\n          }\n        }\n      }\n    }\n  }\n}"
+ * ```
+ */
 export function generateJSON(config: Partial<CSSForgeConfig>): string {
   const forgeValues = createForgeValues(config);
   return JSON.stringify(forgeValues, null, 2);
 }
 
+/**
+ * Generates a TypeScript module from the CSSForge configuration.
+ * This can be used to create a TypeScript file with all the design tokens, providing full type safety.
+ * @example
+ * ```ts
+ * const config = defineConfig({ colors: { palette: { value: { red: { 100: { hex: "#ff0000" } } } } });
+ * const ts = generateTS(config);
+ * // ts: "export const cssForge = {\n  \"colors\": {\n    \"palette\": {\n      \"value\": {\n        \"red\": {\n          \"100\": {\n            \"key\": \"--color-red-100\",\n            \"value\": \"oklch(62.796% 0.25768 29.23388)\",\n            \"variable\": \"--color-red-100: oklch(62.796% 0.25768 29.23388);\"\n          }\n        }\n      }\n    }\n  }\n} as const;"
+ * ```
+ */
 export function generateTS(config: Partial<CSSForgeConfig>): string {
   const forgeValues = createForgeValues(config);
   const forgeValuesString = JSON.stringify(forgeValues, null, 2);
   return `export const cssForge = ${forgeValuesString} as const;`;
 }
 
+/**
+ * Generates a CSS string from the CSSForge configuration.
+ * This is the main function to generate the CSS variables.
+ * @example
+ * ```ts
+ * const config = defineConfig({ colors: { palette: { value: { red: { 100: { hex: "#ff0000" } } } } });
+ * const css = generateCSS(config);
+ * // css: "/*____ CSSForge ____*&#47;\n:root {\n/*____ Colors ____*&#47;\n/* Palette *&#47;\n--color-red-100: oklch(62.796% 0.25768 29.23388);\n}"
+ * ```
+ */
 export function generateCSS(config: Partial<CSSForgeConfig>): string {
   const chunks: string[] = ["/*____ CSSForge ____*/", ":root {"];
   const processedConfig: {

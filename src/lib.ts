@@ -8,6 +8,20 @@ export interface Output {
   resolveMap: ResolveMap;
 }
 
+/**
+ * Resolves a variable path to its corresponding CSS variable name.
+ * This function is used to resolve references to other design tokens.
+ * @example
+ * ```ts
+ * const colors = {
+ *  css: "--color-red-100: oklch(62.796% 0.25768 29.23388);",
+ *  resolveMap: new Map([["colors.palette.value.red.100", { key: "--color-red-100", value: "oklch(62.796% 0.25768 29.23388)", variable: "--color-red-100: oklch(62.796% 0.25768 29.23388);" }]])
+ * };
+ * const varPath = "colors.palette.value.red.100";
+ * const resolved = resolveVariable({ varPath, colors });
+ * // resolved: "--color-red-100"
+ * ```
+ */
 export function resolveVariable(
   { varPath, colors, typography, spacing }: {
     varPath: string;
