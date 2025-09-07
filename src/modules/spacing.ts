@@ -3,15 +3,32 @@ import type { Output, ResolveMap } from "../lib.ts";
 
 type SpacingValue = string;
 
-type SpacingScale = {
+interface SpacingScale {
   [key: string]: SpacingValue;
-};
+}
 
-export type PixelSettings = { pxToRem?: boolean; rem?: number };
+/**
+ * Settings for pixel to rem conversion.
+ */
+export interface PixelSettings {
+  /**
+   * Whether to convert pixel values to rems.
+   * @default true
+   */
+  pxToRem?: boolean;
+  /**
+   * The base rem value to use for conversion.
+   * @default 16
+   */
+  rem?: number;
+}
 
-export type SpacingConfig = {
+/**
+ * The spacing configuration object.
+ */
+export interface SpacingConfig {
   [key: string]: { value: SpacingScale; settings?: PixelSettings };
-};
+}
 
 /**
  * Processes the spacing configuration to generate CSS variables.

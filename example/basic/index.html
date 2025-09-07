@@ -1,100 +1,100 @@
 <!DOCTYPE html>
 <html lang="en">
-
-<head>
+  <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CSSForge Test</title>
     <link rel="stylesheet" href="main.css">
     <style>
-        /* Example usage of the generated variables */
-        .color-test {
-            display: grid;
-            gap: var(--size-2);
-            padding: var(--size-3);
-        }
+      /* Example usage of the generated variables */
+      .color-test {
+        display: grid;
+        gap: var(--size-2);
+        padding: var(--size-3);
+      }
 
-        .color-swatch {
-            width: 100px;
-            height: 100px;
-            border-radius: 8px;
-            margin-bottom: var(--size-1);
-        }
+      .color-swatch {
+        width: 100px;
+        height: 100px;
+        border-radius: 8px;
+        margin-bottom: var(--size-1);
+      }
 
-        /* Example color swatches */
-        .coral-100 {
-            background-color: var(--color-coral-100);
-        }
+      /* Example color swatches */
+      .coral-100 {
+        background-color: var(--color-coral-100);
+      }
 
-        .mint-100 {
-            background-color: var(--color-mint-100);
-        }
+      .mint-100 {
+        background-color: var(--color-mint-100);
+      }
 
-        /* Typography test */
-        .type-scale {
-            margin-top: 2rem;
-            display: grid;
-            gap: var(--text-base);
-        }
+      /* Typography test */
+      .type-scale {
+        margin-top: 2rem;
+        display: grid;
+        gap: var(--text-base);
+      }
 
-        .type-scale h1 {
-            font-size: var(--text-4xl);
-        }
+      .type-scale h1 {
+        font-size: var(--text-4xl);
+      }
 
-        .type-scale h2 {
-            font-size: var(--text-3xl);
-        }
+      .type-scale h2 {
+        font-size: var(--text-3xl);
+      }
 
-        .type-scale h3 {
-            font-size: var(--text-2xl);
-        }
+      .type-scale h3 {
+        font-size: var(--text-2xl);
+      }
 
-        .type-scale p {
-            font-size: var(--text-lg);
-        }
+      .type-scale p {
+        font-size: var(--text-lg);
+      }
     </style>
-</head>
+  </head>
 
-<body>
+  <body>
     <div class="color-test">
-        <h2>Color Test</h2>
-        <div>
-            <div class="color-swatch coral-100"></div>
-            <p>Primary 100</p>
-        </div>
-        <div>
-            <div class="color-swatch mint-100"></div>
-            <p>Primary 900</p>
-        </div>
+      <h2>Color Test</h2>
+      <div>
+        <div class="color-swatch coral-100"></div>
+        <p>Primary 100</p>
+      </div>
+      <div>
+        <div class="color-swatch mint-100"></div>
+        <p>Primary 900</p>
+      </div>
     </div>
 
     <div class="type-scale">
-        <h2>Typography Scale Test</h2>
-        <h1>Heading Level 1</h1>
-        <h2>Heading Level 2</h2>
-        <h3>Heading Level 3</h3>
-        <p>This is a paragraph of text that demonstrates the base font size. It should be comfortable to read and
-            well-proportioned according to the type scale.</p>
+      <h2>Typography Scale Test</h2>
+      <h1>Heading Level 1</h1>
+      <h2>Heading Level 2</h2>
+      <h3>Heading Level 3</h3>
+      <p>
+        This is a paragraph of text that demonstrates the base font size. It should be
+        comfortable to read and well-proportioned according to the type scale.
+      </p>
     </div>
 
     <div class="spacing-test">
-        <h2>Spacing Scale Test</h2>
-        <div style="background: #eee; padding: var(--size-1);">Size 1 padding</div>
-        <div style="background: #ddd; padding: var(--size-2);">Size 2 padding</div>
-        <div style="background: #ccc; padding: var(--size-3);">Size 3 padding</div>
+      <h2>Spacing Scale Test</h2>
+      <div style="background: #eee; padding: var(--size-1)">Size 1 padding</div>
+      <div style="background: #ddd; padding: var(--size-2)">Size 2 padding</div>
+      <div style="background: #ccc; padding: var(--size-3)">Size 3 padding</div>
     </div>
 
     <script>
-        // Optional: Add this to help debug which variables are available
-        const styles = getComputedStyle(document.documentElement);
-        const cssVariables = Array.from(document.styleSheets)
-            .filter(sheet => sheet.href?.endsWith('test.css'))
-            .flatMap(sheet => Array.from(sheet.cssRules))
-            .flatMap(rule => Array.from(rule.style))
-            .filter(name => name.startsWith('--'));
+      // Optional: Add this to help debug which variables are available
+      const styles = getComputedStyle(document.documentElement);
+      const cssVariables = Array.from(document.styleSheets)
+        .filter((sheet) => sheet.href?.endsWith("test.css"))
+        .flatMap((sheet) => Array.from(sheet.cssRules))
+        .flatMap((rule) => Array.from(rule.style))
+        .filter((name) => name.startsWith("--"));
 
-        console.log('Available CSS Variables:', cssVariables);
+      console.log("Available CSS Variables:", cssVariables);
     </script>
-</body>
-
+  </body>
 </html>

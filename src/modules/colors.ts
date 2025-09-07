@@ -12,76 +12,97 @@ type ExactlyOne<T> = {
     };
 }[keyof T];
 
-type PossibleColorValues = {
+interface PossibleColorValues {
   hex: string;
   rgb: readonly [number, number, number] | string;
   hsl: readonly [number, number, number] | string;
   oklch: readonly [number, number, number] | string;
-};
+}
 
 type ColorValue = ExactlyOne<PossibleColorValues>;
 
 type ColorValueOrString = ColorValue | string;
 
-type ColorVariants = {
+interface ColorVariants {
   [key: string]: ColorValueOrString;
-};
+}
 
-export type ColorPalette = {
+/**
+ * A palette of colors, organized by name and variants.
+ */
+export interface ColorPalette {
   [key: string]: ColorVariants;
-};
+}
 
-type Variables = {
+interface Variables {
   [key: string]: string;
-};
+}
 
-type GradientDefinition = {
+interface GradientDefinition {
   value: string;
   variables?: Variables;
   settings?: unknown;
-};
+}
 
-type GradientValue = {
+interface GradientValue {
   [key: string]: GradientDefinition;
-};
+}
 
-export type Gradient = {
+/**
+ * A single gradient definition.
+ */
+export interface Gradient {
   value: GradientValue;
   settings?: unknown;
-};
+}
 
-export type GradientConfig = {
+/**
+ * A collection of gradients.
+ */
+export interface GradientConfig {
   [key: string]: Gradient;
-};
+}
 
-type ColorInThemeValues = {
+interface ColorInThemeValues {
   [key: string]: string;
-};
+}
 
-type ColorTheme = {
+interface ColorTheme {
   [key: string]: {
     value: ColorInThemeValues;
     variables?: Variables;
     settings?: unknown;
   };
-};
+}
 
-export type ColorConfig = {
+/**
+ * The main color configuration object.
+ */
+export interface ColorConfig {
+  /**
+   * The color palette.
+   */
   palette: {
     value: ColorPalette;
     settings?: unknown;
   };
+  /**
+   * A collection of gradients.
+   */
   gradients?: {
     value: GradientConfig;
     settings?: unknown;
   };
+  /**
+   * A collection of themes.
+   */
   theme?: {
     value: {
       [key: string]: ColorTheme;
     };
     settings?: unknown;
   };
-};
+}
 
 /**
  * Gets the color string from a color value object.

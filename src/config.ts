@@ -3,12 +3,27 @@ import type { PrimitiveConfig } from "./modules/primitive.ts";
 import type { SpacingConfig } from "./modules/spacing.ts";
 import type { TypographyConfig } from "./modules/typography.ts";
 
-export type CSSForgeConfig = {
+/**
+ * The main configuration object for CSSForge.
+ */
+export interface CSSForgeConfig {
+  /**
+   * Color configuration, including palettes, gradients, and themes.
+   */
   colors: ColorConfig;
+  /**
+   * Typography configuration, including type scales and weights.
+   */
   typography: TypographyConfig;
+  /**
+   * Spacing configuration for creating spacing scales.
+   */
   spacing: SpacingConfig;
+  /**
+   * Primitive configuration for creating custom design tokens.
+   */
   primitives: PrimitiveConfig;
-};
+}
 
 /**
  * Define a CSSForge configuration.

@@ -2,25 +2,51 @@ import { calculateTypeScale, type UtopiaTypeConfig } from "utopia-core";
 import type { Output, ResolveMap } from "../lib.ts";
 import { validateName } from "../helpers.ts";
 
-export type TypeScaleDefinition = {
-  value: UtopiaTypeConfig & { prefix?: string };
+/**
+ * The definition for a type scale.
+ */
+export interface TypeScaleDefinition {
+  /**
+   * The configuration for the type scale generation.
+   */
+  value: UtopiaTypeConfig & {
+    /**
+     * An optional prefix for the generated CSS variables.
+     */
+    prefix?: string;
+  };
+  /**
+   * Optional settings for the type scale.
+   */
   settings?: {
+    /**
+     * Custom labels for the type scale steps.
+     */
     customLabel?: Record<string, string>;
   };
-};
+}
 
-type TypographyWeight = {
+interface TypographyWeight {
   value: {
     [key: string]: string;
   };
-};
+}
 
-export type TypographyConfig = {
+/**
+ * The typography configuration object.
+ */
+export interface TypographyConfig {
   [key: string]: {
+    /**
+     * A collection of font weights.
+     */
     weight?: TypographyWeight;
+    /**
+     * The type scale definition.
+     */
     typescale?: TypeScaleDefinition;
   };
-};
+}
 
 /**
  * Processes the typography configuration to generate CSS variables for type scales and weights.

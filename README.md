@@ -6,11 +6,12 @@
 
 CSS forge is a suite of tools that leverages modern CSS features and conventions to help
 you generate design tokens. All operations happen at build time, so you can use the
-generated tokens in your stylesheets without any runtime overhead.
+generated tokens in your stylesheets without any runtime overhead. 
+Cssforge accepts a single, serializable configuration object.
 
 ## Features
 
-- 🎨 **Colors**: Create palettes, gradients and themes. Automatically convert to OKLCH. 
+- 🎨 **Colors**: Create palettes, gradients and themes. Automatically convert to OKLCH.
 - 📐 **Type Scale**: Generate fluid typography with `clamp()`
 - 📏 **Spacing Scale**: Organise spacing utilities
 - 📦 **Primitives**: Define custom design tokens
@@ -209,32 +210,37 @@ export default defineConfig({
 });
 ```
 
-This will generate the following css : 
+This will generate the following css :
 
 ```css
 /*____ CSSForge ____*/
 :root {
-/*____ Colors ____*/
-/* Palette */
---color-simple-white: oklch(100% 0 0);
---color-simple-black: oklch(0% 0 0);
---color-simple-green: oklch(86.644% 0.29483 142.49535);
---color-simple-blue: oklch(45.201% 0.31321 264.05202);
---color-simple-violet: oklch(70% 0.2 270);
---color-simple-red: oklch(62.796% 0.25768 29.23388);
-/*  Gradients  */
---gradient-white-green-primary: linear-gradient(to right, var(--color-simple-white), var(--color-simple-green));
-/* Theme: light */
-/* background */
---theme-light-background-primary: var(--color-simple-white);
---theme-light-background-secondary: var(--gradient-white-green-primary);
+  /*____ Colors ____*/
+  /* Palette */
+  --color-simple-white: oklch(100% 0 0);
+  --color-simple-black: oklch(0% 0 0);
+  --color-simple-green: oklch(86.644% 0.29483 142.49535);
+  --color-simple-blue: oklch(45.201% 0.31321 264.05202);
+  --color-simple-violet: oklch(70% 0.2 270);
+  --color-simple-red: oklch(62.796% 0.25768 29.23388);
+  /*  Gradients  */
+  --gradient-white-green-primary: linear-gradient(
+    to right,
+    var(--color-simple-white),
+    var(--color-simple-green)
+  );
+  /* Theme: light */
+  /* background */
+  --theme-light-background-primary: var(--color-simple-white);
+  --theme-light-background-secondary: var(--gradient-white-green-primary);
 }
 ```
 
 ### Spacing
 
 Define custom spacing scale, that can be referenced for other types, such as primitives.
-By default all spacing values are converted to from `px` to `rem`. This can be disabled with the settings.
+By default all spacing values are converted to from `px` to `rem`. This can be disabled
+with the settings.
 
 ```typescript
 export default defineConfig({
@@ -246,7 +252,7 @@ export default defineConfig({
         3: "0.75rem",
         4: "16px",
       },
-      settings: { pxToRem: true, rem: 16 } // Optional, default settings
+      settings: { pxToRem: true, rem: 16 }, // Optional, default settings
     },
   },
 });
@@ -257,11 +263,11 @@ This will generate the following css :
 ```css
 /*____ CSSForge ____*/
 :root {
-/*____ Spacing ____*/
---size-1: 0.25rem;
---size-2: 0.5rem;
---size-3: 0.75rem;
---size-4: 1rem;
+  /*____ Spacing ____*/
+  --size-1: 0.25rem;
+  --size-2: 0.5rem;
+  --size-3: 0.75rem;
+  --size-4: 1rem;
 }
 ```
 
@@ -295,22 +301,23 @@ export default defineConfig({
   },
 });
 ```
+
 This will generate the following css :
 
 ```css
 /*____ CSSForge ____*/
 :root {
-/*____ Typography ____*/
---typography-arial-4xl: clamp(2.6703rem, 2.5608rem + 0.5474vw, 3.0518rem);
---typography-arial-3xl: clamp(2.1362rem, 2.0486rem + 0.4379vw, 2.4414rem);
---typography-arial-2xl: clamp(1.709rem, 1.6389rem + 0.3503vw, 1.9531rem);
---typography-arial-xl: clamp(1.3672rem, 1.3111rem + 0.2803vw, 1.5625rem);
---typography-arial-lg: clamp(1.0938rem, 1.0489rem + 0.2242vw, 1.25rem);
---typography-arial-base: clamp(0.875rem, 0.8391rem + 0.1794vw, 1rem);
---typography-arial-sm: clamp(0.7rem, 0.6713rem + 0.1435vw, 0.8rem);
---typography-arial-xs: clamp(0.56rem, 0.537rem + 0.1148vw, 0.64rem);
---typography-arial-2xs: clamp(0.448rem, 0.4296rem + 0.0918vw, 0.512rem);
---weight-arial-regular: 500;
+  /*____ Typography ____*/
+  --typography-arial-4xl: clamp(2.6703rem, 2.5608rem + 0.5474vw, 3.0518rem);
+  --typography-arial-3xl: clamp(2.1362rem, 2.0486rem + 0.4379vw, 2.4414rem);
+  --typography-arial-2xl: clamp(1.709rem, 1.6389rem + 0.3503vw, 1.9531rem);
+  --typography-arial-xl: clamp(1.3672rem, 1.3111rem + 0.2803vw, 1.5625rem);
+  --typography-arial-lg: clamp(1.0938rem, 1.0489rem + 0.2242vw, 1.25rem);
+  --typography-arial-base: clamp(0.875rem, 0.8391rem + 0.1794vw, 1rem);
+  --typography-arial-sm: clamp(0.7rem, 0.6713rem + 0.1435vw, 0.8rem);
+  --typography-arial-xs: clamp(0.56rem, 0.537rem + 0.1148vw, 0.64rem);
+  --typography-arial-2xs: clamp(0.448rem, 0.4296rem + 0.0918vw, 0.512rem);
+  --weight-arial-regular: 500;
 }
 ```
 
@@ -355,12 +362,12 @@ Will generate the following css variables :
 ```css
 /*____ CSSForge ____*/
 :root {
-/*____ Typography ____*/
---typography-text-e: clamp(1.3672rem, 1.3111rem + 0.2803vw, 1.5625rem);
---typography-text-d: clamp(1.0938rem, 1.0489rem + 0.2242vw, 1.25rem);
---typography-text-c: clamp(0.875rem, 0.8391rem + 0.1794vw, 1rem);
---typography-text-b: clamp(0.7rem, 0.6713rem + 0.1435vw, 0.8rem);
---typography-text-a: clamp(0.56rem, 0.537rem + 0.1148vw, 0.64rem);
+  /*____ Typography ____*/
+  --typography-text-e: clamp(1.3672rem, 1.3111rem + 0.2803vw, 1.5625rem);
+  --typography-text-d: clamp(1.0938rem, 1.0489rem + 0.2242vw, 1.25rem);
+  --typography-text-c: clamp(0.875rem, 0.8391rem + 0.1794vw, 1rem);
+  --typography-text-b: clamp(0.7rem, 0.6713rem + 0.1435vw, 0.8rem);
+  --typography-text-a: clamp(0.56rem, 0.537rem + 0.1148vw, 0.64rem);
 }
 ```
 
@@ -430,34 +437,34 @@ export default defineConfig({
   },
 });
 ```
+
 This will generate the following css :
 
 ```css
 /*____ CSSForge ____*/
 :root {
-/*____ Spacing ____*/
---size-2: 0.5rem;
---size-3: 0.75rem;
-/*____ Typography ____*/
---typography-arial-4xl: clamp(2.6703rem, 2.5608rem + 0.5474vw, 3.0518rem);
---typography-arial-3xl: clamp(2.1362rem, 2.0486rem + 0.4379vw, 2.4414rem);
---typography-arial-2xl: clamp(1.709rem, 1.6389rem + 0.3503vw, 1.9531rem);
---typography-arial-xl: clamp(1.3672rem, 1.3111rem + 0.2803vw, 1.5625rem);
---typography-arial-lg: clamp(1.0938rem, 1.0489rem + 0.2242vw, 1.25rem);
---typography-arial-base: clamp(0.875rem, 0.8391rem + 0.1794vw, 1rem);
---typography-arial-sm: clamp(0.7rem, 0.6713rem + 0.1435vw, 0.8rem);
---typography-arial-xs: clamp(0.56rem, 0.537rem + 0.1148vw, 0.64rem);
---typography-arial-2xs: clamp(0.448rem, 0.4296rem + 0.0918vw, 0.512rem);
-/*____ Primitives ____*/
-/* button */
---button-small-width: 7.5rem;
---button-small-height: 2.5rem;
---button-small-fontSize: var(--typography-arial-base);
---button-small-radius: 0.5rem;
---button-small-padding: var(--size-2) var(--size-3);
+  /*____ Spacing ____*/
+  --size-2: 0.5rem;
+  --size-3: 0.75rem;
+  /*____ Typography ____*/
+  --typography-arial-4xl: clamp(2.6703rem, 2.5608rem + 0.5474vw, 3.0518rem);
+  --typography-arial-3xl: clamp(2.1362rem, 2.0486rem + 0.4379vw, 2.4414rem);
+  --typography-arial-2xl: clamp(1.709rem, 1.6389rem + 0.3503vw, 1.9531rem);
+  --typography-arial-xl: clamp(1.3672rem, 1.3111rem + 0.2803vw, 1.5625rem);
+  --typography-arial-lg: clamp(1.0938rem, 1.0489rem + 0.2242vw, 1.25rem);
+  --typography-arial-base: clamp(0.875rem, 0.8391rem + 0.1794vw, 1rem);
+  --typography-arial-sm: clamp(0.7rem, 0.6713rem + 0.1435vw, 0.8rem);
+  --typography-arial-xs: clamp(0.56rem, 0.537rem + 0.1148vw, 0.64rem);
+  --typography-arial-2xs: clamp(0.448rem, 0.4296rem + 0.0918vw, 0.512rem);
+  /*____ Primitives ____*/
+  /* button */
+  --button-small-width: 7.5rem;
+  --button-small-height: 2.5rem;
+  --button-small-fontSize: var(--typography-arial-base);
+  --button-small-radius: 0.5rem;
+  --button-small-padding: var(--size-2) var(--size-3);
 }
 ```
-
 
 ## CLI Usage
 
@@ -494,10 +501,7 @@ Check out our examples:
 
 - [Basic Setup](./examples/basic)
 
-TODO Examples :
-[] Nuxt
-[] Tailwind
-[] Vite
+TODO Examples : [] Nuxt [] Tailwind [] Vite
 
 ## License
 

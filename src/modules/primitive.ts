@@ -8,32 +8,38 @@ import { type Output, resolveVariable } from "../lib.ts";
 import { validateName } from "../helpers.ts";
 import { pxToRem } from "../helpers.ts";
 
-type Variables = {
+interface Variables {
   [key: string]: string;
-};
+}
 
-type PrimitiveProperties = {
+interface PrimitiveProperties {
   [key: string]: string;
-};
+}
 
-type PrimitiveDefinition = {
+interface PrimitiveDefinition {
   value: PrimitiveProperties;
   variables?: Variables;
   settings?: PixelSettings;
-};
+}
 
-type PrimitiveValue = {
+interface PrimitiveValue {
   [key: string]: PrimitiveDefinition;
-};
+}
 
-export type Primitive = {
+/**
+ * A single primitive definition.
+ */
+export interface Primitive {
   value: PrimitiveValue;
   settings?: unknown;
-};
+}
 
-export type PrimitiveConfig = {
+/**
+ * A collection of primitives.
+ */
+export interface PrimitiveConfig {
   [key: string]: Primitive;
-};
+}
 
 /**
  * Processes the primitive configuration to generate CSS variables.
