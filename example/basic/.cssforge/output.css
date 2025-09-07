@@ -1,0 +1,17 @@
+/*____ CSSForge ____*/
+:root {
+/*____ Colors ____*/
+/* Palette */
+--color-simple-white: oklch(100% 0 0);
+--color-simple-black: oklch(0% 0 0);
+--color-simple-green: oklch(86.644% 0.29483 142.49535);
+--color-simple-blue: oklch(45.201% 0.31321 264.05202);
+--color-simple-violet: oklch(70% 0.2 270);
+--color-simple-red: oklch(62.796% 0.25768 29.23388);
+/*  Gradients  */
+--gradient-white-green-primary: linear-gradient(to right, var(--color-simple-white), var(--color-simple-green));
+/* Theme: light */
+/* background */
+--theme-light-background-primary: var(--color-simple-white);
+--theme-light-background-secondary: var(--gradient-white-green-primary);
+}

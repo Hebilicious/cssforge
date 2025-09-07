@@ -1,0 +1,6 @@
+@import ".cssforge/output.css" layer(cssforge);
+
+.Red {
+    color: var(--color-coral-100);
+    width: var(--size-1);
+}

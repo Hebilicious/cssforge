@@ -1,0 +1,22 @@
+{
+  "name": "@hebilicious/cssforge",
+  "version": "0.0.1",
+  "exports": {
+    ".": "./mod.ts",
+    "./cli": "./src/cli.ts"
+  },
+  "fmt": {
+    "lineWidth": 90
+  },
+  "publish": {
+    "include": [
+      "src/**/*.ts",
+      "README.md"
+    ]
+  },
+  "tasks": {
+    "cli": "deno run -A ./src/cli.ts",
+    "example:cli": "deno run -A ./src/cli.ts --prefix ./example/basic --mode css",
+    "test:cli": "deno run -A ./src/cli.ts"
+  }
+}
