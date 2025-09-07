@@ -1,7 +1,8 @@
 {
   "name": "@hebilicious/cssforge",
-  "version": "0.0.0",
+  "version": "0.1.0",
+  "type": "module",
   "scripts": {
-    "version": "npx @changesets/cli version && npx @qingshaner/jsr-release --allowDirty version --sync"
+    "version": "npx @changesets/cli version && node sync-version.js"
   }
 }

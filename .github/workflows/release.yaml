@@ -30,12 +30,12 @@ jobs:
         uses: changesets/action@v1
         with:
           commit: "chore(release): update release & CHANGELOG.md"
-          title: "📦 Update Packages Version"
+          title: "release: 📦 update packages version"
           version: npm run version
-          publish: echo "This should be the publish to npm command"
+          publish: echo "This could be a publish to npm command"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Publish to jsr.io
-        if: steps.changesets.outputs.published == 'true'
-        run: npx @qingshaner/jsr-release publish --changesetReleases='${{ steps.changesets.outputs.publishedPackages }}'
+        if: steps.changesets.outputs.hasChangesets == 'false'
+        run: npx jsr publish
