@@ -1,0 +1,36 @@
+name: Format & Publish Dry Run
+
+on:
+  push:
+    branches:
+      - main
+
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: denoland/setup-deno@v2
+        with:
+            deno-version: v2.x
+          
+      - name: Format
+        run: deno fmt --check
+
+  publish-dry-run:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: denoland/setup-deno@v2
+        with:
+            deno-version: v2.x
+
+      - name: Publish dry run
+        run: deno publish --dry-run
