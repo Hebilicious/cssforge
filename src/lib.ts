@@ -1,10 +1,20 @@
+/**
+ * A map where keys are dot-separated paths and values are objects
+ * containing the CSS variable key, its value, and the full variable declaration.
+ */
 export type ResolveMap = Map<
   string,
   { key: string; value: string; variable: string }
 >;
 
+/**
+ * Represents the output of a processing function, containing the generated
+ * CSS and a resolve map.
+ */
 export interface Output {
+  /** The generated CSS string. */
   css: string;
+  /** A map for resolving variable paths. */
   resolveMap: ResolveMap;
 }
 
