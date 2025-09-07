@@ -31,11 +31,11 @@ jobs:
         with:
           commit: "chore(release): update release & CHANGELOG.md"
           title: "📦 Update Packages Version"
-          publish: npx @changesets/cli version && npx @qingshaner/jsr-release --allowDirty version --sync
-          version: npx @changesets/cli publish
+          version: npm run version
+          publish: echo "This should be the publish to npm command"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Publish to jsr.io
         if: steps.changesets.outputs.published == 'true'
-        run: pnpx @qingshaner/jsr-release publish --changesetReleases='${{ steps.changesets.outputs.publishedPackages }}'
+        run: npx @qingshaner/jsr-release publish --changesetReleases='${{ steps.changesets.outputs.publishedPackages }}'

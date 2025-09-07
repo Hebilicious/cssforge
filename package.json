@@ -1,4 +1,7 @@
 {
   "name": "@hebilicious/cssforge",
-  "version": "0.0.0"
+  "version": "0.0.0",
+  "scripts": {
+    "version": "npx @changesets/cli version && npx @qingshaner/jsr-release --allowDirty version --sync"
+  }
 }
