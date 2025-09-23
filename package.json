@@ -1,6 +1,6 @@
 {
   "name": "@hebilicious/cssforge",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "type": "module",
   "scripts": {
     "version": "npx @changesets/cli version && node scripts/sync-version.js"
