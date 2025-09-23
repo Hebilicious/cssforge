@@ -44,6 +44,11 @@ Deno.test("processTypography - generates correct CSS variables", () => {
     "--typography_fluid-arial-xl: clamp(1.3672rem, 1.3111rem + 0.2803vw, 1.5625rem);",
   );
 
+  assertEquals(
+    Array.from(result.resolveMap.keys()),
+    expectedSizes.map((size) => `typography_fluid.arial@${size}`),
+  );
+
   // Test that we have all the expected size variables
   expectedSizes.forEach((size) => {
     const hasSize = lines.some((line) =>
@@ -107,8 +112,13 @@ Deno.test("typography - can handle custom labels and prefixes", () => {
   // Test a specific value for precision
   const xlLine = lines.find((line) => line.includes("--typography_fluid-arial-text-xl:"));
   assertEquals(
-    xlLine?.trim(),
+    xlLine,
     "--typography_fluid-arial-text-xl: clamp(1.3672rem, 1.3111rem + 0.2803vw, 1.5625rem);",
+  );
+
+  assertEquals(
+    Array.from(result.resolveMap.keys()),
+    expectedSizes.toReversed().map((size) => `typography_fluid.arial@${size}`),
   );
 
   // Test that we have all the expected size variables
@@ -149,12 +159,22 @@ Deno.test("processTypography - can process weights", () => {
   const lines = getLines(result.css);
   assertEquals(lines.length, positiveSteps + negativeSteps + 1 + 1); // 1 for base size and 1 for weight
 
+  assertEquals(
+    Array.from(result.resolveMap.keys()),
+    [
+      "typography_fluid.arial@2xl",
+      "typography_fluid.arial@xl",
+      "typography_fluid.arial@l",
+      "typography_fluid.arial@m",
+      "typography_fluid.arial@s",
+      "typography_fluid.arial@xs",
+      "typography_fluid.arial@2xs",
+      "typography.weight.arial.value.regular",
+    ],
+  );
   // Test that we have the weight variable
   const xlLine = lines.find((line) =>
     line.includes("--typography-weight-arial-regular:")
   );
-  assertEquals(
-    xlLine?.trim(),
-    "--typography-weight-arial-regular: 500;",
-  );
+  assertEquals(xlLine, "--typography-weight-arial-regular: 500;");
 });

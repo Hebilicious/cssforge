@@ -1,6 +1,8 @@
 import { assertEquals } from "@std/assert";
 import { defineConfig, processColors } from "../src/mod.ts";
 import { getLines } from "./helpers.ts";
+import { resolve } from "node:path";
+import { assert } from "node:console";
 
 Deno.test("processColors - converts hex to oklch", () => {
   const config = defineConfig({
@@ -16,7 +18,7 @@ Deno.test("processColors - converts hex to oklch", () => {
     },
   });
 
-  const { css } = processColors(config.colors);
+  const { css, resolveMap } = processColors(config.colors);
   const lines = getLines(css);
   assertEquals(
     lines[1].trim(),
@@ -26,6 +28,10 @@ Deno.test("processColors - converts hex to oklch", () => {
     lines[2].trim(),
     "--palette-coral-200: oklch(69.622% 0.19552 32.32143);",
   );
+  assertEquals(Array.from(resolveMap.keys()), [
+    "palette.value.coral.100",
+    "palette.value.coral.200",
+  ]);
 });
 
 Deno.test("processColors - handles different color formats", () => {
@@ -45,7 +51,7 @@ Deno.test("processColors - handles different color formats", () => {
       },
     } as const,
   );
-  const { css } = processColors(config.colors);
+  const { css, resolveMap } = processColors(config.colors);
   const lines = getLines(css);
 
   assertEquals(
@@ -61,6 +67,13 @@ Deno.test("processColors - handles different color formats", () => {
     lines[4].trim(),
     "--palette-brand-default: oklch(62.796% 0.25768 29.23388);",
   );
+
+  assertEquals(Array.from(resolveMap.keys()), [
+    "palette.value.brand.200",
+    "palette.value.brand.300",
+    "palette.value.brand.400",
+    "palette.value.brand.default",
+  ]);
 });
 
 Deno.test("processColors - handles string values", () => {
@@ -76,7 +89,7 @@ Deno.test("processColors - handles string values", () => {
       },
     },
   });
-  const { css } = processColors(config.colors);
+  const { css, resolveMap } = processColors(config.colors);
   const lines = getLines(css);
   assertEquals(
     lines[1].trim(),
@@ -86,6 +99,10 @@ Deno.test("processColors - handles string values", () => {
     lines[2].trim(),
     "--palette-simple-black: oklch(0% 0 0);",
   );
+  assertEquals(Array.from(resolveMap.keys()), [
+    "palette.value.simple.white",
+    "palette.value.simple.black",
+  ]);
 });
 
 Deno.test("processColors - handles themes", () => {
@@ -117,7 +134,7 @@ Deno.test("processColors - handles themes", () => {
       },
     },
   });
-  const { css } = processColors(config.colors);
+  const { css, resolveMap } = processColors(config.colors);
   const lines = getLines(css);
   assertEquals(
     lines[5].trim(),
@@ -127,6 +144,12 @@ Deno.test("processColors - handles themes", () => {
     lines[6].trim(),
     "--theme-light-background-secondary: var(--palette-simple-black);",
   );
+  assertEquals(Array.from(resolveMap.keys()), [
+    "palette.value.simple.white",
+    "palette.value.simple.black",
+    "theme.value.light.background.primary",
+    "theme.value.light.background.secondary",
+  ]);
 });
 
 Deno.test("processColors - handles transparency", () => {
@@ -142,7 +165,7 @@ Deno.test("processColors - handles transparency", () => {
       },
     },
   });
-  const { css } = processColors(config.colors);
+  const { css, resolveMap } = processColors(config.colors);
   const lines = getLines(css);
   assertEquals(
     lines[1],
@@ -152,6 +175,10 @@ Deno.test("processColors - handles transparency", () => {
     lines[2],
     "--palette-alpha-softGray2: oklch(14.48% 0 0 / 24%);",
   );
+  assertEquals(Array.from(resolveMap.keys()), [
+    "palette.value.alpha.softGray1",
+    "palette.value.alpha.softGray2",
+  ]);
 });
 
 Deno.test("processColors - generates gradient with color variables", () => {
@@ -197,6 +224,13 @@ Deno.test("processColors - generates gradient with color variables", () => {
   ].join("\n");
 
   assertEquals(lines.at(-1), expected);
+  assertEquals(Array.from(result.resolveMap.keys()), [
+    "palette.value.coral.50",
+    "palette.value.coral.90",
+    "palette.value.coral.100",
+    "palette.value.indigo.100",
+    "gradients.value.orangeGradient.primary",
+  ]);
 });
 
 Deno.test("processColors - handles themes referencing gradients", () => {
@@ -241,11 +275,16 @@ Deno.test("processColors - handles themes referencing gradients", () => {
     },
   });
 
-  const { css } = processColors(config.colors);
+  const { css, resolveMap } = processColors(config.colors);
   const lines = getLines(css);
   const lastLine = lines.pop();
   assertEquals(
     lastLine,
     "--theme-light-background-primary: var(--gradients-orangeGradient-primary);",
   );
+  assertEquals(Array.from(resolveMap.keys()), [
+    "palette.value.coral.50",
+    "gradients.value.orangeGradient.primary",
+    "theme.value.light.background.primary",
+  ]);
 });

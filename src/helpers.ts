@@ -4,7 +4,8 @@ const reservedKeyWords = [
   "typography",
   "typography_fluid",
   "theme",
-  "color",
+  "gradients",
+  "palette",
 ];
 /**
  * Validates a name to ensure it doesn't contain invalid characters.
