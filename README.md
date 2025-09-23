@@ -3,17 +3,18 @@
 0 runtime design tokens generator for modern style systems.
 
 > [!WARNING]
-> CSSForge is an experimental library and its API *will* change while I figure out a schema that makes sense. That being said, when the schema change, you should be able to search and replace your variables names.
-
+> CSSForge is an experimental library and its API _will_ change while I figure out a
+> schema that makes sense. That being said, when the schema change, you should be able to
+> search and replace your variables names.
 
 ## Why
 
-CSS forge is library that leverages modern CSS features and conventions to help
-you generate CSS custom properties (css variables). 
-At the core of CSSforge is the schema : A serializable configuration object.
-CSSforge has 0 runtime and generate at build time raw CSS, Typescript or JSON.
-This intentionally keeps things simple and flexible, and allows you to integrate it with any framework or CSS workflow.
-CSSforge will try to integrate with design tools such as Figma, cooors etc in the future.
+CSS forge is library that leverages modern CSS features and conventions to help you
+generate CSS custom properties (css variables). At the core of CSSforge is the schema : A
+serializable configuration object. CSSforge has 0 runtime and generate at build time raw
+CSS, Typescript or JSON. This intentionally keeps things simple and flexible, and allows
+you to integrate it with any framework or CSS workflow. CSSforge will try to integrate
+with design tools such as Figma, cooors etc in the future.
 
 ## Features
 
@@ -146,7 +147,7 @@ deno task cssforge --watch # To watch for changes
 
 3. Use the generated variables in your CSS:
 
-For example, you can import as a layer : 
+For example, you can import as a layer :
 
 ```css
 @import "cssforge.output.css" layer(cssforge);
@@ -224,6 +225,7 @@ export default defineConfig({
   },
 });
 -->
+
 ```typescript
 export default defineConfig({
   colors: {
@@ -279,20 +281,25 @@ This will generate the following CSS :
 ```css
 /*____ CSSForge ____*/
 :root {
-/*____ Colors ____*/
-/* Palette */
---palette-simple-white: oklch(100% 0 0);
---palette-simple-black: oklch(0% 0 0);
---palette-simple-green: oklch(86.644% 0.29483 142.49535);
---palette-simple-blue: oklch(45.201% 0.31321 264.05202);
---palette-simple-violet: oklch(70% 0.2 270);
---palette-simple-red: oklch(62.796% 0.25768 29.23388);
-/*  Gradients  */
---gradients-white-green-primary: linear-gradient(to right, var(--palette-simple-white), var(--palette-simple-green));
-/* Theme: light */
-/* background */
+  /*____ Colors ____*/
+  /* Palette */
+  --palette-simple-white: oklch(100% 0 0);
+  --palette-simple-black: oklch(0% 0 0);
+  --palette-simple-green: oklch(86.644% 0.29483 142.49535);
+  --palette-simple-blue: oklch(45.201% 0.31321 264.05202);
+  --palette-simple-violet: oklch(70% 0.2 270);
+  --palette-simple-red: oklch(62.796% 0.25768 29.23388);
+  /*  Gradients  */
+  --gradients-white-green-primary: linear-gradient(
+    to right,
+    var(--palette-simple-white),
+    var(--palette-simple-green)
+  );
+  /* Theme: light */
+  /* background */
 }
 ```
+
 <!-- /md:generate -->
 
 ### Spacing
@@ -318,6 +325,7 @@ export default defineConfig({
   },
 });
 -->
+
 ```typescript
 export default defineConfig({
   spacing: {
@@ -341,21 +349,21 @@ This will generate the following CSS :
 ```css
 /*____ CSSForge ____*/
 :root {
-/*____ Spacing ____*/
---spacing-size-1: 0.25rem;
---spacing-size-2: 0.5rem;
---spacing-size-3: 0.75rem;
---spacing-size-4: 1rem;
+  /*____ Spacing ____*/
+  --spacing-size-1: 0.25rem;
+  --spacing-size-2: 0.5rem;
+  --spacing-size-3: 0.75rem;
+  --spacing-size-4: 1rem;
 }
 ```
-<!-- /md:generate -->
 
+<!-- /md:generate -->
 
 #### Fluid Spacing (Utopia)
 
-You can generate fluid spacing scales powered by [Utopia](https://utopia.fyi). Fluid scales
-output `clamp()` expressions which interpolate between a minimum and maximum size across a
-viewport range.
+You can generate fluid spacing scales powered by [Utopia](https://utopia.fyi). Fluid
+scales output `clamp()` expressions which interpolate between a minimum and maximum size
+across a viewport range.
 
 <!-- md:generate defineConfig
 export default defineConfig({
@@ -376,6 +384,7 @@ export default defineConfig({
   },
 });
 -->
+
 ```typescript
 export default defineConfig({
   spacing: {
@@ -401,12 +410,13 @@ This will generate the following CSS :
 ```css
 /*____ CSSForge ____*/
 :root {
-/*____ Spacing ____*/
---spacing_fluid-base-hi-xs: clamp(0rem, 0rem + 0vw, 0rem);
---spacing_fluid-base-hi-s: clamp(0.25rem, -0.1667rem + 2.0833vw, 1.5rem);
---spacing_fluid-base-hi-m: clamp(0.75rem, -0.5rem + 6.25vw, 4.5rem);
+  /*____ Spacing ____*/
+  --spacing_fluid-base-hi-xs: clamp(0rem, 0rem + 0vw, 0rem);
+  --spacing_fluid-base-hi-s: clamp(0.25rem, -0.1667rem + 2.0833vw, 1.5rem);
+  --spacing_fluid-base-hi-m: clamp(0.75rem, -0.5rem + 6.25vw, 4.5rem);
 }
 ```
+
 <!-- /md:generate -->
 
 You can combine fluid and static spacing:
@@ -435,6 +445,7 @@ export default defineConfig({
   },
 });
 -->
+
 ```typescript
 export default defineConfig({
   spacing: {
@@ -465,25 +476,27 @@ This will generate the following CSS :
 ```css
 /*____ CSSForge ____*/
 :root {
-/*____ Spacing ____*/
---spacing_fluid-base-smooth-3xs: clamp(0.0625rem, -0.0417rem + 0.5208vw, 0.375rem);
---spacing_fluid-base-smooth-2xs: clamp(0.125rem, -0.0833rem + 1.0417vw, 0.75rem);
---spacing_fluid-base-smooth-xs: clamp(0.1875rem, -0.125rem + 1.5625vw, 1.125rem);
---spacing_fluid-base-smooth-s: clamp(0.25rem, -0.1667rem + 2.0833vw, 1.5rem);
---spacing_fluid-base-smooth-m: clamp(0.375rem, -0.25rem + 3.125vw, 2.25rem);
---spacing_fluid-base-smooth-l: clamp(0.5rem, -0.3333rem + 4.1667vw, 3rem);
---spacing_fluid-base-smooth-xl: clamp(0.75rem, -0.5rem + 6.25vw, 4.5rem);
---spacing_fluid-base-smooth-2xl: clamp(1rem, -0.6667rem + 8.3333vw, 6rem);
---spacing_fluid-base-smooth-3xl: clamp(1.5rem, -1rem + 12.5vw, 9rem);
---spacing-gap-1: 0.25rem;
---spacing-gap-2: 0.5rem;
+  /*____ Spacing ____*/
+  --spacing_fluid-base-smooth-3xs: clamp(0.0625rem, -0.0417rem + 0.5208vw, 0.375rem);
+  --spacing_fluid-base-smooth-2xs: clamp(0.125rem, -0.0833rem + 1.0417vw, 0.75rem);
+  --spacing_fluid-base-smooth-xs: clamp(0.1875rem, -0.125rem + 1.5625vw, 1.125rem);
+  --spacing_fluid-base-smooth-s: clamp(0.25rem, -0.1667rem + 2.0833vw, 1.5rem);
+  --spacing_fluid-base-smooth-m: clamp(0.375rem, -0.25rem + 3.125vw, 2.25rem);
+  --spacing_fluid-base-smooth-l: clamp(0.5rem, -0.3333rem + 4.1667vw, 3rem);
+  --spacing_fluid-base-smooth-xl: clamp(0.75rem, -0.5rem + 6.25vw, 4.5rem);
+  --spacing_fluid-base-smooth-2xl: clamp(1rem, -0.6667rem + 8.3333vw, 6rem);
+  --spacing_fluid-base-smooth-3xl: clamp(1.5rem, -1rem + 12.5vw, 9rem);
+  --spacing-gap-1: 0.25rem;
+  --spacing-gap-2: 0.5rem;
 }
 ```
+
 <!-- /md:generate -->
 
 #### Referencing Fluid Spacing
 
-To reference fluid spacing, use the `@` symbol and the label of the scale; ie: `spacing_fluid-base-smooth@xs`.
+To reference fluid spacing, use the `@` symbol and the label of the scale; ie:
+`spacing_fluid-base-smooth@xs`.
 
 ### Typography
 
@@ -517,6 +530,7 @@ export default defineConfig({
   },
 });
 -->
+
 ```typescript
 export default defineConfig({
   typography: {
@@ -550,19 +564,20 @@ This will generate the following CSS :
 ```css
 /*____ CSSForge ____*/
 :root {
-/*____ Typography ____*/
---typography_fluid-arial-4xl: clamp(2.6703rem, 2.5608rem + 0.5474vw, 3.0518rem);
---typography_fluid-arial-3xl: clamp(2.1362rem, 2.0486rem + 0.4379vw, 2.4414rem);
---typography_fluid-arial-2xl: clamp(1.709rem, 1.6389rem + 0.3503vw, 1.9531rem);
---typography_fluid-arial-xl: clamp(1.3672rem, 1.3111rem + 0.2803vw, 1.5625rem);
---typography_fluid-arial-lg: clamp(1.0938rem, 1.0489rem + 0.2242vw, 1.25rem);
---typography_fluid-arial-base: clamp(0.875rem, 0.8391rem + 0.1794vw, 1rem);
---typography_fluid-arial-sm: clamp(0.7rem, 0.6713rem + 0.1435vw, 0.8rem);
---typography_fluid-arial-xs: clamp(0.56rem, 0.537rem + 0.1148vw, 0.64rem);
---typography_fluid-arial-2xs: clamp(0.448rem, 0.4296rem + 0.0918vw, 0.512rem);
---typography-weight-arial-regular: 600;
+  /*____ Typography ____*/
+  --typography_fluid-arial-4xl: clamp(2.6703rem, 2.5608rem + 0.5474vw, 3.0518rem);
+  --typography_fluid-arial-3xl: clamp(2.1362rem, 2.0486rem + 0.4379vw, 2.4414rem);
+  --typography_fluid-arial-2xl: clamp(1.709rem, 1.6389rem + 0.3503vw, 1.9531rem);
+  --typography_fluid-arial-xl: clamp(1.3672rem, 1.3111rem + 0.2803vw, 1.5625rem);
+  --typography_fluid-arial-lg: clamp(1.0938rem, 1.0489rem + 0.2242vw, 1.25rem);
+  --typography_fluid-arial-base: clamp(0.875rem, 0.8391rem + 0.1794vw, 1rem);
+  --typography_fluid-arial-sm: clamp(0.7rem, 0.6713rem + 0.1435vw, 0.8rem);
+  --typography_fluid-arial-xs: clamp(0.56rem, 0.537rem + 0.1148vw, 0.64rem);
+  --typography_fluid-arial-2xs: clamp(0.448rem, 0.4296rem + 0.0918vw, 0.512rem);
+  --typography-weight-arial-regular: 600;
 }
 ```
+
 <!-- /md:generate -->
 
 ### Customizing Fluid Typography Scales
@@ -600,6 +615,7 @@ const config = defineConfig({
   },
 });
 -->
+
 ```typescript
 const config = defineConfig({
   typography: {
@@ -636,20 +652,22 @@ This will generate the following CSS :
 ```css
 /*____ CSSForge ____*/
 :root {
-/*____ Typography ____*/
---typography_fluid-comicsans-text-e: clamp(1.3672rem, 1.3111rem + 0.2803vw, 1.5625rem);
---typography_fluid-comicsans-text-d: clamp(1.0938rem, 1.0489rem + 0.2242vw, 1.25rem);
---typography_fluid-comicsans-text-c: clamp(0.875rem, 0.8391rem + 0.1794vw, 1rem);
---typography_fluid-comicsans-text-b: clamp(0.7rem, 0.6713rem + 0.1435vw, 0.8rem);
---typography_fluid-comicsans-text-a: clamp(0.56rem, 0.537rem + 0.1148vw, 0.64rem);
+  /*____ Typography ____*/
+  --typography_fluid-comicsans-text-e: clamp(1.3672rem, 1.3111rem + 0.2803vw, 1.5625rem);
+  --typography_fluid-comicsans-text-d: clamp(1.0938rem, 1.0489rem + 0.2242vw, 1.25rem);
+  --typography_fluid-comicsans-text-c: clamp(0.875rem, 0.8391rem + 0.1794vw, 1rem);
+  --typography_fluid-comicsans-text-b: clamp(0.7rem, 0.6713rem + 0.1435vw, 0.8rem);
+  --typography_fluid-comicsans-text-a: clamp(0.56rem, 0.537rem + 0.1148vw, 0.64rem);
 }
 ```
+
 <!-- /md:generate -->
 
 #### Referencing Fluid Typography
 
 To reference fluid typography, use the `@` symbol and the label of the scale; ie:
-`typography_fluid.comicsans-text@a`. By default the labels follow the Tailwind convention :
+`typography_fluid.comicsans-text@a`. By default the labels follow the Tailwind convention
+:
 
 - 2xs
 - xs
@@ -715,6 +733,7 @@ export default defineConfig({
 });
 ```
 -->
+
 ```typescript
 export default defineConfig({
   typography: {
@@ -771,28 +790,29 @@ This will generate the following CSS :
 ```css
 /*____ CSSForge ____*/
 :root {
-/*____ Spacing ____*/
---spacing-size-2: 0.5rem;
---spacing-size-3: 0.75rem;
-/*____ Typography ____*/
---typography_fluid-arial-4xl: clamp(2.6703rem, 2.5608rem + 0.5474vw, 3.0518rem);
---typography_fluid-arial-3xl: clamp(2.1362rem, 2.0486rem + 0.4379vw, 2.4414rem);
---typography_fluid-arial-2xl: clamp(1.709rem, 1.6389rem + 0.3503vw, 1.9531rem);
---typography_fluid-arial-xl: clamp(1.3672rem, 1.3111rem + 0.2803vw, 1.5625rem);
---typography_fluid-arial-lg: clamp(1.0938rem, 1.0489rem + 0.2242vw, 1.25rem);
---typography_fluid-arial-base: clamp(0.875rem, 0.8391rem + 0.1794vw, 1rem);
---typography_fluid-arial-sm: clamp(0.7rem, 0.6713rem + 0.1435vw, 0.8rem);
---typography_fluid-arial-xs: clamp(0.56rem, 0.537rem + 0.1148vw, 0.64rem);
---typography_fluid-arial-2xs: clamp(0.448rem, 0.4296rem + 0.0918vw, 0.512rem);
-/*____ Primitives ____*/
-/* button */
---button-small-width: 7.5rem;
---button-small-height: 2.5rem;
---button-small-fontSize: var(--typography_fluid-arial-base);
---button-small-radius: 0.5rem;
---button-small-padding: var(--spacing-size-2) var(--spacing-size-3);
+  /*____ Spacing ____*/
+  --spacing-size-2: 0.5rem;
+  --spacing-size-3: 0.75rem;
+  /*____ Typography ____*/
+  --typography_fluid-arial-4xl: clamp(2.6703rem, 2.5608rem + 0.5474vw, 3.0518rem);
+  --typography_fluid-arial-3xl: clamp(2.1362rem, 2.0486rem + 0.4379vw, 2.4414rem);
+  --typography_fluid-arial-2xl: clamp(1.709rem, 1.6389rem + 0.3503vw, 1.9531rem);
+  --typography_fluid-arial-xl: clamp(1.3672rem, 1.3111rem + 0.2803vw, 1.5625rem);
+  --typography_fluid-arial-lg: clamp(1.0938rem, 1.0489rem + 0.2242vw, 1.25rem);
+  --typography_fluid-arial-base: clamp(0.875rem, 0.8391rem + 0.1794vw, 1rem);
+  --typography_fluid-arial-sm: clamp(0.7rem, 0.6713rem + 0.1435vw, 0.8rem);
+  --typography_fluid-arial-xs: clamp(0.56rem, 0.537rem + 0.1148vw, 0.64rem);
+  --typography_fluid-arial-2xs: clamp(0.448rem, 0.4296rem + 0.0918vw, 0.512rem);
+  /*____ Primitives ____*/
+  /* button */
+  --button-small-width: 7.5rem;
+  --button-small-height: 2.5rem;
+  --button-small-fontSize: var(--typography_fluid-arial-base);
+  --button-small-radius: 0.5rem;
+  --button-small-padding: var(--spacing-size-2) var(--spacing-size-3);
 }
 ```
+
 <!-- /md:generate -->
 
 ## CLI Usage
@@ -831,7 +851,7 @@ Check out our examples:
 - [Basic Setup](./examples/basic)
 - [] Tailwind
 
-## TODO 
+## TODO
 
 - [] Custom Media Queries https://www.w3.org/TR/mediaqueries-5/#at-ruledef-custom-media
 - [] Line Height

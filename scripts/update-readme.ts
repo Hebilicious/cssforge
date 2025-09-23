@@ -23,11 +23,13 @@ function buildReplacement(tsSource: string, css: string): string {
   const cssBlock = md.codeBlock(css.trim(), "css");
   // Only return the inner content to place between START_CODE and END_BLOCK
   return [
+    "",
     tsBlock,
     "",
     "This will generate the following CSS :",
     "",
     cssBlock,
+    "",
   ].join("\n");
 }
 
