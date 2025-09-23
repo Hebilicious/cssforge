@@ -21,6 +21,13 @@ Deno.test("processSpacing - generates correct spacing scale", () => {
     "--spacing-size-s: 1rem;",
   ].join("\n");
   assertEquals(result.css, expected);
+
+  assertEquals(Array.from(result.resolveMap.keys()), [
+    "spacing.custom.size.value.1",
+    "spacing.custom.size.value.2",
+    "spacing.custom.size.value.3",
+    "spacing.custom.size.value.s",
+  ]);
 });
 
 // Test with string keys
@@ -49,6 +56,13 @@ Deno.test("processSpacing - handles settings", () => {
   ].join("\n");
 
   assertEquals(result.css, expected);
+
+  assertEquals(Array.from(result.resolveMap.keys()), [
+    "spacing.custom.size.value.1",
+    "spacing.custom.size.value.2",
+    "spacing.custom.scale.value.md",
+    "spacing.custom.scale.value.lg",
+  ]);
 });
 
 Deno.test("processSpacing - generates fluid spacing (prefix)", () => {
@@ -71,7 +85,7 @@ Deno.test("processSpacing - generates fluid spacing (prefix)", () => {
     },
   });
 
-  const { css } = processSpacing(config.spacing);
+  const { css, resolveMap } = processSpacing(config.spacing);
   const expected = [
     "--spacing_fluid-base-foo-xs: clamp(0rem, 0rem + 0vw, 0rem);",
     "--spacing_fluid-base-foo-s: clamp(0.25rem, -0.1667rem + 2.0833vw, 1.5rem);",
@@ -83,6 +97,17 @@ Deno.test("processSpacing - generates fluid spacing (prefix)", () => {
     "--spacing_fluid-base-foo-m-l: clamp(0.25rem, -0.6667rem + 4.5833vw, 3rem);",
   ].join("\n");
   assertEquals(css, expected);
+
+  assertEquals(Array.from(resolveMap.keys()), [
+    "spacing_fluid.base@xs",
+    "spacing_fluid.base@s",
+    "spacing_fluid.base@m",
+    "spacing_fluid.base@l",
+    "spacing_fluid.base@xs-l",
+    "spacing_fluid.base@xs-s",
+    "spacing_fluid.base@s-m",
+    "spacing_fluid.base@m-l",
+  ]);
 });
 
 Deno.test("processSpacing - fluid without prefix falls back to scale name", () => {
@@ -102,7 +127,7 @@ Deno.test("processSpacing - fluid without prefix falls back to scale name", () =
       },
     },
   });
-  const { css } = processSpacing(config.spacing);
+  const { css, resolveMap } = processSpacing(config.spacing);
   const expected = [
     "--spacing_fluid-rhythm-xs: clamp(0rem, 0rem + 0vw, 0rem);",
     "--spacing_fluid-rhythm-s: clamp(0.125rem, -0.25rem + 1.875vw, 1.25rem);",
@@ -111,6 +136,14 @@ Deno.test("processSpacing - fluid without prefix falls back to scale name", () =
     "--spacing_fluid-rhythm-s-m: clamp(0.125rem, -0.25rem + 1.875vw, 1.25rem);",
   ].join("\n");
   assertEquals(css, expected);
+
+  assertEquals(Array.from(resolveMap.keys()), [
+    "spacing_fluid.rhythm@xs",
+    "spacing_fluid.rhythm@s",
+    "spacing_fluid.rhythm@m",
+    "spacing_fluid.rhythm@xs-s",
+    "spacing_fluid.rhythm@s-m",
+  ]);
 });
 
 Deno.test("processSpacing - combines fluid and custom spacing", () => {
@@ -137,7 +170,7 @@ Deno.test("processSpacing - combines fluid and custom spacing", () => {
       },
     },
   });
-  const { css } = processSpacing(config.spacing!);
+  const { css, resolveMap } = processSpacing(config.spacing!);
   const expected = [
     "--spacing_fluid-base-flux-xs: clamp(0rem, 0rem + 0vw, 0rem);",
     "--spacing_fluid-base-flux-s: clamp(0.25rem, -0.1667rem + 2.0833vw, 1.5rem);",
@@ -148,4 +181,13 @@ Deno.test("processSpacing - combines fluid and custom spacing", () => {
     "--spacing-gap-2: 8px;",
   ].join("\n");
   assertEquals(css, expected);
+  assertEquals(Array.from(resolveMap.keys()), [
+    "spacing_fluid.base@xs",
+    "spacing_fluid.base@s",
+    "spacing_fluid.base@m",
+    "spacing_fluid.base@xs-s",
+    "spacing_fluid.base@s-m",
+    "spacing.custom.gap.value.1",
+    "spacing.custom.gap.value.2",
+  ]);
 });
