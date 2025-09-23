@@ -19,7 +19,7 @@ CSSforge has 0 runtime and generate at build time raw CSS, Typescript or JSON.
 This intentionally keeps things simple and flexible, and allows you to integrate it with
 any framework or CSS workflow.
 
-CSSforge will try to integratewith design tools such as Figma, cooors etc in the future.
+In the future, CSSforge will try to integrate with popular design tools such as Figma.
 
 ## Features
 
