@@ -1,20 +1,25 @@
-// spacing_test.ts
-import { assertEquals } from "jsr:@std/assert";
+import { assertEquals } from "@std/assert";
 import { processSpacing } from "../src/modules/spacing.ts";
 import { defineConfig } from "../src/config.ts";
 
 Deno.test("processSpacing - generates correct spacing scale", () => {
   const config = defineConfig({
     spacing: {
-      size: {
-        value: { 1: "0.25rem", 2: "0.5rem", 3: "0.75rem", s: "16px" },
+      custom: {
+        size: {
+          value: { 1: "0.25rem", 2: "0.5rem", 3: "0.75rem", s: "16px" },
+        },
       },
     },
   });
 
   const result = processSpacing(config.spacing);
-  const expected =
-    "--size-1: 0.25rem;\n--size-2: 0.5rem;\n--size-3: 0.75rem;\n--size-s: 1rem;";
+  const expected = [
+    "--spacing-size-1: 0.25rem;",
+    "--spacing-size-2: 0.5rem;",
+    "--spacing-size-3: 0.75rem;",
+    "--spacing-size-s: 1rem;",
+  ].join("\n");
   assertEquals(result.css, expected);
 });
 
@@ -22,20 +27,125 @@ Deno.test("processSpacing - generates correct spacing scale", () => {
 Deno.test("processSpacing - handles settings", () => {
   const config = defineConfig({
     spacing: {
-      size: {
-        value: { 1: "16px", 2: "0.5rem" },
-        settings: { pxToRem: true },
-      },
-      scale: {
-        value: { "md": "8px", "lg": "0.75rem" },
-        settings: { pxToRem: false },
+      custom: {
+        size: {
+          value: { 1: "16px", 2: "0.5rem" },
+          settings: { pxToRem: true },
+        },
+        scale: {
+          value: { "md": "8px", "lg": "0.75rem" },
+          settings: { pxToRem: false },
+        },
       },
     },
   });
 
   const result = processSpacing(config.spacing);
-  const expected =
-    "--size-1: 1rem;\n--size-2: 0.5rem;\n--scale-md: 8px;\n--scale-lg: 0.75rem;";
+  const expected = [
+    "--spacing-size-1: 1rem;",
+    "--spacing-size-2: 0.5rem;",
+    "--spacing-scale-md: 8px;",
+    "--spacing-scale-lg: 0.75rem;",
+  ].join("\n");
 
   assertEquals(result.css, expected);
+});
+
+Deno.test("processSpacing - generates fluid spacing (prefix)", () => {
+  const config = defineConfig({
+    spacing: {
+      fluid: {
+        base: {
+          value: {
+            minSize: 4,
+            maxSize: 24,
+            minWidth: 320,
+            maxWidth: 1280,
+            negativeSteps: [0],
+            positiveSteps: [1, 2],
+            prefix: "foo",
+            customSizes: ["xs-l"],
+          },
+        },
+      },
+    },
+  });
+
+  const { css } = processSpacing(config.spacing);
+  const expected = [
+    "--spacing_fluid-base-foo-xs: clamp(0rem, 0rem + 0vw, 0rem);",
+    "--spacing_fluid-base-foo-s: clamp(0.25rem, -0.1667rem + 2.0833vw, 1.5rem);",
+    "--spacing_fluid-base-foo-m: clamp(0.25rem, -0.1667rem + 2.0833vw, 1.5rem);",
+    "--spacing_fluid-base-foo-l: clamp(0.5rem, -0.3333rem + 4.1667vw, 3rem);",
+    "--spacing_fluid-base-foo-xs-l: clamp(0rem, -1rem + 5vw, 3rem);",
+    "--spacing_fluid-base-foo-xs-s: clamp(0rem, -0.5rem + 2.5vw, 1.5rem);",
+    "--spacing_fluid-base-foo-s-m: clamp(0.25rem, -0.1667rem + 2.0833vw, 1.5rem);",
+    "--spacing_fluid-base-foo-m-l: clamp(0.25rem, -0.6667rem + 4.5833vw, 3rem);",
+  ].join("\n");
+  assertEquals(css, expected);
+});
+
+Deno.test("processSpacing - fluid without prefix falls back to scale name", () => {
+  const config = defineConfig({
+    spacing: {
+      fluid: {
+        rhythm: {
+          value: {
+            minSize: 2,
+            maxSize: 20,
+            minWidth: 320,
+            maxWidth: 1280,
+            negativeSteps: [0],
+            positiveSteps: [1],
+          },
+        },
+      },
+    },
+  });
+  const { css } = processSpacing(config.spacing);
+  const expected = [
+    "--spacing_fluid-rhythm-xs: clamp(0rem, 0rem + 0vw, 0rem);",
+    "--spacing_fluid-rhythm-s: clamp(0.125rem, -0.25rem + 1.875vw, 1.25rem);",
+    "--spacing_fluid-rhythm-m: clamp(0.125rem, -0.25rem + 1.875vw, 1.25rem);",
+    "--spacing_fluid-rhythm-xs-s: clamp(0rem, -0.4167rem + 2.0833vw, 1.25rem);",
+    "--spacing_fluid-rhythm-s-m: clamp(0.125rem, -0.25rem + 1.875vw, 1.25rem);",
+  ].join("\n");
+  assertEquals(css, expected);
+});
+
+Deno.test("processSpacing - combines fluid and custom spacing", () => {
+  const config = defineConfig({
+    spacing: {
+      fluid: {
+        base: {
+          value: {
+            minSize: 4,
+            maxSize: 24,
+            minWidth: 320,
+            maxWidth: 1280,
+            negativeSteps: [0],
+            positiveSteps: [1],
+            prefix: "flux",
+          },
+        },
+      },
+      custom: {
+        gap: {
+          value: { 1: "4px", 2: "8px" },
+          settings: { pxToRem: false },
+        },
+      },
+    },
+  });
+  const { css } = processSpacing(config.spacing!);
+  const expected = [
+    "--spacing_fluid-base-flux-xs: clamp(0rem, 0rem + 0vw, 0rem);",
+    "--spacing_fluid-base-flux-s: clamp(0.25rem, -0.1667rem + 2.0833vw, 1.5rem);",
+    "--spacing_fluid-base-flux-m: clamp(0.25rem, -0.1667rem + 2.0833vw, 1.5rem);",
+    "--spacing_fluid-base-flux-xs-s: clamp(0rem, -0.5rem + 2.5vw, 1.5rem);",
+    "--spacing_fluid-base-flux-s-m: clamp(0.25rem, -0.1667rem + 2.0833vw, 1.5rem);",
+    "--spacing-gap-1: 4px;",
+    "--spacing-gap-2: 8px;",
+  ].join("\n");
+  assertEquals(css, expected);
 });

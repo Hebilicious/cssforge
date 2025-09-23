@@ -1,13 +1,12 @@
-// primitives_test.ts
-import { assertEquals } from "jsr:@std/assert";
+import { assertEquals } from "@std/assert";
 import { processPrimitives } from "../src/modules/primitive.ts";
 import { defineConfig } from "../src/mod.ts";
 
 Deno.test("processPrimitives - processes button with variables", () => {
   const config = defineConfig({
     typography: {
-      arial: {
-        typescale: {
+      fluid: {
+        arial: {
           value: {
             minWidth: 320,
             minFontSize: 14,
@@ -17,15 +16,18 @@ Deno.test("processPrimitives - processes button with variables", () => {
             maxTypeScale: 1.25,
             positiveSteps: 5,
             negativeSteps: 3,
+            prefix: "foo",
           },
         },
       },
     },
     spacing: {
-      size: {
-        value: {
-          2: "0.5rem",
-          3: "0.75rem",
+      custom: {
+        size: {
+          value: {
+            2: "0.5rem",
+            3: "0.75rem",
+          },
         },
       },
     },
@@ -41,9 +43,9 @@ Deno.test("processPrimitives - processes button with variables", () => {
               padding: "var(--2) var(--3)",
             },
             variables: {
-              "base": "typography.arial.typescale@base",
-              "2": "spacing.size.value.2",
-              "3": "spacing.size.value.3",
+              "base": "typography_fluid.arial@m",
+              "2": "spacing.custom.size.value.2",
+              "3": "spacing.custom.size.value.3",
             },
             settings: { pxToRem: false },
           },
@@ -53,8 +55,14 @@ Deno.test("processPrimitives - processes button with variables", () => {
   });
 
   const result = processPrimitives(config);
-  const expected =
-    "/* button */\n--button-small-width: 120px;\n--button-small-height: 40px;\n--button-small-fontSize: var(--typography-arial-base);\n--button-small-radius: 8px;\n--button-small-padding: var(--size-2) var(--size-3);";
+  const expected = [
+    "/* button */",
+    "--button-small-width: 120px;",
+    "--button-small-height: 40px;",
+    "--button-small-fontSize: var(--typography_fluid-arial-foo-m);",
+    "--button-small-radius: 8px;",
+    "--button-small-padding: var(--spacing-size-2) var(--spacing-size-3);",
+  ].join("\n");
 
   assertEquals(result.css, expected);
 });
@@ -86,8 +94,15 @@ Deno.test("processPrimitives - processes buttons with settings", () => {
   });
 
   const result = processPrimitives(config);
-  const expected =
-    "/* button */\n--button-small-width: 120px;\n--button-small-height: 40px;\n--button-small-radius: 8px;\n--button-big-width: 15rem;\n--button-big-height: 5rem;\n--button-big-radius: 1rem;";
+  const expected = [
+    "/* button */",
+    "--button-small-width: 120px;",
+    "--button-small-height: 40px;",
+    "--button-small-radius: 8px;",
+    "--button-big-width: 15rem;",
+    "--button-big-height: 5rem;",
+    "--button-big-radius: 1rem;",
+  ].join("\n");
 
   assertEquals(result.css, expected);
 });
@@ -109,8 +124,8 @@ Deno.test("processPrimitives - references colors, gradients, and themes", () => 
               primary: {
                 value: "linear-gradient(to right, var(--c1), var(--c2))",
                 variables: {
-                  "c1": "colors.palette.value.coral.50",
-                  "c2": "colors.palette.value.coral.50",
+                  "c1": "palette.value.coral.50",
+                  "c2": "palette.value.coral.50",
                 },
               },
             },
@@ -125,7 +140,7 @@ Deno.test("processPrimitives - references colors, gradients, and themes", () => 
                 primary: "var(--grad)",
               },
               variables: {
-                "grad": "colors.gradients.value.orangeGradient.primary",
+                "grad": "gradients.value.orangeGradient.primary",
               },
             },
           },
@@ -142,9 +157,9 @@ Deno.test("processPrimitives - references colors, gradients, and themes", () => 
               "border-color": "var(--border)",
             },
             variables: {
-              "bg": "colors.theme.value.light.background.primary",
-              "grad": "colors.gradients.value.orangeGradient.primary",
-              "border": "colors.palette.value.coral.50",
+              "bg": "theme.value.light.background.primary",
+              "grad": "gradients.value.orangeGradient.primary",
+              "border": "palette.value.coral.50",
             },
           },
         },
@@ -156,9 +171,51 @@ Deno.test("processPrimitives - references colors, gradients, and themes", () => 
   const expected = [
     "/* card */",
     "--card-default-background-color: var(--theme-light-background-primary);",
-    "--card-default-background-image: var(--gradient-orangeGradient-primary);",
-    "--card-default-border-color: var(--color-coral-50);",
+    "--card-default-background-image: var(--gradients-orangeGradient-primary);",
+    "--card-default-border-color: var(--palette-coral-50);",
   ].join("\n");
 
   assertEquals(result.css, expected);
+});
+
+Deno.test("processPrimitives - uses fluid spacing references", () => {
+  const config = defineConfig({
+    spacing: {
+      fluid: {
+        gap: {
+          value: {
+            minSize: 4,
+            maxSize: 24,
+            minWidth: 320,
+            maxWidth: 1280,
+            negativeSteps: [0],
+            positiveSteps: [1],
+            prefix: "gs",
+          },
+        },
+      },
+    },
+    primitives: {
+      box: {
+        value: {
+          default: {
+            value: {
+              padding: "var(--s) var(--m)",
+            },
+            variables: {
+              "s": "spacing_fluid.gap@s",
+              "m": "spacing_fluid.gap@m",
+            },
+            settings: { pxToRem: false },
+          },
+        },
+      },
+    },
+  });
+  const primitives = processPrimitives(config);
+  const expected = [
+    "/* box */",
+    "--box-default-padding: var(--spacing_fluid-gap-gs-s) var(--spacing_fluid-gap-gs-m);",
+  ].join("\n");
+  assertEquals(primitives.css, expected);
 });

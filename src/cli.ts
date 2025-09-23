@@ -179,8 +179,8 @@ const mainCommand = defineCommand({
       const cleanup = await watch(settings);
 
       // Handle process termination
-      process.on("SIGINT", async () => {
-        await cleanup();
+      process.on("SIGINT", () => {
+        cleanup();
         console.log("\n🛑 Stopped watching");
         process.exit(0);
       });

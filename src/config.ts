@@ -42,8 +42,8 @@ export interface CSSForgeConfig {
         },
       },
       typography: {
-        default: {
-          typescale: {
+        fluid: {
+          base: {
             value: {
               minWidth: 320,
               minFontSize: 14,
@@ -55,6 +55,9 @@ export interface CSSForgeConfig {
               negativeSteps: 3,
             },
           },
+        },
+        weight: {
+          arial: { value: { regular: "400", bold: "700" } },
         },
       },
       colors: {
@@ -76,8 +79,8 @@ export interface CSSForgeConfig {
   );
  * ```
  */
-export function defineConfig<C extends CSSForgeConfig>(
-  config: Partial<C>,
+export function defineConfig<C extends Partial<CSSForgeConfig>>(
+  config: C,
 ): C {
   return config as C;
 }

@@ -14,8 +14,10 @@
     "citty": "npm:citty@0.1.6",
     "chokidar": "npm:chokidar@4.0.3",
     "@std/collections": "jsr:@std/collections@^1.1.3",
+    "@std/assert": "jsr:@std/assert@^1.0.14",
     "colorjs.io": "npm:colorjs.io@0.5.2",
-    "utopia-core": "npm:utopia-core@1.6.0"
+    "utopia-core": "npm:utopia-core@1.6.0",
+    "mdbox": "npm:mdbox@0.1.1"
   },
   "publish": {
     "include": [
@@ -26,6 +28,6 @@
   "tasks": {
     "cli": "deno run -A ./src/cli.ts",
     "example:cli": "deno run -A ./src/cli.ts --prefix ./example/basic --mode css",
-    "test:cli": "deno run -A ./src/cli.ts"
+    "readme:update": "deno run -A ./scripts/update-readme.ts"
   }
 }

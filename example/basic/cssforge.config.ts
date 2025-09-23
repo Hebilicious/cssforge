@@ -3,18 +3,32 @@ import { defineConfig } from "../../src/mod.ts";
 export default defineConfig(
   {
     spacing: {
-      size: {
-        value: {
-          1: "0.25rem",
-          2: "0.5rem",
-          3: "0.75rem",
-          4: "1rem",
+      fluid: {
+        base: {
+          value: {
+            minSize: 4,
+            maxSize: 24,
+            minWidth: 320,
+            maxWidth: 1280,
+            positiveSteps: [1.5, 2, 3, 4, 6],
+            negativeSteps: [0.75, 0.5, 0.25],
+          },
+        },
+      },
+      custom: {
+        size: {
+          value: {
+            1: "0.25rem",
+            2: "0.5rem",
+            3: "0.75rem",
+            4: "1rem",
+          },
         },
       },
     },
     typography: {
-      default: {
-        typescale: {
+      font: {
+        fluid: {
           value: {
             minWidth: 320,
             minFontSize: 14,
