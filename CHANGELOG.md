@@ -1,5 +1,11 @@
 # @hebilicious/cssforge
 
+## 0.2.1
+
+### Patch Changes
+
+- 1df1f2d: fix: update reserved keywords
+
 ## 0.2.0
 
 ### Minor Changes
