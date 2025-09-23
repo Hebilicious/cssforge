@@ -1,8 +1,6 @@
 import { assertEquals } from "@std/assert";
 import { defineConfig, processColors } from "../src/mod.ts";
 import { getLines } from "./helpers.ts";
-import { resolve } from "node:path";
-import { assert } from "node:console";
 
 Deno.test("processColors - converts hex to oklch", () => {
   const config = defineConfig({
