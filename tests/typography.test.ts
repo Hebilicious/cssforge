@@ -27,9 +27,9 @@ Deno.test("processTypography - generates correct CSS variables", () => {
     "3xl",
     "2xl",
     "xl",
-    "lg",
-    "base",
-    "sm",
+    "l",
+    "m",
+    "s",
     "xs",
     "2xs",
   ];
@@ -40,7 +40,7 @@ Deno.test("processTypography - generates correct CSS variables", () => {
   // Test a specific value for precision
   const xlLine = lines.find((line) => line.includes("--typography_fluid-arial-xl:"));
   assertEquals(
-    xlLine?.trim(),
+    xlLine,
     "--typography_fluid-arial-xl: clamp(1.3672rem, 1.3111rem + 0.2803vw, 1.5625rem);",
   );
 

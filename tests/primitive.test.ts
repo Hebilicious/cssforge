@@ -16,6 +16,7 @@ Deno.test("processPrimitives - processes button with variables", () => {
             maxTypeScale: 1.25,
             positiveSteps: 5,
             negativeSteps: 3,
+            prefix: "foo",
           },
         },
       },
@@ -42,7 +43,7 @@ Deno.test("processPrimitives - processes button with variables", () => {
               padding: "var(--2) var(--3)",
             },
             variables: {
-              "base": "typography_fluid.arial@base",
+              "base": "typography_fluid.arial@m",
               "2": "spacing.custom.size.value.2",
               "3": "spacing.custom.size.value.3",
             },
@@ -58,7 +59,7 @@ Deno.test("processPrimitives - processes button with variables", () => {
     "/* button */",
     "--button-small-width: 120px;",
     "--button-small-height: 40px;",
-    "--button-small-fontSize: var(--typography_fluid-arial-base);",
+    "--button-small-fontSize: var(--typography_fluid-arial-foo-m);",
     "--button-small-radius: 8px;",
     "--button-small-padding: var(--spacing-size-2) var(--spacing-size-3);",
   ].join("\n");

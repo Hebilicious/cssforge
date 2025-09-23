@@ -64,6 +64,7 @@ Deno.test("processSpacing - generates fluid spacing (prefix)", () => {
             negativeSteps: [0],
             positiveSteps: [1, 2],
             prefix: "foo",
+            customSizes: ["xs-l"],
           },
         },
       },
@@ -76,6 +77,10 @@ Deno.test("processSpacing - generates fluid spacing (prefix)", () => {
     "--spacing_fluid-base-foo-s: clamp(0.25rem, -0.1667rem + 2.0833vw, 1.5rem);",
     "--spacing_fluid-base-foo-m: clamp(0.25rem, -0.1667rem + 2.0833vw, 1.5rem);",
     "--spacing_fluid-base-foo-l: clamp(0.5rem, -0.3333rem + 4.1667vw, 3rem);",
+    "--spacing_fluid-base-foo-xs-l: clamp(0rem, -1rem + 5vw, 3rem);",
+    "--spacing_fluid-base-foo-xs-s: clamp(0rem, -0.5rem + 2.5vw, 1.5rem);",
+    "--spacing_fluid-base-foo-s-m: clamp(0.25rem, -0.1667rem + 2.0833vw, 1.5rem);",
+    "--spacing_fluid-base-foo-m-l: clamp(0.25rem, -0.6667rem + 4.5833vw, 3rem);",
   ].join("\n");
   assertEquals(css, expected);
 });
@@ -102,6 +107,8 @@ Deno.test("processSpacing - fluid without prefix falls back to scale name", () =
     "--spacing_fluid-rhythm-xs: clamp(0rem, 0rem + 0vw, 0rem);",
     "--spacing_fluid-rhythm-s: clamp(0.125rem, -0.25rem + 1.875vw, 1.25rem);",
     "--spacing_fluid-rhythm-m: clamp(0.125rem, -0.25rem + 1.875vw, 1.25rem);",
+    "--spacing_fluid-rhythm-xs-s: clamp(0rem, -0.4167rem + 2.0833vw, 1.25rem);",
+    "--spacing_fluid-rhythm-s-m: clamp(0.125rem, -0.25rem + 1.875vw, 1.25rem);",
   ].join("\n");
   assertEquals(css, expected);
 });
@@ -135,6 +142,8 @@ Deno.test("processSpacing - combines fluid and custom spacing", () => {
     "--spacing_fluid-base-flux-xs: clamp(0rem, 0rem + 0vw, 0rem);",
     "--spacing_fluid-base-flux-s: clamp(0.25rem, -0.1667rem + 2.0833vw, 1.5rem);",
     "--spacing_fluid-base-flux-m: clamp(0.25rem, -0.1667rem + 2.0833vw, 1.5rem);",
+    "--spacing_fluid-base-flux-xs-s: clamp(0rem, -0.5rem + 2.5vw, 1.5rem);",
+    "--spacing_fluid-base-flux-s-m: clamp(0.25rem, -0.1667rem + 2.0833vw, 1.5rem);",
     "--spacing-gap-1: 4px;",
     "--spacing-gap-2: 8px;",
   ].join("\n");

@@ -84,9 +84,10 @@ export function processSpacing(spacing: SpacingConfig): Output {
       const { prefix, ...utopiaConfig } = value;
       if (prefix) validateName(prefix);
 
-      const scale = calculateSpaceScale(utopiaConfig);
-      for (const { label, clamp } of scale.sizes) {
-        const resolvedPrefix = prefix ? `${scaleName}-${prefix}` : scaleName;
+      const { sizes, customPairs, oneUpPairs } = calculateSpaceScale(utopiaConfig);
+
+      const resolvedPrefix = prefix ? `${scaleName}-${prefix}` : scaleName;
+      for (const { label, clamp } of [sizes, customPairs, oneUpPairs].flat()) {
         const variableName = `--${moduleKey}-${resolvedPrefix}-${label}`;
         const cssVar = `${variableName}: ${clamp};`;
         cssOutput.push(cssVar);

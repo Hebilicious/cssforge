@@ -414,6 +414,8 @@ This will generate the following CSS :
   --spacing_fluid-base-hi-xs: clamp(0rem, 0rem + 0vw, 0rem);
   --spacing_fluid-base-hi-s: clamp(0.25rem, -0.1667rem + 2.0833vw, 1.5rem);
   --spacing_fluid-base-hi-m: clamp(0.75rem, -0.5rem + 6.25vw, 4.5rem);
+  --spacing_fluid-base-hi-xs-s: clamp(0rem, -0.5rem + 2.5vw, 1.5rem);
+  --spacing_fluid-base-hi-s-m: clamp(0.25rem, -1.1667rem + 7.0833vw, 4.5rem);
 }
 ```
 
@@ -486,6 +488,14 @@ This will generate the following CSS :
   --spacing_fluid-base-smooth-xl: clamp(0.75rem, -0.5rem + 6.25vw, 4.5rem);
   --spacing_fluid-base-smooth-2xl: clamp(1rem, -0.6667rem + 8.3333vw, 6rem);
   --spacing_fluid-base-smooth-3xl: clamp(1.5rem, -1rem + 12.5vw, 9rem);
+  --spacing_fluid-base-smooth-3xs-2xs: clamp(0.0625rem, -0.1667rem + 1.1458vw, 0.75rem);
+  --spacing_fluid-base-smooth-2xs-xs: clamp(0.125rem, -0.2083rem + 1.6667vw, 1.125rem);
+  --spacing_fluid-base-smooth-xs-s: clamp(0.1875rem, -0.25rem + 2.1875vw, 1.5rem);
+  --spacing_fluid-base-smooth-s-m: clamp(0.25rem, -0.4167rem + 3.3333vw, 2.25rem);
+  --spacing_fluid-base-smooth-m-l: clamp(0.375rem, -0.5rem + 4.375vw, 3rem);
+  --spacing_fluid-base-smooth-l-xl: clamp(0.5rem, -0.8333rem + 6.6667vw, 4.5rem);
+  --spacing_fluid-base-smooth-xl-2xl: clamp(0.75rem, -1rem + 8.75vw, 6rem);
+  --spacing_fluid-base-smooth-2xl-3xl: clamp(1rem, -1.6667rem + 13.3333vw, 9rem);
   --spacing-gap-1: 0.25rem;
   --spacing-gap-2: 0.5rem;
 }
@@ -496,7 +506,18 @@ This will generate the following CSS :
 #### Referencing Fluid Spacing
 
 To reference fluid spacing, use the `@` symbol and the label of the scale; ie:
-`spacing_fluid-base-smooth@xs`.
+`spacing_fluid-base@xs`. Do not include the prefix in the reference. The labels follow the
+following convention :
+
+- 3xs
+- 2xs
+- xs
+- s
+- m
+- l
+- xl
+- 2xl
+- 3xl
 
 ### Typography
 
@@ -569,9 +590,9 @@ This will generate the following CSS :
   --typography_fluid-arial-3xl: clamp(2.1362rem, 2.0486rem + 0.4379vw, 2.4414rem);
   --typography_fluid-arial-2xl: clamp(1.709rem, 1.6389rem + 0.3503vw, 1.9531rem);
   --typography_fluid-arial-xl: clamp(1.3672rem, 1.3111rem + 0.2803vw, 1.5625rem);
-  --typography_fluid-arial-lg: clamp(1.0938rem, 1.0489rem + 0.2242vw, 1.25rem);
-  --typography_fluid-arial-base: clamp(0.875rem, 0.8391rem + 0.1794vw, 1rem);
-  --typography_fluid-arial-sm: clamp(0.7rem, 0.6713rem + 0.1435vw, 0.8rem);
+  --typography_fluid-arial-l: clamp(1.0938rem, 1.0489rem + 0.2242vw, 1.25rem);
+  --typography_fluid-arial-m: clamp(0.875rem, 0.8391rem + 0.1794vw, 1rem);
+  --typography_fluid-arial-s: clamp(0.7rem, 0.6713rem + 0.1435vw, 0.8rem);
   --typography_fluid-arial-xs: clamp(0.56rem, 0.537rem + 0.1148vw, 0.64rem);
   --typography_fluid-arial-2xs: clamp(0.448rem, 0.4296rem + 0.0918vw, 0.512rem);
   --typography-weight-arial-regular: 600;
@@ -580,7 +601,7 @@ This will generate the following CSS :
 
 <!-- /md:generate -->
 
-### Customizing Fluid Typography Scales
+#### Customizing Fluid Typography Scales
 
 You can customize the typescale by providing your prefix and custom labels. The prefix
 will overwrite the name of the key that you are using to define your typography.
@@ -666,16 +687,18 @@ This will generate the following CSS :
 #### Referencing Fluid Typography
 
 To reference fluid typography, use the `@` symbol and the label of the scale; ie:
-`typography_fluid.comicsans-text@a`. By default the labels follow the Tailwind convention
-:
+`typography_fluid.comicsans@a`. Do not include the prefix in the reference. The labels
+follow the following convention :
 
+- 3xs
 - 2xs
 - xs
-- sm
-- base
-- lg
+- s
+- m
+- l
 - xl
 - 2xl
+- 3xl
 
 ### Primitives
 
@@ -722,7 +745,7 @@ export default defineConfig({
             padding: "var(--2) var(--3)",
           },
           variables: {
-            "base": "typography_fluid.arial@base",
+            "base": "typography_fluid.arial@m",
             "2": "spacing.custom.size.value.2",
             "3": "spacing.custom.size.value.3",
           },
@@ -774,7 +797,7 @@ export default defineConfig({
             padding: "var(--2) var(--3)",
           },
           variables: {
-            "base": "typography_fluid.arial@base",
+            "base": "typography_fluid.arial@m",
             "2": "spacing.custom.size.value.2",
             "3": "spacing.custom.size.value.3",
           },
@@ -798,16 +821,16 @@ This will generate the following CSS :
   --typography_fluid-arial-3xl: clamp(2.1362rem, 2.0486rem + 0.4379vw, 2.4414rem);
   --typography_fluid-arial-2xl: clamp(1.709rem, 1.6389rem + 0.3503vw, 1.9531rem);
   --typography_fluid-arial-xl: clamp(1.3672rem, 1.3111rem + 0.2803vw, 1.5625rem);
-  --typography_fluid-arial-lg: clamp(1.0938rem, 1.0489rem + 0.2242vw, 1.25rem);
-  --typography_fluid-arial-base: clamp(0.875rem, 0.8391rem + 0.1794vw, 1rem);
-  --typography_fluid-arial-sm: clamp(0.7rem, 0.6713rem + 0.1435vw, 0.8rem);
+  --typography_fluid-arial-l: clamp(1.0938rem, 1.0489rem + 0.2242vw, 1.25rem);
+  --typography_fluid-arial-m: clamp(0.875rem, 0.8391rem + 0.1794vw, 1rem);
+  --typography_fluid-arial-s: clamp(0.7rem, 0.6713rem + 0.1435vw, 0.8rem);
   --typography_fluid-arial-xs: clamp(0.56rem, 0.537rem + 0.1148vw, 0.64rem);
   --typography_fluid-arial-2xs: clamp(0.448rem, 0.4296rem + 0.0918vw, 0.512rem);
   /*____ Primitives ____*/
   /* button */
   --button-small-width: 7.5rem;
   --button-small-height: 2.5rem;
-  --button-small-fontSize: var(--typography_fluid-arial-base);
+  --button-small-fontSize: var(--typography_fluid-arial-m);
   --button-small-radius: 0.5rem;
   --button-small-padding: var(--spacing-size-2) var(--spacing-size-3);
 }

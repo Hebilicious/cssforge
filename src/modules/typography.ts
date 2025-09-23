@@ -6,7 +6,7 @@ export interface FluidTypeScaleDefinition {
   /**
    * The configuration for the type scale generation.
    */
-  value: UtopiaTypeConfig & {
+  value: Omit<UtopiaTypeConfig, "labelStyle"> & {
     /**
      * An optional prefix for the generated CSS variables.
      */
@@ -79,7 +79,7 @@ export function processTypography(config: TypographyConfig): Output {
       if (prefix) validateName(prefix);
 
       const scale = calculateTypeScale({
-        labelStyle: settings?.customLabel ? "utopia" : "tailwind",
+        labelStyle: settings?.customLabel ? "utopia" : "tshirt",
         ...utopiaConfig,
       });
 
