@@ -10,11 +10,16 @@
 ## Why
 
 CSS forge is library that leverages modern CSS features and conventions to help you
-generate CSS custom properties (css variables). At the core of CSSforge is the schema : A
-serializable configuration object. CSSforge has 0 runtime and generate at build time raw
-CSS, Typescript or JSON. This intentionally keeps things simple and flexible, and allows
-you to integrate it with any framework or CSS workflow. CSSforge will try to integrate
-with design tools such as Figma, cooors etc in the future.
+generate CSS custom properties (css variables).
+
+At the core of CSSforge is the schema : A serializable configuration object.
+
+CSSforge has 0 runtime and generate at build time raw CSS, Typescript or JSON.
+
+This intentionally keeps things simple and flexible, and allows you to integrate it with
+any framework or CSS workflow.
+
+CSSforge will try to integratewith design tools such as Figma, cooors etc in the future.
 
 ## Features
 
@@ -876,7 +881,8 @@ Check out our examples:
 
 ## TODO
 
-- [] Module: Custom Media Queries https://www.w3.org/TR/mediaqueries-5/#at-ruledef-custom-media
+- [] Module: Custom Media Queries
+  https://www.w3.org/TR/mediaqueries-5/#at-ruledef-custom-media
 - [] Typography : Line Height
 - [] Stable schema spec
 - [] VSCode Extension
