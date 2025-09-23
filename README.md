@@ -423,7 +423,7 @@ export default defineConfig({
           maxWidth: 1280,
           positiveSteps: [1.5, 2, 3, 4, 6],
           negativeSteps: [0.75, 0.5, 0.25],
-          prefix: "fluid",
+          prefix: "smooth",
         },
       },
     },
@@ -447,7 +447,7 @@ export default defineConfig({
           maxWidth: 1280,
           positiveSteps: [1.5, 2, 3, 4, 6],
           negativeSteps: [0.75, 0.5, 0.25],
-          prefix: "fluid",
+          prefix: "smooth",
         },
       },
     },
@@ -466,24 +466,28 @@ This will generate the following CSS :
 /*____ CSSForge ____*/
 :root {
 /*____ Spacing ____*/
---spacing_fluid-base-fluid-3xs: clamp(0.0625rem, -0.0417rem + 0.5208vw, 0.375rem);
---spacing_fluid-base-fluid-2xs: clamp(0.125rem, -0.0833rem + 1.0417vw, 0.75rem);
---spacing_fluid-base-fluid-xs: clamp(0.1875rem, -0.125rem + 1.5625vw, 1.125rem);
---spacing_fluid-base-fluid-s: clamp(0.25rem, -0.1667rem + 2.0833vw, 1.5rem);
---spacing_fluid-base-fluid-m: clamp(0.375rem, -0.25rem + 3.125vw, 2.25rem);
---spacing_fluid-base-fluid-l: clamp(0.5rem, -0.3333rem + 4.1667vw, 3rem);
---spacing_fluid-base-fluid-xl: clamp(0.75rem, -0.5rem + 6.25vw, 4.5rem);
---spacing_fluid-base-fluid-2xl: clamp(1rem, -0.6667rem + 8.3333vw, 6rem);
---spacing_fluid-base-fluid-3xl: clamp(1.5rem, -1rem + 12.5vw, 9rem);
+--spacing_fluid-base-smooth-3xs: clamp(0.0625rem, -0.0417rem + 0.5208vw, 0.375rem);
+--spacing_fluid-base-smooth-2xs: clamp(0.125rem, -0.0833rem + 1.0417vw, 0.75rem);
+--spacing_fluid-base-smooth-xs: clamp(0.1875rem, -0.125rem + 1.5625vw, 1.125rem);
+--spacing_fluid-base-smooth-s: clamp(0.25rem, -0.1667rem + 2.0833vw, 1.5rem);
+--spacing_fluid-base-smooth-m: clamp(0.375rem, -0.25rem + 3.125vw, 2.25rem);
+--spacing_fluid-base-smooth-l: clamp(0.5rem, -0.3333rem + 4.1667vw, 3rem);
+--spacing_fluid-base-smooth-xl: clamp(0.75rem, -0.5rem + 6.25vw, 4.5rem);
+--spacing_fluid-base-smooth-2xl: clamp(1rem, -0.6667rem + 8.3333vw, 6rem);
+--spacing_fluid-base-smooth-3xl: clamp(1.5rem, -1rem + 12.5vw, 9rem);
 --spacing-gap-1: 0.25rem;
 --spacing-gap-2: 0.5rem;
 }
 ```
 <!-- /md:generate -->
 
+#### Referencing Fluid Spacing
+
+To reference fluid spacing, use the `@` symbol and the label of the scale; ie: `spacing_fluid-base-smooth@xs`.
+
 ### Typography
 
-Define your typography, with typescales powered by
+Define your typography, with fluid typescales powered by
 [utopia](https://utopia.fyi/type/calculator):
 
 <!-- md:generate defineConfig
@@ -645,7 +649,7 @@ This will generate the following CSS :
 #### Referencing Fluid Typography
 
 To reference fluid typography, use the `@` symbol and the label of the scale; ie:
-`typography_fluid.text@a`. By default the labels follow the Tailwind convention :
+`typography_fluid.comicsans-text@a`. By default the labels follow the Tailwind convention :
 
 - 2xs
 - xs
