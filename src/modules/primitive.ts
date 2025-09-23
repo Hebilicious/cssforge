@@ -4,13 +4,14 @@ import type { TypographyConfig } from "./typography.ts";
 import { processTypography } from "./typography.ts";
 import type { PixelSettings, SpacingConfig } from "./spacing.ts";
 import { processSpacing } from "./spacing.ts";
-import { type Output, resolveVariable } from "../lib.ts";
+import {
+  getResolvedVariablesMap,
+  type Output,
+  resolveValue,
+  type Variables,
+} from "../lib.ts";
 import { validateName } from "../helpers.ts";
 import { pxToRem } from "../helpers.ts";
-
-interface Variables {
-  [key: string]: string;
-}
 
 interface PrimitiveProperties {
   [key: string]: string;
@@ -85,12 +86,12 @@ export function processPrimitives(
 ): Output {
   const cssOutput: string[] = [];
   const resolveMap = new Map();
+  const moduleKey = "primitives";
   const colorVariables = config.colors ? processColors(config.colors) : null;
   const typographyVariables = config.typography
     ? processTypography(config.typography)
     : null;
   const spacingVariables = config.spacing ? processSpacing(config.spacing) : null;
-
   for (const [primitiveName, primitive] of Object.entries(config.primitives)) {
     validateName(primitiveName);
     cssOutput.push(`/* ${primitiveName} */`);
@@ -104,21 +105,12 @@ export function processPrimitives(
     ) {
       validateName(variantName);
       try {
-        const resolvedVariables = variables
-          ? Object.entries(variables).map(
-            ([varKey, varPath]) => {
-              const resolved = resolveVariable({
-                varPath,
-                colors: colorVariables,
-                typography: typographyVariables,
-                spacing: spacingVariables,
-              });
-              return [`--${varKey}`, resolved] as const;
-            },
-          )
-          : [];
-
-        const resolvedMap = new Map(resolvedVariables);
+        const resolvedMap = getResolvedVariablesMap({
+          variables,
+          colors: colorVariables,
+          typography: typographyVariables,
+          spacing: spacingVariables,
+        });
 
         for (const [propName, propValue] of Object.entries(properties)) {
           validateName(propName);
@@ -127,19 +119,19 @@ export function processPrimitives(
             ? pxToRem({ value: propValue, rem: settings.rem })
             : propValue;
 
-          const resolvedValue = convertedValue.replace(
-            /var\(--(\w+)\)/g,
-            (_, key: string) => `var(${resolvedMap.get(`--${key}`) ?? `--${key}`})`,
-          );
+          const resolvedValue = resolveValue({ map: resolvedMap, value: convertedValue });
 
           const key = `--${primitiveName}-${variantName}-${propName}`;
           const variable = `${key}: ${resolvedValue};`;
           cssOutput.push(variable);
-          resolveMap.set(`primitives.${primitiveName}.value.${variantName}.${propName}`, {
-            key,
-            value: resolvedValue,
-            variable,
-          });
+          resolveMap.set(
+            `${moduleKey}.${primitiveName}.value.${variantName}.${propName}`,
+            {
+              key,
+              value: resolvedValue,
+              variable,
+            },
+          );
         }
       } catch (error) {
         console.error(

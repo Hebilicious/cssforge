@@ -1,3 +1,11 @@
+const reservedKeyWords = [
+  "spacing",
+  "spacing_fluid",
+  "typography",
+  "typography_fluid",
+  "theme",
+  "color",
+];
 /**
  * Validates a name to ensure it doesn't contain invalid characters.
  * Throws an error if the name is invalid.
@@ -8,9 +16,18 @@
  * ```
  */
 export function validateName(name: string): boolean {
-  if (name.length === 0 || name.includes(".") || name === "value") {
+  if (
+    name.length === 0 || name.includes(".") || name === "value"
+  ) {
     throw new Error(
       `Invalid name: ${name}. Names must be non-empty strings that do not contain periods.`,
+    );
+  }
+  if (reservedKeyWords.includes(name)) {
+    throw new Error(
+      `Invalid name: ${name}. Names cannot be one of the reserved keywords: ${
+        reservedKeyWords.join(", ")
+      }`,
     );
   }
   return true;

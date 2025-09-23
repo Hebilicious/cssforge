@@ -1,6 +1,8 @@
 import Color from "colorjs.io";
-import { type Output, type ResolveMap, resolveVariable } from "../lib.ts";
+import { type Output, type ResolveMap, resolveValue } from "../lib.ts";
 import { validateName } from "../helpers.ts";
+import { getResolvedVariablesMap } from "../lib.ts";
+import type { Variables } from "../lib.ts";
 
 type ExactlyOne<T> = {
   [K in keyof T]:
@@ -32,10 +34,6 @@ interface ColorVariants {
  */
 export interface ColorPalette {
   [key: string]: ColorVariants;
-}
-
-interface Variables {
-  [key: string]: string;
 }
 
 interface GradientDefinition {
@@ -183,18 +181,19 @@ export function processColors(colors: ColorConfig): Output {
   const cssOutput: string[] = [];
   const resolveMap: ResolveMap = new Map();
   cssOutput.push(`/* Palette */`);
+  const moduleKey = "palette";
   for (const [colorName, variants] of Object.entries(colors.palette.value)) {
     validateName(colorName);
     for (const [variantId, colorValue] of Object.entries(variants)) {
       try {
         validateName(variantId);
-        const key = `--color-${colorName}-${variantId}`;
+        const key = `--${moduleKey}-${colorName}-${variantId}`;
         const value = colorValueToOklch(colorValue);
         const variable = `${key}: ${value};`;
 
         cssOutput.push(variable);
         resolveMap.set(
-          `colors.palette.value.${colorName}.${variantId}`,
+          `${moduleKey}.value.${colorName}.${variantId}`,
           { key, value, variable },
         );
       } catch (error) {
@@ -208,6 +207,7 @@ export function processColors(colors: ColorConfig): Output {
 
   if (colors.gradients) {
     cssOutput.push(`/*  Gradients  */`);
+    const moduleKey = "gradients";
     const palette = { css: cssOutput.join("\n"), resolveMap };
     for (const [gradientName, gradient] of Object.entries(colors.gradients.value)) {
       validateName(gradientName);
@@ -218,30 +218,17 @@ export function processColors(colors: ColorConfig): Output {
       ) {
         validateName(variantName);
         try {
-          const resolvedVariables = variables
-            ? Object.entries(variables).map(
-              ([varKey, varPath]) => {
-                const resolved = resolveVariable({
-                  varPath,
-                  colors: palette,
-                });
-                return [`--${varKey}`, resolved] as const;
-              },
-            )
-            : [];
+          const resolvedMapForGradient = getResolvedVariablesMap({
+            variables,
+            colors: palette,
+          });
 
-          const resolvedMapForGradient = new Map(resolvedVariables);
+          const gradientValue = resolveValue({ map: resolvedMapForGradient, value });
 
-          const gradientValue = value.replace(
-            /var\(--(\w+)\)/g,
-            (_, key: string) =>
-              `var(${resolvedMapForGradient.get(`--${key}`) ?? `--${key}`})`,
-          );
-
-          const key = `--gradient-${gradientName}-${variantName}`;
+          const key = `--${moduleKey}-${gradientName}-${variantName}`;
           const variable = `${key}: ${gradientValue};`;
           cssOutput.push(variable);
-          resolveMap.set(`colors.gradients.value.${gradientName}.${variantName}`, {
+          resolveMap.set(`${moduleKey}.value.${gradientName}.${variantName}`, {
             variable,
             key,
             value: gradientValue,
@@ -258,6 +245,7 @@ export function processColors(colors: ColorConfig): Output {
   }
 
   if (colors.theme) {
+    const moduleKey = "theme";
     for (const [themeName, theme] of Object.entries(colors.theme.value)) {
       validateName(themeName);
       cssOutput.push(`/* Theme: ${themeName} */`);
@@ -269,19 +257,10 @@ export function processColors(colors: ColorConfig): Output {
         validateName(colorName);
         cssOutput.push(`/* ${colorName} */`);
         try {
-          const resolvedVariables = variables
-            ? Object.entries(variables).map(
-              ([varKey, varPath]) => {
-                const resolved = resolveVariable({
-                  varPath,
-                  colors: palette,
-                });
-                return [`--${varKey}`, resolved] as const;
-              },
-            )
-            : [];
-
-          const resolvedMap = new Map(resolvedVariables);
+          const resolvedMap = getResolvedVariablesMap({
+            variables,
+            colors: palette,
+          });
 
           for (
             const [variantName, variantValue] of Object.entries(
@@ -289,16 +268,13 @@ export function processColors(colors: ColorConfig): Output {
             )
           ) {
             validateName(variantName);
-            const resolvedValue = variantValue.replace(
-              /var\(--(\w+)\)/g,
-              (_, key: string) => `var(${resolvedMap.get(`--${key}`) ?? `--${key}`})`,
-            );
+            const resolvedValue = resolveValue({ map: resolvedMap, value: variantValue });
 
-            const key = `--theme-${themeName}-${colorName}-${variantName}`;
+            const key = `--${moduleKey}-${themeName}-${colorName}-${variantName}`;
             const variable = `${key}: ${resolvedValue};`;
             cssOutput.push(`${key}: ${resolvedValue};`);
             resolveMap.set(
-              `colors.theme.value.${themeName}.${colorName}.${variantName}`,
+              `${moduleKey}.value.${themeName}.${colorName}.${variantName}`,
               { key, value: resolvedValue, variable },
             );
           }

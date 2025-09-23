@@ -1,5 +1,16 @@
+import type { UtopiaSpaceConfig } from "utopia-core";
+import { calculateSpaceScale } from "utopia-core";
 import { pxToRem, validateName } from "../helpers.ts";
 import type { Output, ResolveMap } from "../lib.ts";
+
+export interface FluidSpaceConfig {
+  value: UtopiaSpaceConfig & {
+    /**
+     * An optional prefix for the generated CSS variables.
+     */
+    prefix?: string;
+  };
+}
 
 type SpacingValue = string;
 
@@ -27,51 +38,88 @@ export interface PixelSettings {
  * The spacing configuration object.
  */
 export interface SpacingConfig {
-  [key: string]: { value: SpacingScale; settings?: PixelSettings };
+  /**
+   * Fluid spacing scales powered by utopia `calculateSpaceScale`.
+   * Each key defines one scale. Tokens are derived from the returned sizes' labels.
+   */
+  fluid?: {
+    [key: string]: FluidSpaceConfig;
+  };
+  /**
+   * Static spacing scales defined under the `custom` key.
+   * Each scale's `value` map contains token -> size (string) pairs.
+   */
+  custom?: {
+    [key: string]: { value: SpacingScale; settings?: PixelSettings };
+  };
 }
 
 /**
- * Processes the spacing configuration to generate CSS variables.
+ * Convert spacing configuration into CSS custom properties.
+ *
+ * Generated variable naming:
+ * - Custom scale: `--spacing-{scale}-{token}` (renamed from --space-)
+ * - Fluid scale:  `--spacing_fluid-{prefixOrScale}-{token}` (renamed from --fluidspace-)
+
+ *
  * @example
- * ```ts
- * const spacing = {
- *  size: {
- *    value: {
- *      1: "0.25rem",
- *      2: "0.5rem",
- *    },
- *  },
- * };
- * const output = processSpacing(spacing);
- * // output.css: "--size-1: 0.25rem;\n--size-2: 0.5rem;"
- * ```
+ * // Static + fluid combined
+ * const { css } = processSpacing({
+ *   fluid: {
+ *     base: { value: { minSize: 4, maxSize: 24, minWidth: 320, maxWidth: 1280, negativeSteps: 0, positiveSteps: 2, prefix: "space" } }
+ *   },
+ *   custom: {
+ *     gap: { value: { 1: "4px", 2: "8px" } }
+ *   }
+ * });
  */
 export function processSpacing(spacing: SpacingConfig): Output {
   const cssOutput: string[] = [];
   const resolveMap: ResolveMap = new Map();
 
-  for (
-    const [scaleName, { value, settings = { pxToRem: true, rem: 16 } }] of Object.entries(
-      spacing,
-    )
-  ) {
-    validateName(scaleName);
-    for (const [scaleKey, scaleValue] of Object.entries(value)) {
-      validateName(scaleKey);
+  if (spacing.fluid) {
+    const moduleKey = "spacing_fluid";
+    for (const [scaleName, { value }] of Object.entries(spacing.fluid)) {
+      validateName(scaleName);
+      const { prefix, ...utopiaConfig } = value;
+      if (prefix) validateName(prefix);
 
-      const convertedValue = settings.pxToRem
-        ? pxToRem({ value: scaleValue, rem: settings.rem })
-        : scaleValue;
+      const scale = calculateSpaceScale(utopiaConfig);
+      for (const { label, clamp } of scale.sizes) {
+        const resolvedPrefix = prefix ? `${scaleName}-${prefix}` : scaleName;
+        const variableName = `--${moduleKey}-${resolvedPrefix}-${label}`;
+        const cssVar = `${variableName}: ${clamp};`;
+        cssOutput.push(cssVar);
+        resolveMap.set(`${moduleKey}.${scaleName}@${label}`, {
+          variable: cssVar,
+          key: variableName,
+          value: clamp,
+        });
+      }
+    }
+  }
 
-      const key = `--${scaleName}-${scaleKey}`;
-      const variable = `${key}: ${convertedValue};`;
-
-      cssOutput.push(variable);
-      resolveMap.set(`spacing.${scaleName}.value.${scaleKey}`, {
-        variable,
-        key,
-        value: convertedValue,
-      });
+  if (spacing.custom) {
+    const moduleKey = "spacing";
+    for (
+      const [scaleName, { value, settings = { pxToRem: true, rem: 16 } }] of Object
+        .entries(spacing.custom)
+    ) {
+      validateName(scaleName);
+      for (const [scaleKey, scaleValue] of Object.entries(value)) {
+        validateName(scaleKey);
+        const convertedValue = settings.pxToRem
+          ? pxToRem({ value: scaleValue, rem: settings.rem })
+          : scaleValue;
+        const varName = `--${moduleKey}-${scaleName}-${scaleKey}`;
+        const variable = `${varName}: ${convertedValue};`;
+        cssOutput.push(variable);
+        resolveMap.set(`${moduleKey}.custom.${scaleName}.value.${scaleKey}`, {
+          variable,
+          key: varName,
+          value: convertedValue,
+        });
+      }
     }
   }
 

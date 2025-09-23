@@ -1,12 +1,12 @@
-import { assertEquals } from "jsr:@std/assert";
+import { assertEquals } from "@std/assert";
 import { defineConfig, processTypography } from "../src/mod.ts";
 import { getLines } from "./helpers.ts";
 
 Deno.test("processTypography - generates correct CSS variables", () => {
   const config = defineConfig({
     typography: {
-      arial: {
-        typescale: {
+      fluid: {
+        arial: {
           value: {
             minWidth: 320,
             minFontSize: 14,
@@ -38,15 +38,17 @@ Deno.test("processTypography - generates correct CSS variables", () => {
   assertEquals(lines.length, expectedSizes.length);
 
   // Test a specific value for precision
-  const xlLine = lines.find((line) => line.includes("--typography-arial-xl:"));
+  const xlLine = lines.find((line) => line.includes("--typography_fluid-arial-xl:"));
   assertEquals(
     xlLine?.trim(),
-    "--typography-arial-xl: clamp(1.3672rem, 1.3111rem + 0.2803vw, 1.5625rem);",
+    "--typography_fluid-arial-xl: clamp(1.3672rem, 1.3111rem + 0.2803vw, 1.5625rem);",
   );
 
   // Test that we have all the expected size variables
   expectedSizes.forEach((size) => {
-    const hasSize = lines.some((line) => line.includes(`--typography-arial-${size}:`));
+    const hasSize = lines.some((line) =>
+      line.includes(`--typography_fluid-arial-${size}:`)
+    );
     assertEquals(hasSize, true, `Missing size ${size}`);
   });
 });
@@ -54,8 +56,8 @@ Deno.test("processTypography - generates correct CSS variables", () => {
 Deno.test("typography - can handle custom labels and prefixes", () => {
   const config = defineConfig({
     typography: {
-      arial: {
-        typescale: {
+      fluid: {
+        arial: {
           value: {
             minWidth: 320,
             minFontSize: 14,
@@ -103,15 +105,17 @@ Deno.test("typography - can handle custom labels and prefixes", () => {
   assertEquals(lines.length, expectedSizes.length);
 
   // Test a specific value for precision
-  const xlLine = lines.find((line) => line.includes("--typography-text-xl:"));
+  const xlLine = lines.find((line) => line.includes("--typography_fluid-arial-text-xl:"));
   assertEquals(
     xlLine?.trim(),
-    "--typography-text-xl: clamp(1.3672rem, 1.3111rem + 0.2803vw, 1.5625rem);",
+    "--typography_fluid-arial-text-xl: clamp(1.3672rem, 1.3111rem + 0.2803vw, 1.5625rem);",
   );
 
   // Test that we have all the expected size variables
   expectedSizes.forEach((size) => {
-    const hasSize = lines.some((line) => line.includes(`--typography-text-${size}:`));
+    const hasSize = lines.some((line) =>
+      line.includes(`--typography_fluid-arial-text-${size}:`)
+    );
     assertEquals(hasSize, true, `Missing size ${size}`);
   });
 });
@@ -121,13 +125,8 @@ Deno.test("processTypography - can process weights", () => {
   const negativeSteps = 3;
   const config = defineConfig({
     typography: {
-      arial: {
-        weight: {
-          value: {
-            regular: "500",
-          },
-        },
-        typescale: {
+      fluid: {
+        arial: {
           value: {
             minWidth: 320,
             minFontSize: 14,
@@ -140,6 +139,9 @@ Deno.test("processTypography - can process weights", () => {
           },
         },
       },
+      weight: {
+        arial: { value: { regular: "500" } },
+      },
     },
   });
 
@@ -148,9 +150,11 @@ Deno.test("processTypography - can process weights", () => {
   assertEquals(lines.length, positiveSteps + negativeSteps + 1 + 1); // 1 for base size and 1 for weight
 
   // Test that we have the weight variable
-  const xlLine = lines.find((line) => line.includes("--weight-arial-regular:"));
+  const xlLine = lines.find((line) =>
+    line.includes("--typography-weight-arial-regular:")
+  );
   assertEquals(
     xlLine?.trim(),
-    "--weight-arial-regular: 500;",
+    "--typography-weight-arial-regular: 500;",
   );
 });
