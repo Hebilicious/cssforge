@@ -871,13 +871,15 @@ const css = generateCSS(config);
 
 Check out our examples:
 
-- [Basic Setup](./examples/basic)
+- [Basic Setup](./example/basic)
 - [] Tailwind
 
 ## TODO
 
-- [] Custom Media Queries https://www.w3.org/TR/mediaqueries-5/#at-ruledef-custom-media
-- [] Line Height
+- [] Module: Custom Media Queries https://www.w3.org/TR/mediaqueries-5/#at-ruledef-custom-media
+- [] Typography : Line Height
+- [] Stable schema spec
+- [] VSCode Extension
 - [] Bundlers Plugin (Vite, Rollup, Webpack ...)
 - [] Nuxt Module
 
