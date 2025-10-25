@@ -79,6 +79,6 @@ export interface CSSForgeConfig {
   );
  * ```
  */
-export function defineConfig<C extends CSSForgeConfig>(config: Partial<C>) {
+export function defineConfig<C extends Partial<CSSForgeConfig>>(config: C): C {
   return config as C;
 }
