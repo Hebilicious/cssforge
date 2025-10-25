@@ -491,3 +491,58 @@ Deno.test("processColors - handles themes with class condition", async (t) => {
   await assertSnapshot(t, css);
   await assertSnapshot(t, Array.from(resolveMap.entries()));
 });
+
+Deno.test("processColors - handles theme variantNameOnly", async (t) => {
+  const config = defineConfig({
+    colors: {
+      palette: {
+        value: {
+          simple: {
+            value: {
+              white: "oklch(100% 0 0)",
+              black: { hex: "#000" },
+            },
+          },
+        },
+      },
+      theme: {
+        light: {
+          value: {
+            background: {
+              value: {
+                primary: "var(--1)",
+                secondary: "var(--2)",
+              },
+              variables: {
+                1: "palette.simple.white",
+                2: "palette.simple.black",
+              },
+              settings: {
+                variantNameOnly: true,
+              },
+            },
+          },
+        },
+      },
+    },
+  });
+
+  const { css, resolveMap } = processColors(config.colors);
+  const lines = getLines(css);
+
+  const primaryLine = lines.find((l) => l.includes("--primary:"));
+  const secondaryLine = lines.find((l) => l.includes("--secondary:"));
+
+  assertEquals(primaryLine?.trim(), "--primary: var(--palette-simple-white);");
+  assertEquals(secondaryLine?.trim(), "--secondary: var(--palette-simple-black);");
+
+  assertEquals(Array.from(resolveMap.keys()), [
+    "palette.simple.white",
+    "palette.simple.black",
+    "theme.light.background.primary",
+    "theme.light.background.secondary",
+  ]);
+
+  await assertSnapshot(t, css);
+  await assertSnapshot(t, Array.from(resolveMap.entries()));
+});

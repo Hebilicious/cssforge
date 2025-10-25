@@ -97,7 +97,13 @@ interface ColorInThemeValues {
 interface ColorInTheme {
   value: ColorInThemeValues;
   variables?: Variables;
-  settings?: unknown;
+  settings?: {
+    /**
+     * Only include the variant name in the CSS variable name.
+     * --theme-light-colors-primaryBackground => --primaryBackground
+     */
+    variantNameOnly?: boolean;
+  };
 }
 
 export interface ThemeConfig {
@@ -222,18 +228,19 @@ export function processColors(colors: ColorConfig): Output {
     settings: WithCondition | undefined,
     initialComment: string,
   ) {
-    const comments: string[] = [];
+    const leadingComments: string[] = [];
+    const innerComments: string[] = [];
     const vars: string[] = [];
 
     if (settings?.condition) {
-      comments.push(initialComment);
+      leadingComments.push(initialComment);
     } else {
       cssOutput.push(initialComment);
     }
 
     return {
       addComment(c: string) {
-        if (settings?.condition) comments.push(c);
+        if (settings?.condition) innerComments.push(c);
         else cssOutput.push(c);
       },
       pushVariable(v: string) {
@@ -242,8 +249,9 @@ export function processColors(colors: ColorConfig): Output {
       },
       finalize() {
         if (settings?.condition && vars.length > 0) {
+          cssOutput.push(...leadingComments);
           cssOutput.push(`${settings.condition} {`);
-          cssOutput.push(...comments.map((c) => `  ${c}`));
+          cssOutput.push(...innerComments.map((c) => `  ${c}`));
           cssOutput.push(...vars.map((v) => `  ${v}`));
           cssOutput.push(`}`);
         }
@@ -349,14 +357,18 @@ export function processColors(colors: ColorConfig): Output {
             colors: palette,
           });
 
+          const variantNameOnly = colorInTheme.settings?.variantNameOnly ?? false;
           for (const [variantName, variantValue] of Object.entries(colorInTheme.value)) {
             validateName(variantName);
             const resolvedValue = resolveValue({
               map: resolvedMap,
-              value: variantValue as string,
+              value: variantValue,
             });
 
-            const key = `--${moduleKey}-${themeName}-${colorName}-${variantName}`;
+            const key = variantNameOnly
+              ? `--${variantName}`
+              : `--${moduleKey}-${themeName}-${colorName}-${variantName}`;
+
             const variable = `${key}: ${resolvedValue};`;
 
             handler.pushVariable(variable);

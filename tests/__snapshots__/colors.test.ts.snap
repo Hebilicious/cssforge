@@ -284,8 +284,8 @@ snapshot[`processColors - handles gradients with conditions 1`] = `
 /* coral */
 --palette-coral-50: oklch(73.58% 0.16378 34.33822);
 /* Gradients */
+/* orangeGradient */
 @media (prefers-color-scheme: dark) {
-  /* orangeGradient */
   --gradients-orangeGradient-primary: linear-gradient(to right, var(--palette-coral-50), var(--palette-coral-50));
 }"
 `;
@@ -315,8 +315,8 @@ snapshot[`processColors - handles palette colors with conditions 1`] = `
 "/* Palette */
 /* background */
 --palette-background-light: oklch(100% 0 0);
+/* backgroundDark */
 @media (prefers-color-scheme: dark) {
-  /* backgroundDark */
   --palette-backgroundDark-dark: oklch(0% 0 0);
 }"
 `;
@@ -347,8 +347,8 @@ snapshot[`processColors - handles themes with class condition 1`] = `
 /* base */
 --palette-base-primary: oklch(73.511% 0.16799 40.24666);
 /* Themes */
+/* Theme: dark */
 .dark-theme {
-  /* Theme: dark */
   /* background */
   --theme-dark-background-primary: var(--palette-base-primary);
 }"
@@ -370,6 +370,55 @@ snapshot[`processColors - handles themes with class condition 2`] = `
       key: "--theme-dark-background-primary",
       value: "var(--palette-base-primary)",
       variable: "--theme-dark-background-primary: var(--palette-base-primary);",
+    },
+  ],
+]
+`;
+
+snapshot[`processColors - handles theme variantNameOnly 1`] = `
+"/* Palette */
+/* simple */
+--palette-simple-white: oklch(100% 0 0);
+--palette-simple-black: oklch(0% 0 0);
+/* Themes */
+/* Theme: light */
+/* background */
+--primary: var(--palette-simple-white);
+--secondary: var(--palette-simple-black);"
+`;
+
+snapshot[`processColors - handles theme variantNameOnly 2`] = `
+[
+  [
+    "palette.simple.white",
+    {
+      key: "--palette-simple-white",
+      value: "oklch(100% 0 0)",
+      variable: "--palette-simple-white: oklch(100% 0 0);",
+    },
+  ],
+  [
+    "palette.simple.black",
+    {
+      key: "--palette-simple-black",
+      value: "oklch(0% 0 0)",
+      variable: "--palette-simple-black: oklch(0% 0 0);",
+    },
+  ],
+  [
+    "theme.light.background.primary",
+    {
+      key: "--primary",
+      value: "var(--palette-simple-white)",
+      variable: "--primary: var(--palette-simple-white);",
+    },
+  ],
+  [
+    "theme.light.background.secondary",
+    {
+      key: "--secondary",
+      value: "var(--palette-simple-black)",
+      variable: "--secondary: var(--palette-simple-black);",
     },
   ],
 ]

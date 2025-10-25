@@ -247,7 +247,10 @@ export default defineConfig({
             },
             variables: {
               1: "palette.simple.white",
-              2: "gradients.white-green.primary",
+              2: "gradients.white-green.primary", //Reference the color name directly.
+            },
+            settings: {
+              variantNameOnly: true,
             },
           },
         },
@@ -263,10 +266,33 @@ export default defineConfig({
               1: "palette.another.yellow",
               2: "palette.another.cyan",
             },
+            settings: {
+              variantNameOnly: true,
+            },
           },
         },
         settings: {
           condition: "@media (prefers-color-scheme: dark)",
+        },
+      },
+      pink: {
+        value: {
+          background: {
+            value: {
+              primary: "var(--1)",
+              secondary: "var(--2)",
+            },
+            variables: {
+              1: "palette.simple.red",
+              2: "palette.simple.violet",
+            },
+            settings: {
+              variantNameOnly: true,
+            },
+          },
+        },
+        settings: {
+          condition: ".ThemePink",
         },
       },
     },
@@ -325,7 +351,10 @@ export default defineConfig({
             },
             variables: {
               1: "palette.simple.white",
-              2: "gradients.white-green", //Reference the color name directly.
+              2: "gradients.white-green.primary", //Reference the color name directly.
+            },
+            settings: {
+              variantNameOnly: true,
             },
           },
         },
@@ -341,10 +370,33 @@ export default defineConfig({
               1: "palette.another.yellow",
               2: "palette.another.cyan",
             },
+            settings: {
+              variantNameOnly: true,
+            },
           },
         },
         settings: {
           condition: "@media (prefers-color-scheme: dark)",
+        },
+      },
+      pink: {
+        value: {
+          background: {
+            value: {
+              primary: "var(--1)",
+              secondary: "var(--2)",
+            },
+            variables: {
+              1: "palette.simple.red",
+              2: "palette.simple.violet",
+            },
+            settings: {
+              variantNameOnly: true,
+            },
+          },
+        },
+        settings: {
+          condition: ".ThemePink",
         },
       },
     },
@@ -366,30 +418,55 @@ This will generate the following CSS :
   --palette-simple-blue: oklch(45.201% 0.31321 264.05202);
   --palette-simple-violet: oklch(70% 0.2 270);
   --palette-simple-red: oklch(62.796% 0.25768 29.23388);
+  /* another */
   .Another {
-    /* another */
     --palette-another-yellow: oklch(96.798% 0.21101 109.76924);
     --palette-another-cyan: oklch(90.54% 0.15455 194.76896);
   }
-  /*  Gradients  */
+  /* Gradients */
+  /* white-green */
   --gradients-white-green-primary: linear-gradient(
     to right,
     var(--palette-simple-white),
     var(--palette-simple-green)
   );
-  /*  Themes  */
+  /* Themes */
   /* Theme: light */
   /* background */
+  --primary: var(--palette-simple-white);
+  --secondary: var(--gradients-white-green-primary);
+  /* Theme: dark */
   @media (prefers-color-scheme: dark) {
-    /* Theme: dark */
     /* background */
-    --theme-dark-background-primary: var(--palette-another-yellow);
-    --theme-dark-background-secondary: var(--palette-another-cyan);
+    --primary: var(--palette-another-yellow);
+    --secondary: var(--palette-another-cyan);
+  }
+  /* Theme: pink */
+  .ThemePink {
+    /* background */
+    --primary: var(--palette-simple-red);
+    --secondary: var(--palette-simple-violet);
   }
 }
 ```
 
 <!-- /md:generate -->
+
+#### Condition
+
+You can conditionnally apply colors, gradients or themes by setting the `condition`
+property to a selector or media query. Your variables will be wrapped within the
+condition.
+
+#### Theme: Variant Name Only
+
+When working with themes, you can choose to only include the variant name in the CSS
+variable name by setting `variantNameOnly: true` in the color definition settings. This is
+usually used in combination with `condition` to conditionnally apply themes.
+
+- Default: `--theme-${themeName}-${colorName}-${variantName}`
+- VariantOnly Name: `--${variantName}`
+- Path : `theme.${themeName}.${colorName}.${variantName}`
 
 ### Spacing
 
