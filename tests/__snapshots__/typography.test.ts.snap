@@ -1,0 +1,268 @@
+export const snapshot = {};
+
+snapshot[`processTypography - generates correct CSS variables 1`] = `
+"--typography_fluid-arial-4xl: clamp(2.6703rem, 2.5608rem + 0.5474vw, 3.0518rem);
+--typography_fluid-arial-3xl: clamp(2.1362rem, 2.0486rem + 0.4379vw, 2.4414rem);
+--typography_fluid-arial-2xl: clamp(1.709rem, 1.6389rem + 0.3503vw, 1.9531rem);
+--typography_fluid-arial-xl: clamp(1.3672rem, 1.3111rem + 0.2803vw, 1.5625rem);
+--typography_fluid-arial-l: clamp(1.0938rem, 1.0489rem + 0.2242vw, 1.25rem);
+--typography_fluid-arial-m: clamp(0.875rem, 0.8391rem + 0.1794vw, 1rem);
+--typography_fluid-arial-s: clamp(0.7rem, 0.6713rem + 0.1435vw, 0.8rem);
+--typography_fluid-arial-xs: clamp(0.56rem, 0.537rem + 0.1148vw, 0.64rem);
+--typography_fluid-arial-2xs: clamp(0.448rem, 0.4296rem + 0.0918vw, 0.512rem);"
+`;
+
+snapshot[`processTypography - generates correct CSS variables 2`] = `
+[
+  [
+    "typography_fluid.arial@4xl",
+    {
+      key: "--typography_fluid-arial-4xl",
+      value: "clamp(2.6703rem, 2.5608rem + 0.5474vw, 3.0518rem)",
+      variable: "--typography_fluid-arial-4xl: clamp(2.6703rem, 2.5608rem + 0.5474vw, 3.0518rem);",
+    },
+  ],
+  [
+    "typography_fluid.arial@3xl",
+    {
+      key: "--typography_fluid-arial-3xl",
+      value: "clamp(2.1362rem, 2.0486rem + 0.4379vw, 2.4414rem)",
+      variable: "--typography_fluid-arial-3xl: clamp(2.1362rem, 2.0486rem + 0.4379vw, 2.4414rem);",
+    },
+  ],
+  [
+    "typography_fluid.arial@2xl",
+    {
+      key: "--typography_fluid-arial-2xl",
+      value: "clamp(1.709rem, 1.6389rem + 0.3503vw, 1.9531rem)",
+      variable: "--typography_fluid-arial-2xl: clamp(1.709rem, 1.6389rem + 0.3503vw, 1.9531rem);",
+    },
+  ],
+  [
+    "typography_fluid.arial@xl",
+    {
+      key: "--typography_fluid-arial-xl",
+      value: "clamp(1.3672rem, 1.3111rem + 0.2803vw, 1.5625rem)",
+      variable: "--typography_fluid-arial-xl: clamp(1.3672rem, 1.3111rem + 0.2803vw, 1.5625rem);",
+    },
+  ],
+  [
+    "typography_fluid.arial@l",
+    {
+      key: "--typography_fluid-arial-l",
+      value: "clamp(1.0938rem, 1.0489rem + 0.2242vw, 1.25rem)",
+      variable: "--typography_fluid-arial-l: clamp(1.0938rem, 1.0489rem + 0.2242vw, 1.25rem);",
+    },
+  ],
+  [
+    "typography_fluid.arial@m",
+    {
+      key: "--typography_fluid-arial-m",
+      value: "clamp(0.875rem, 0.8391rem + 0.1794vw, 1rem)",
+      variable: "--typography_fluid-arial-m: clamp(0.875rem, 0.8391rem + 0.1794vw, 1rem);",
+    },
+  ],
+  [
+    "typography_fluid.arial@s",
+    {
+      key: "--typography_fluid-arial-s",
+      value: "clamp(0.7rem, 0.6713rem + 0.1435vw, 0.8rem)",
+      variable: "--typography_fluid-arial-s: clamp(0.7rem, 0.6713rem + 0.1435vw, 0.8rem);",
+    },
+  ],
+  [
+    "typography_fluid.arial@xs",
+    {
+      key: "--typography_fluid-arial-xs",
+      value: "clamp(0.56rem, 0.537rem + 0.1148vw, 0.64rem)",
+      variable: "--typography_fluid-arial-xs: clamp(0.56rem, 0.537rem + 0.1148vw, 0.64rem);",
+    },
+  ],
+  [
+    "typography_fluid.arial@2xs",
+    {
+      key: "--typography_fluid-arial-2xs",
+      value: "clamp(0.448rem, 0.4296rem + 0.0918vw, 0.512rem)",
+      variable: "--typography_fluid-arial-2xs: clamp(0.448rem, 0.4296rem + 0.0918vw, 0.512rem);",
+    },
+  ],
+]
+`;
+
+snapshot[`typography - can handle custom labels and prefixes 1`] = `
+"--typography_fluid-arial-text-h1: clamp(4.1723rem, 4.0013rem + 0.8553vw, 4.7684rem);
+--typography_fluid-arial-text-h2: clamp(3.3379rem, 3.201rem + 0.6843vw, 3.8147rem);
+--typography_fluid-arial-text-h3: clamp(2.6703rem, 2.5608rem + 0.5474vw, 3.0518rem);
+--typography_fluid-arial-text-h4: clamp(2.1362rem, 2.0486rem + 0.4379vw, 2.4414rem);
+--typography_fluid-arial-text-xxl: clamp(1.709rem, 1.6389rem + 0.3503vw, 1.9531rem);
+--typography_fluid-arial-text-xl: clamp(1.3672rem, 1.3111rem + 0.2803vw, 1.5625rem);
+--typography_fluid-arial-text-l: clamp(1.0938rem, 1.0489rem + 0.2242vw, 1.25rem);
+--typography_fluid-arial-text-m: clamp(0.875rem, 0.8391rem + 0.1794vw, 1rem);
+--typography_fluid-arial-text-s: clamp(0.7rem, 0.6713rem + 0.1435vw, 0.8rem);
+--typography_fluid-arial-text-xs: clamp(0.56rem, 0.537rem + 0.1148vw, 0.64rem);"
+`;
+
+snapshot[`typography - can handle custom labels and prefixes 2`] = `
+[
+  [
+    "typography_fluid.arial@h1",
+    {
+      key: "--typography_fluid-arial-text-h1",
+      value: "clamp(4.1723rem, 4.0013rem + 0.8553vw, 4.7684rem)",
+      variable: "--typography_fluid-arial-text-h1: clamp(4.1723rem, 4.0013rem + 0.8553vw, 4.7684rem);",
+    },
+  ],
+  [
+    "typography_fluid.arial@h2",
+    {
+      key: "--typography_fluid-arial-text-h2",
+      value: "clamp(3.3379rem, 3.201rem + 0.6843vw, 3.8147rem)",
+      variable: "--typography_fluid-arial-text-h2: clamp(3.3379rem, 3.201rem + 0.6843vw, 3.8147rem);",
+    },
+  ],
+  [
+    "typography_fluid.arial@h3",
+    {
+      key: "--typography_fluid-arial-text-h3",
+      value: "clamp(2.6703rem, 2.5608rem + 0.5474vw, 3.0518rem)",
+      variable: "--typography_fluid-arial-text-h3: clamp(2.6703rem, 2.5608rem + 0.5474vw, 3.0518rem);",
+    },
+  ],
+  [
+    "typography_fluid.arial@h4",
+    {
+      key: "--typography_fluid-arial-text-h4",
+      value: "clamp(2.1362rem, 2.0486rem + 0.4379vw, 2.4414rem)",
+      variable: "--typography_fluid-arial-text-h4: clamp(2.1362rem, 2.0486rem + 0.4379vw, 2.4414rem);",
+    },
+  ],
+  [
+    "typography_fluid.arial@xxl",
+    {
+      key: "--typography_fluid-arial-text-xxl",
+      value: "clamp(1.709rem, 1.6389rem + 0.3503vw, 1.9531rem)",
+      variable: "--typography_fluid-arial-text-xxl: clamp(1.709rem, 1.6389rem + 0.3503vw, 1.9531rem);",
+    },
+  ],
+  [
+    "typography_fluid.arial@xl",
+    {
+      key: "--typography_fluid-arial-text-xl",
+      value: "clamp(1.3672rem, 1.3111rem + 0.2803vw, 1.5625rem)",
+      variable: "--typography_fluid-arial-text-xl: clamp(1.3672rem, 1.3111rem + 0.2803vw, 1.5625rem);",
+    },
+  ],
+  [
+    "typography_fluid.arial@l",
+    {
+      key: "--typography_fluid-arial-text-l",
+      value: "clamp(1.0938rem, 1.0489rem + 0.2242vw, 1.25rem)",
+      variable: "--typography_fluid-arial-text-l: clamp(1.0938rem, 1.0489rem + 0.2242vw, 1.25rem);",
+    },
+  ],
+  [
+    "typography_fluid.arial@m",
+    {
+      key: "--typography_fluid-arial-text-m",
+      value: "clamp(0.875rem, 0.8391rem + 0.1794vw, 1rem)",
+      variable: "--typography_fluid-arial-text-m: clamp(0.875rem, 0.8391rem + 0.1794vw, 1rem);",
+    },
+  ],
+  [
+    "typography_fluid.arial@s",
+    {
+      key: "--typography_fluid-arial-text-s",
+      value: "clamp(0.7rem, 0.6713rem + 0.1435vw, 0.8rem)",
+      variable: "--typography_fluid-arial-text-s: clamp(0.7rem, 0.6713rem + 0.1435vw, 0.8rem);",
+    },
+  ],
+  [
+    "typography_fluid.arial@xs",
+    {
+      key: "--typography_fluid-arial-text-xs",
+      value: "clamp(0.56rem, 0.537rem + 0.1148vw, 0.64rem)",
+      variable: "--typography_fluid-arial-text-xs: clamp(0.56rem, 0.537rem + 0.1148vw, 0.64rem);",
+    },
+  ],
+]
+`;
+
+snapshot[`processTypography - can process weights 1`] = `
+"--typography_fluid-arial-2xl: clamp(1.709rem, 1.6389rem + 0.3503vw, 1.9531rem);
+--typography_fluid-arial-xl: clamp(1.3672rem, 1.3111rem + 0.2803vw, 1.5625rem);
+--typography_fluid-arial-l: clamp(1.0938rem, 1.0489rem + 0.2242vw, 1.25rem);
+--typography_fluid-arial-m: clamp(0.875rem, 0.8391rem + 0.1794vw, 1rem);
+--typography_fluid-arial-s: clamp(0.7rem, 0.6713rem + 0.1435vw, 0.8rem);
+--typography_fluid-arial-xs: clamp(0.56rem, 0.537rem + 0.1148vw, 0.64rem);
+--typography_fluid-arial-2xs: clamp(0.448rem, 0.4296rem + 0.0918vw, 0.512rem);
+--typography-weight-arial-regular: 500;"
+`;
+
+snapshot[`processTypography - can process weights 2`] = `
+[
+  [
+    "typography_fluid.arial@2xl",
+    {
+      key: "--typography_fluid-arial-2xl",
+      value: "clamp(1.709rem, 1.6389rem + 0.3503vw, 1.9531rem)",
+      variable: "--typography_fluid-arial-2xl: clamp(1.709rem, 1.6389rem + 0.3503vw, 1.9531rem);",
+    },
+  ],
+  [
+    "typography_fluid.arial@xl",
+    {
+      key: "--typography_fluid-arial-xl",
+      value: "clamp(1.3672rem, 1.3111rem + 0.2803vw, 1.5625rem)",
+      variable: "--typography_fluid-arial-xl: clamp(1.3672rem, 1.3111rem + 0.2803vw, 1.5625rem);",
+    },
+  ],
+  [
+    "typography_fluid.arial@l",
+    {
+      key: "--typography_fluid-arial-l",
+      value: "clamp(1.0938rem, 1.0489rem + 0.2242vw, 1.25rem)",
+      variable: "--typography_fluid-arial-l: clamp(1.0938rem, 1.0489rem + 0.2242vw, 1.25rem);",
+    },
+  ],
+  [
+    "typography_fluid.arial@m",
+    {
+      key: "--typography_fluid-arial-m",
+      value: "clamp(0.875rem, 0.8391rem + 0.1794vw, 1rem)",
+      variable: "--typography_fluid-arial-m: clamp(0.875rem, 0.8391rem + 0.1794vw, 1rem);",
+    },
+  ],
+  [
+    "typography_fluid.arial@s",
+    {
+      key: "--typography_fluid-arial-s",
+      value: "clamp(0.7rem, 0.6713rem + 0.1435vw, 0.8rem)",
+      variable: "--typography_fluid-arial-s: clamp(0.7rem, 0.6713rem + 0.1435vw, 0.8rem);",
+    },
+  ],
+  [
+    "typography_fluid.arial@xs",
+    {
+      key: "--typography_fluid-arial-xs",
+      value: "clamp(0.56rem, 0.537rem + 0.1148vw, 0.64rem)",
+      variable: "--typography_fluid-arial-xs: clamp(0.56rem, 0.537rem + 0.1148vw, 0.64rem);",
+    },
+  ],
+  [
+    "typography_fluid.arial@2xs",
+    {
+      key: "--typography_fluid-arial-2xs",
+      value: "clamp(0.448rem, 0.4296rem + 0.0918vw, 0.512rem)",
+      variable: "--typography_fluid-arial-2xs: clamp(0.448rem, 0.4296rem + 0.0918vw, 0.512rem);",
+    },
+  ],
+  [
+    "typography.weight.arial.regular",
+    {
+      key: "--typography-weight-arial-regular",
+      value: "500",
+      variable: "--typography-weight-arial-regular: 500;",
+    },
+  ],
+]
+`;

@@ -1,0 +1,172 @@
+export const snapshot = {};
+
+snapshot[`processPrimitives - processes button with variables 1`] = `
+"/* button */
+--button-small-width: 120px;
+--button-small-height: 40px;
+--button-small-fontSize: var(--typography_fluid-arial-foo-m);
+--button-small-radius: 8px;
+--button-small-padding: var(--spacing-size-2) var(--spacing-size-3);"
+`;
+
+snapshot[`processPrimitives - processes button with variables 2`] = `
+[
+  [
+    "primitives.button.small.width",
+    {
+      key: "--button-small-width",
+      value: "120px",
+      variable: "--button-small-width: 120px;",
+    },
+  ],
+  [
+    "primitives.button.small.height",
+    {
+      key: "--button-small-height",
+      value: "40px",
+      variable: "--button-small-height: 40px;",
+    },
+  ],
+  [
+    "primitives.button.small.fontSize",
+    {
+      key: "--button-small-fontSize",
+      value: "var(--typography_fluid-arial-foo-m)",
+      variable: "--button-small-fontSize: var(--typography_fluid-arial-foo-m);",
+    },
+  ],
+  [
+    "primitives.button.small.radius",
+    {
+      key: "--button-small-radius",
+      value: "8px",
+      variable: "--button-small-radius: 8px;",
+    },
+  ],
+  [
+    "primitives.button.small.padding",
+    {
+      key: "--button-small-padding",
+      value: "var(--spacing-size-2) var(--spacing-size-3)",
+      variable: "--button-small-padding: var(--spacing-size-2) var(--spacing-size-3);",
+    },
+  ],
+]
+`;
+
+snapshot[`processPrimitives - processes buttons with settings 1`] = `
+"/* button */
+--button-small-width: 120px;
+--button-small-height: 40px;
+--button-small-radius: 8px;
+--button-big-width: 15rem;
+--button-big-height: 5rem;
+--button-big-radius: 1rem;"
+`;
+
+snapshot[`processPrimitives - processes buttons with settings 2`] = `
+[
+  [
+    "primitives.button.small.width",
+    {
+      key: "--button-small-width",
+      value: "120px",
+      variable: "--button-small-width: 120px;",
+    },
+  ],
+  [
+    "primitives.button.small.height",
+    {
+      key: "--button-small-height",
+      value: "40px",
+      variable: "--button-small-height: 40px;",
+    },
+  ],
+  [
+    "primitives.button.small.radius",
+    {
+      key: "--button-small-radius",
+      value: "8px",
+      variable: "--button-small-radius: 8px;",
+    },
+  ],
+  [
+    "primitives.button.big.width",
+    {
+      key: "--button-big-width",
+      value: "15rem",
+      variable: "--button-big-width: 15rem;",
+    },
+  ],
+  [
+    "primitives.button.big.height",
+    {
+      key: "--button-big-height",
+      value: "5rem",
+      variable: "--button-big-height: 5rem;",
+    },
+  ],
+  [
+    "primitives.button.big.radius",
+    {
+      key: "--button-big-radius",
+      value: "1rem",
+      variable: "--button-big-radius: 1rem;",
+    },
+  ],
+]
+`;
+
+snapshot[`processPrimitives - references colors, gradients, and themes 1`] = `
+"/* card */
+--card-default-background-color: var(--theme-light-background-primary);
+--card-default-background-image: var(--gradients-orangeGradient-primary);
+--card-default-border-color: var(--palette-coral-50);"
+`;
+
+snapshot[`processPrimitives - references colors, gradients, and themes 2`] = `
+[
+  [
+    "primitives.card.default.background-color",
+    {
+      key: "--card-default-background-color",
+      value: "var(--theme-light-background-primary)",
+      variable: "--card-default-background-color: var(--theme-light-background-primary);",
+    },
+  ],
+  [
+    "primitives.card.default.background-image",
+    {
+      key: "--card-default-background-image",
+      value: "var(--gradients-orangeGradient-primary)",
+      variable: "--card-default-background-image: var(--gradients-orangeGradient-primary);",
+    },
+  ],
+  [
+    "primitives.card.default.border-color",
+    {
+      key: "--card-default-border-color",
+      value: "var(--palette-coral-50)",
+      variable: "--card-default-border-color: var(--palette-coral-50);",
+    },
+  ],
+]
+`;
+
+snapshot[`processPrimitives - uses fluid spacing references 1`] = `
+"/* box */
+--box-default-padding: var(--spacing_fluid-gap-gs-s) var(--spacing_fluid-gap-gs-m);"
+`;
+
+snapshot[`processPrimitives - uses fluid spacing references 2`] = `
+[
+  [
+    "primitives.box.default.padding",
+    {
+      key: "--box-default-padding",
+      value: "var(--spacing_fluid-gap-gs-s) var(--spacing_fluid-gap-gs-m)",
+      variable: "--box-default-padding: var(--spacing_fluid-gap-gs-s) var(--spacing_fluid-gap-gs-m);",
+    },
+  ],
+]
+`;

@@ -71,7 +71,11 @@ function resolveVariable(
       if (!colors) throw new Error("The colors object must be passed.");
       const result = colors.resolveMap.get(varPath);
       if (!result) {
-        throw new Error(`The color path ${varPath} could not be resolved.`);
+        throw new Error(
+          `The color path ${varPath} could not be resolved. Map contains ${
+            Array.from(colors.resolveMap.keys()).map((key) => `\n${key}`)
+          }`,
+        );
       }
       return result.key;
     }

@@ -27,8 +27,8 @@ export default defineConfig(
       },
     },
     typography: {
-      font: {
-        fluid: {
+      fluid: {
+        base: {
           value: {
             minWidth: 320,
             minFontSize: 14,
@@ -46,13 +46,60 @@ export default defineConfig(
       palette: {
         value: {
           coral: {
-            100: { hex: "#FF7F50" },
+            value: {
+              100: { hex: "#FF7F50" },
+            },
           },
           mint: {
-            100: { hex: "#4ADE80" },
+            value: {
+              100: { hex: "#4ADE80" },
+            },
           },
           indigo: {
-            100: { hex: "#4F46E5" },
+            value: {
+              100: { hex: "#4F46E5" },
+            },
+          },
+          // dark-mode overrides wrapped in a condition
+          coral_dark: {
+            value: {
+              100: { hex: "#FF6347" },
+            },
+            settings: {
+              condition: "@media (prefers-color-scheme: dark)",
+            },
+          },
+          mint_dark: {
+            value: {
+              100: { hex: "#22C55E" },
+            },
+            settings: {
+              condition: "@media (prefers-color-scheme: dark)",
+            },
+          },
+          indigo_dark: {
+            value: {
+              100: { hex: "#4338CA" },
+            },
+            settings: {
+              condition: "@media (prefers-color-scheme: dark)",
+            },
+          },
+        },
+      },
+      theme: {
+        main: {
+          value: {
+            background: {
+              value: {
+                primary: "var(--coral)",
+                secondary: "var(--mint)",
+              },
+              variables: {
+                coral: "palette.coral.100",
+                mint: "palette.mint.100",
+              },
+            },
           },
         },
       },

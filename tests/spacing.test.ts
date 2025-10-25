@@ -1,8 +1,9 @@
 import { assertEquals } from "@std/assert";
+import { assertSnapshot } from "@std/testing/snapshot";
 import { processSpacing } from "../src/modules/spacing.ts";
 import { defineConfig } from "../src/config.ts";
 
-Deno.test("processSpacing - generates correct spacing scale", () => {
+Deno.test("processSpacing - generates correct spacing scale", async (t) => {
   const config = defineConfig({
     spacing: {
       custom: {
@@ -23,15 +24,17 @@ Deno.test("processSpacing - generates correct spacing scale", () => {
   assertEquals(result.css, expected);
 
   assertEquals(Array.from(result.resolveMap.keys()), [
-    "spacing.custom.size.value.1",
-    "spacing.custom.size.value.2",
-    "spacing.custom.size.value.3",
-    "spacing.custom.size.value.s",
+    "spacing.custom.size.1",
+    "spacing.custom.size.2",
+    "spacing.custom.size.3",
+    "spacing.custom.size.s",
   ]);
+  await assertSnapshot(t, result.css);
+  await assertSnapshot(t, Array.from(result.resolveMap.entries()));
 });
 
 // Test with string keys
-Deno.test("processSpacing - handles settings", () => {
+Deno.test("processSpacing - handles settings", async (t) => {
   const config = defineConfig({
     spacing: {
       custom: {
@@ -58,14 +61,16 @@ Deno.test("processSpacing - handles settings", () => {
   assertEquals(result.css, expected);
 
   assertEquals(Array.from(result.resolveMap.keys()), [
-    "spacing.custom.size.value.1",
-    "spacing.custom.size.value.2",
-    "spacing.custom.scale.value.md",
-    "spacing.custom.scale.value.lg",
+    "spacing.custom.size.1",
+    "spacing.custom.size.2",
+    "spacing.custom.scale.md",
+    "spacing.custom.scale.lg",
   ]);
+  await assertSnapshot(t, result.css);
+  await assertSnapshot(t, Array.from(result.resolveMap.entries()));
 });
 
-Deno.test("processSpacing - generates fluid spacing (prefix)", () => {
+Deno.test("processSpacing - generates fluid spacing (prefix)", async (t) => {
   const config = defineConfig({
     spacing: {
       fluid: {
@@ -108,9 +113,11 @@ Deno.test("processSpacing - generates fluid spacing (prefix)", () => {
     "spacing_fluid.base@s-m",
     "spacing_fluid.base@m-l",
   ]);
+  await assertSnapshot(t, css);
+  await assertSnapshot(t, Array.from(resolveMap.entries()));
 });
 
-Deno.test("processSpacing - fluid without prefix falls back to scale name", () => {
+Deno.test("processSpacing - fluid without prefix falls back to scale name", async (t) => {
   const config = defineConfig({
     spacing: {
       fluid: {
@@ -144,9 +151,11 @@ Deno.test("processSpacing - fluid without prefix falls back to scale name", () =
     "spacing_fluid.rhythm@xs-s",
     "spacing_fluid.rhythm@s-m",
   ]);
+  await assertSnapshot(t, css);
+  await assertSnapshot(t, Array.from(resolveMap.entries()));
 });
 
-Deno.test("processSpacing - combines fluid and custom spacing", () => {
+Deno.test("processSpacing - combines fluid and custom spacing", async (t) => {
   const config = defineConfig({
     spacing: {
       fluid: {
@@ -187,7 +196,9 @@ Deno.test("processSpacing - combines fluid and custom spacing", () => {
     "spacing_fluid.base@m",
     "spacing_fluid.base@xs-s",
     "spacing_fluid.base@s-m",
-    "spacing.custom.gap.value.1",
-    "spacing.custom.gap.value.2",
+    "spacing.custom.gap.1",
+    "spacing.custom.gap.2",
   ]);
+  await assertSnapshot(t, css);
+  await assertSnapshot(t, Array.from(resolveMap.entries()));
 });

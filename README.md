@@ -39,21 +39,27 @@ For programmatic usage, you can install CSS Forge as a dependency:
 # Using npm
 npx jsr add @hebilicious/cssforge
 
-# Using Deno
-deno install jsr:@hebilicious/cssforge
+# Using pnpm (10.9 +)
+pnpm i jsr:@hebilicious/cssforge
 ```
 
-For CLI usage, you can also run CSS Forge directly from JSR or install it globally:
+Then to run CSS forge, add the following script to your `package.json` or `deno.json` :
+
+```json
+{
+  "scripts": {
+    "cssforge": "node node_modules/@hebilicious/cssforge/src/cli"
+  }
+}
+```
+
+then run :
 
 ```bash
-# Run directly from jsr with npx
-npx jsr run @hebilicious/cssforge/cli
-
-# Run directly from jsr with deno
-deno run -A jsr:@hebilicious/cssforge/cli 
-
-# Or install globally
-deno install -A -n cssforge jsr:@hebilicious/cssforge/cli
+#npm
+npm run cssforge
+#pnpm
+pnpm run cssforge
 ```
 
 ## Quick Start
@@ -96,13 +102,19 @@ export default defineConfig({
     palette: {
       value: {
         coral: {
-          100: { hex: "#FF7F50" },
+          value: {
+            100: { hex: "#FF7F50" },
+          }
         },
         mint: {
-          100: { hex: "#4ADE80" },
+          value: {
+            100: { hex: "#4ADE80" },
+          }
         },
         indigo: {
-          100: { hex: "#4F46E5" },
+          value: {
+            100: { hex: "#4F46E5" },
+          }
         },
       },
     },
@@ -112,7 +124,7 @@ export default defineConfig({
 
 2. Run CSS Forge with the CLI :
 
-If you're using a package.json, you can add the follwing into your scripts :
+If you're using a package.json, add the follwing to your scripts :
 
 ```json
 {
@@ -163,13 +175,16 @@ For example, you can import as a layer :
 }
 ```
 
+>!IMPORTANT
+> Do not manually edit the generated CSS file, edit the configuration file instead and regenerate.
+
 4. Use the generated css in your JS/TS :
 
 ```typescript
 import { cssForge } from "./.cssforge/output.ts";
 
 // Use like this anywhere :
-//`cssForge.colors.palette.value.basic.white` is fully typed { key: --myKey, value: white, variable: --key: white }
+//`cssForge.colors.palette.basic.white` is fully typed { key: --myKey, value: white, variable: --key: white }
 
 export { cssForge };
 ```
@@ -187,12 +202,23 @@ export default defineConfig({
     palette: {
       value: {
         simple: {
-          white: "oklch(100% 0 0)",
-          black: "#000",
-          green: { rgb: [0, 255, 0] },
-          blue: { hsl: [240, 100, 50] },
-          violet: { oklch: "oklch(0.7 0.2 270)" },
-          red: { hex: "#FF0000" },
+          value: {
+            white: "oklch(100% 0 0)",
+            black: "#000",
+            green: { rgb: [0, 255, 0] },
+            blue: { hsl: [240, 100, 50] },
+            violet: { oklch: "oklch(0.7 0.2 270)" },
+            red: { hex: "#FF0000" },
+          },
+        },
+        another: {
+          value: {
+            yellow: { hex: "#FFFF00" },
+            cyan: { hex: "#00FFFF" },
+          },
+          settings: {
+            condition: ".Another",
+          },
         },
       },
     },
@@ -203,8 +229,8 @@ export default defineConfig({
             primary: {
               value: "linear-gradient(to right, var(--c1), var(--c2))",
               variables: {
-                "c1": "palette.value.simple.white",
-                "c2": "palette.value.simple.green",
+                "c1": "palette.simple.white",
+                "c2": "palette.simple.green",
               },
             },
           },
@@ -212,18 +238,35 @@ export default defineConfig({
       },
     },
     theme: {
-      value: {
-        light: {
+      light: {
+        value: {
           background: {
             value: {
               primary: "var(--1)",
               secondary: "var(--2)",
             },
             variables: {
-              1: "palette.value.simple.white",
-              2: "gradients.value.white-green", //Reference the color name directly.
+              1: "palette.simple.white",
+              2: "gradients.white-green.primary",
             },
           },
+        },
+      },
+      dark: {
+        value: {
+          background: {
+            value: {
+              primary: "var(--1)",
+              secondary: "var(--2)",
+            },
+            variables: {
+              1: "palette.another.yellow",
+              2: "palette.another.cyan",
+            },
+          },
+        },
+        settings: {
+          condition: "@media (prefers-color-scheme: dark)",
         },
       },
     },
@@ -237,12 +280,23 @@ export default defineConfig({
     palette: {
       value: {
         simple: {
-          white: "oklch(100% 0 0)",
-          black: "#000",
-          green: { rgb: [0, 255, 0] },
-          blue: { hsl: [240, 100, 50] },
-          violet: { oklch: "oklch(0.7 0.2 270)" },
-          red: { hex: "#FF0000" },
+          value: {
+            white: "oklch(100% 0 0)",
+            black: "#000",
+            green: { rgb: [0, 255, 0] },
+            blue: { hsl: [240, 100, 50] },
+            violet: { oklch: "oklch(0.7 0.2 270)" },
+            red: { hex: "#FF0000" },
+          },
+        },
+        another: {
+          value: {
+            yellow: { hex: "#FFFF00" },
+            cyan: { hex: "#00FFFF" },
+          },
+          settings: {
+            condition: ".Another",
+          },
         },
       },
     },
@@ -253,8 +307,8 @@ export default defineConfig({
             primary: {
               value: "linear-gradient(to right, var(--c1), var(--c2))",
               variables: {
-                "c1": "palette.value.simple.white",
-                "c2": "palette.value.simple.green",
+                "c1": "palette.simple.white",
+                "c2": "palette.simple.green",
               },
             },
           },
@@ -262,18 +316,35 @@ export default defineConfig({
       },
     },
     theme: {
-      value: {
-        light: {
+      light: {
+        value: {
           background: {
             value: {
               primary: "var(--1)",
               secondary: "var(--2)",
             },
             variables: {
-              1: "palette.value.simple.white",
-              2: "gradients.value.white-green", //Reference the color name directly.
+              1: "palette.simple.white",
+              2: "gradients.white-green", //Reference the color name directly.
             },
           },
+        },
+      },
+      dark: {
+        value: {
+          background: {
+            value: {
+              primary: "var(--1)",
+              secondary: "var(--2)",
+            },
+            variables: {
+              1: "palette.another.yellow",
+              2: "palette.another.cyan",
+            },
+          },
+        },
+        settings: {
+          condition: "@media (prefers-color-scheme: dark)",
         },
       },
     },
@@ -286,22 +357,31 @@ This will generate the following CSS :
 ```css
 /*____ CSSForge ____*/
 :root {
-  /*____ Colors ____*/
-  /* Palette */
-  --palette-simple-white: oklch(100% 0 0);
-  --palette-simple-black: oklch(0% 0 0);
-  --palette-simple-green: oklch(86.644% 0.29483 142.49535);
-  --palette-simple-blue: oklch(45.201% 0.31321 264.05202);
-  --palette-simple-violet: oklch(70% 0.2 270);
-  --palette-simple-red: oklch(62.796% 0.25768 29.23388);
-  /*  Gradients  */
-  --gradients-white-green-primary: linear-gradient(
-    to right,
-    var(--palette-simple-white),
-    var(--palette-simple-green)
-  );
-  /* Theme: light */
+/*____ Colors ____*/
+/* Palette */
+/* simple */
+--palette-simple-white: oklch(100% 0 0);
+--palette-simple-black: oklch(0% 0 0);
+--palette-simple-green: oklch(86.644% 0.29483 142.49535);
+--palette-simple-blue: oklch(45.201% 0.31321 264.05202);
+--palette-simple-violet: oklch(70% 0.2 270);
+--palette-simple-red: oklch(62.796% 0.25768 29.23388);
+.Another {
+  /* another */
+  --palette-another-yellow: oklch(96.798% 0.21101 109.76924);
+  --palette-another-cyan: oklch(90.54% 0.15455 194.76896);
+}
+/*  Gradients  */
+--gradients-white-green-primary: linear-gradient(to right, var(--palette-simple-white), var(--palette-simple-green));
+/*  Themes  */
+/* Theme: light */
+/* background */
+@media (prefers-color-scheme: dark) {
+  /* Theme: dark */
   /* background */
+  --theme-dark-background-primary: var(--palette-another-yellow);
+  --theme-dark-background-secondary: var(--palette-another-cyan);
+}
 }
 ```
 
@@ -354,11 +434,11 @@ This will generate the following CSS :
 ```css
 /*____ CSSForge ____*/
 :root {
-  /*____ Spacing ____*/
-  --spacing-size-1: 0.25rem;
-  --spacing-size-2: 0.5rem;
-  --spacing-size-3: 0.75rem;
-  --spacing-size-4: 1rem;
+/*____ Spacing ____*/
+--spacing-size-1: 0.25rem;
+--spacing-size-2: 0.5rem;
+--spacing-size-3: 0.75rem;
+--spacing-size-4: 1rem;
 }
 ```
 
@@ -415,12 +495,12 @@ This will generate the following CSS :
 ```css
 /*____ CSSForge ____*/
 :root {
-  /*____ Spacing ____*/
-  --spacing_fluid-base-hi-xs: clamp(0rem, 0rem + 0vw, 0rem);
-  --spacing_fluid-base-hi-s: clamp(0.25rem, -0.1667rem + 2.0833vw, 1.5rem);
-  --spacing_fluid-base-hi-m: clamp(0.75rem, -0.5rem + 6.25vw, 4.5rem);
-  --spacing_fluid-base-hi-xs-s: clamp(0rem, -0.5rem + 2.5vw, 1.5rem);
-  --spacing_fluid-base-hi-s-m: clamp(0.25rem, -1.1667rem + 7.0833vw, 4.5rem);
+/*____ Spacing ____*/
+--spacing_fluid-base-hi-xs: clamp(0rem, 0rem + 0vw, 0rem);
+--spacing_fluid-base-hi-s: clamp(0.25rem, -0.1667rem + 2.0833vw, 1.5rem);
+--spacing_fluid-base-hi-m: clamp(0.75rem, -0.5rem + 6.25vw, 4.5rem);
+--spacing_fluid-base-hi-xs-s: clamp(0rem, -0.5rem + 2.5vw, 1.5rem);
+--spacing_fluid-base-hi-s-m: clamp(0.25rem, -1.1667rem + 7.0833vw, 4.5rem);
 }
 ```
 
@@ -483,46 +563,30 @@ This will generate the following CSS :
 ```css
 /*____ CSSForge ____*/
 :root {
-  /*____ Spacing ____*/
-  --spacing_fluid-base-smooth-3xs: clamp(0.0625rem, -0.0417rem + 0.5208vw, 0.375rem);
-  --spacing_fluid-base-smooth-2xs: clamp(0.125rem, -0.0833rem + 1.0417vw, 0.75rem);
-  --spacing_fluid-base-smooth-xs: clamp(0.1875rem, -0.125rem + 1.5625vw, 1.125rem);
-  --spacing_fluid-base-smooth-s: clamp(0.25rem, -0.1667rem + 2.0833vw, 1.5rem);
-  --spacing_fluid-base-smooth-m: clamp(0.375rem, -0.25rem + 3.125vw, 2.25rem);
-  --spacing_fluid-base-smooth-l: clamp(0.5rem, -0.3333rem + 4.1667vw, 3rem);
-  --spacing_fluid-base-smooth-xl: clamp(0.75rem, -0.5rem + 6.25vw, 4.5rem);
-  --spacing_fluid-base-smooth-2xl: clamp(1rem, -0.6667rem + 8.3333vw, 6rem);
-  --spacing_fluid-base-smooth-3xl: clamp(1.5rem, -1rem + 12.5vw, 9rem);
-  --spacing_fluid-base-smooth-3xs-2xs: clamp(0.0625rem, -0.1667rem + 1.1458vw, 0.75rem);
-  --spacing_fluid-base-smooth-2xs-xs: clamp(0.125rem, -0.2083rem + 1.6667vw, 1.125rem);
-  --spacing_fluid-base-smooth-xs-s: clamp(0.1875rem, -0.25rem + 2.1875vw, 1.5rem);
-  --spacing_fluid-base-smooth-s-m: clamp(0.25rem, -0.4167rem + 3.3333vw, 2.25rem);
-  --spacing_fluid-base-smooth-m-l: clamp(0.375rem, -0.5rem + 4.375vw, 3rem);
-  --spacing_fluid-base-smooth-l-xl: clamp(0.5rem, -0.8333rem + 6.6667vw, 4.5rem);
-  --spacing_fluid-base-smooth-xl-2xl: clamp(0.75rem, -1rem + 8.75vw, 6rem);
-  --spacing_fluid-base-smooth-2xl-3xl: clamp(1rem, -1.6667rem + 13.3333vw, 9rem);
-  --spacing-gap-1: 0.25rem;
-  --spacing-gap-2: 0.5rem;
+/*____ Spacing ____*/
+--spacing_fluid-base-smooth-3xs: clamp(0.0625rem, -0.0417rem + 0.5208vw, 0.375rem);
+--spacing_fluid-base-smooth-2xs: clamp(0.125rem, -0.0833rem + 1.0417vw, 0.75rem);
+--spacing_fluid-base-smooth-xs: clamp(0.1875rem, -0.125rem + 1.5625vw, 1.125rem);
+--spacing_fluid-base-smooth-s: clamp(0.25rem, -0.1667rem + 2.0833vw, 1.5rem);
+--spacing_fluid-base-smooth-m: clamp(0.375rem, -0.25rem + 3.125vw, 2.25rem);
+--spacing_fluid-base-smooth-l: clamp(0.5rem, -0.3333rem + 4.1667vw, 3rem);
+--spacing_fluid-base-smooth-xl: clamp(0.75rem, -0.5rem + 6.25vw, 4.5rem);
+--spacing_fluid-base-smooth-2xl: clamp(1rem, -0.6667rem + 8.3333vw, 6rem);
+--spacing_fluid-base-smooth-3xl: clamp(1.5rem, -1rem + 12.5vw, 9rem);
+--spacing_fluid-base-smooth-3xs-2xs: clamp(0.0625rem, -0.1667rem + 1.1458vw, 0.75rem);
+--spacing_fluid-base-smooth-2xs-xs: clamp(0.125rem, -0.2083rem + 1.6667vw, 1.125rem);
+--spacing_fluid-base-smooth-xs-s: clamp(0.1875rem, -0.25rem + 2.1875vw, 1.5rem);
+--spacing_fluid-base-smooth-s-m: clamp(0.25rem, -0.4167rem + 3.3333vw, 2.25rem);
+--spacing_fluid-base-smooth-m-l: clamp(0.375rem, -0.5rem + 4.375vw, 3rem);
+--spacing_fluid-base-smooth-l-xl: clamp(0.5rem, -0.8333rem + 6.6667vw, 4.5rem);
+--spacing_fluid-base-smooth-xl-2xl: clamp(0.75rem, -1rem + 8.75vw, 6rem);
+--spacing_fluid-base-smooth-2xl-3xl: clamp(1rem, -1.6667rem + 13.3333vw, 9rem);
+--spacing-gap-1: 0.25rem;
+--spacing-gap-2: 0.5rem;
 }
 ```
 
 <!-- /md:generate -->
-
-#### Referencing Fluid Spacing
-
-To reference fluid spacing, use the `@` symbol and the label of the scale; ie:
-`spacing_fluid-base@xs`. Do not include the prefix in the reference. The labels follow the
-following convention :
-
-- 3xs
-- 2xs
-- xs
-- s
-- m
-- l
-- xl
-- 2xl
-- 3xl
 
 ### Typography
 
@@ -590,17 +654,17 @@ This will generate the following CSS :
 ```css
 /*____ CSSForge ____*/
 :root {
-  /*____ Typography ____*/
-  --typography_fluid-arial-4xl: clamp(2.6703rem, 2.5608rem + 0.5474vw, 3.0518rem);
-  --typography_fluid-arial-3xl: clamp(2.1362rem, 2.0486rem + 0.4379vw, 2.4414rem);
-  --typography_fluid-arial-2xl: clamp(1.709rem, 1.6389rem + 0.3503vw, 1.9531rem);
-  --typography_fluid-arial-xl: clamp(1.3672rem, 1.3111rem + 0.2803vw, 1.5625rem);
-  --typography_fluid-arial-l: clamp(1.0938rem, 1.0489rem + 0.2242vw, 1.25rem);
-  --typography_fluid-arial-m: clamp(0.875rem, 0.8391rem + 0.1794vw, 1rem);
-  --typography_fluid-arial-s: clamp(0.7rem, 0.6713rem + 0.1435vw, 0.8rem);
-  --typography_fluid-arial-xs: clamp(0.56rem, 0.537rem + 0.1148vw, 0.64rem);
-  --typography_fluid-arial-2xs: clamp(0.448rem, 0.4296rem + 0.0918vw, 0.512rem);
-  --typography-weight-arial-regular: 600;
+/*____ Typography ____*/
+--typography_fluid-arial-4xl: clamp(2.6703rem, 2.5608rem + 0.5474vw, 3.0518rem);
+--typography_fluid-arial-3xl: clamp(2.1362rem, 2.0486rem + 0.4379vw, 2.4414rem);
+--typography_fluid-arial-2xl: clamp(1.709rem, 1.6389rem + 0.3503vw, 1.9531rem);
+--typography_fluid-arial-xl: clamp(1.3672rem, 1.3111rem + 0.2803vw, 1.5625rem);
+--typography_fluid-arial-l: clamp(1.0938rem, 1.0489rem + 0.2242vw, 1.25rem);
+--typography_fluid-arial-m: clamp(0.875rem, 0.8391rem + 0.1794vw, 1rem);
+--typography_fluid-arial-s: clamp(0.7rem, 0.6713rem + 0.1435vw, 0.8rem);
+--typography_fluid-arial-xs: clamp(0.56rem, 0.537rem + 0.1148vw, 0.64rem);
+--typography_fluid-arial-2xs: clamp(0.448rem, 0.4296rem + 0.0918vw, 0.512rem);
+--typography-weight-arial-regular: 600;
 }
 ```
 
@@ -678,32 +742,16 @@ This will generate the following CSS :
 ```css
 /*____ CSSForge ____*/
 :root {
-  /*____ Typography ____*/
-  --typography_fluid-comicsans-text-e: clamp(1.3672rem, 1.3111rem + 0.2803vw, 1.5625rem);
-  --typography_fluid-comicsans-text-d: clamp(1.0938rem, 1.0489rem + 0.2242vw, 1.25rem);
-  --typography_fluid-comicsans-text-c: clamp(0.875rem, 0.8391rem + 0.1794vw, 1rem);
-  --typography_fluid-comicsans-text-b: clamp(0.7rem, 0.6713rem + 0.1435vw, 0.8rem);
-  --typography_fluid-comicsans-text-a: clamp(0.56rem, 0.537rem + 0.1148vw, 0.64rem);
+/*____ Typography ____*/
+--typography_fluid-comicsans-text-e: clamp(1.3672rem, 1.3111rem + 0.2803vw, 1.5625rem);
+--typography_fluid-comicsans-text-d: clamp(1.0938rem, 1.0489rem + 0.2242vw, 1.25rem);
+--typography_fluid-comicsans-text-c: clamp(0.875rem, 0.8391rem + 0.1794vw, 1rem);
+--typography_fluid-comicsans-text-b: clamp(0.7rem, 0.6713rem + 0.1435vw, 0.8rem);
+--typography_fluid-comicsans-text-a: clamp(0.56rem, 0.537rem + 0.1148vw, 0.64rem);
 }
 ```
 
 <!-- /md:generate -->
-
-#### Referencing Fluid Typography
-
-To reference fluid typography, use the `@` symbol and the label of the scale; ie:
-`typography_fluid.comicsans@a`. Do not include the prefix in the reference. The labels
-follow the following convention :
-
-- 3xs
-- 2xs
-- xs
-- s
-- m
-- l
-- xl
-- 2xl
-- 3xl
 
 ### Primitives
 
@@ -751,8 +799,8 @@ export default defineConfig({
           },
           variables: {
             "base": "typography_fluid.arial@m",
-            "2": "spacing.custom.size.value.2",
-            "3": "spacing.custom.size.value.3",
+            "2": "spacing.custom.size.2",
+            "3": "spacing.custom.size.3",
           },
         },
       },
@@ -803,8 +851,8 @@ export default defineConfig({
           },
           variables: {
             "base": "typography_fluid.arial@m",
-            "2": "spacing.custom.size.value.2",
-            "3": "spacing.custom.size.value.3",
+            "2": "spacing.custom.size.2",
+            "3": "spacing.custom.size.3",
           },
         },
       },
@@ -818,42 +866,100 @@ This will generate the following CSS :
 ```css
 /*____ CSSForge ____*/
 :root {
-  /*____ Spacing ____*/
-  --spacing-size-2: 0.5rem;
-  --spacing-size-3: 0.75rem;
-  /*____ Typography ____*/
-  --typography_fluid-arial-4xl: clamp(2.6703rem, 2.5608rem + 0.5474vw, 3.0518rem);
-  --typography_fluid-arial-3xl: clamp(2.1362rem, 2.0486rem + 0.4379vw, 2.4414rem);
-  --typography_fluid-arial-2xl: clamp(1.709rem, 1.6389rem + 0.3503vw, 1.9531rem);
-  --typography_fluid-arial-xl: clamp(1.3672rem, 1.3111rem + 0.2803vw, 1.5625rem);
-  --typography_fluid-arial-l: clamp(1.0938rem, 1.0489rem + 0.2242vw, 1.25rem);
-  --typography_fluid-arial-m: clamp(0.875rem, 0.8391rem + 0.1794vw, 1rem);
-  --typography_fluid-arial-s: clamp(0.7rem, 0.6713rem + 0.1435vw, 0.8rem);
-  --typography_fluid-arial-xs: clamp(0.56rem, 0.537rem + 0.1148vw, 0.64rem);
-  --typography_fluid-arial-2xs: clamp(0.448rem, 0.4296rem + 0.0918vw, 0.512rem);
-  /*____ Primitives ____*/
-  /* button */
-  --button-small-width: 7.5rem;
-  --button-small-height: 2.5rem;
-  --button-small-fontSize: var(--typography_fluid-arial-m);
-  --button-small-radius: 0.5rem;
-  --button-small-padding: var(--spacing-size-2) var(--spacing-size-3);
+/*____ Spacing ____*/
+--spacing-size-2: 0.5rem;
+--spacing-size-3: 0.75rem;
+/*____ Typography ____*/
+--typography_fluid-arial-4xl: clamp(2.6703rem, 2.5608rem + 0.5474vw, 3.0518rem);
+--typography_fluid-arial-3xl: clamp(2.1362rem, 2.0486rem + 0.4379vw, 2.4414rem);
+--typography_fluid-arial-2xl: clamp(1.709rem, 1.6389rem + 0.3503vw, 1.9531rem);
+--typography_fluid-arial-xl: clamp(1.3672rem, 1.3111rem + 0.2803vw, 1.5625rem);
+--typography_fluid-arial-l: clamp(1.0938rem, 1.0489rem + 0.2242vw, 1.25rem);
+--typography_fluid-arial-m: clamp(0.875rem, 0.8391rem + 0.1794vw, 1rem);
+--typography_fluid-arial-s: clamp(0.7rem, 0.6713rem + 0.1435vw, 0.8rem);
+--typography_fluid-arial-xs: clamp(0.56rem, 0.537rem + 0.1148vw, 0.64rem);
+--typography_fluid-arial-2xs: clamp(0.448rem, 0.4296rem + 0.0918vw, 0.512rem);
+/*____ Primitives ____*/
+/* button */
+--button-small-width: 7.5rem;
+--button-small-height: 2.5rem;
+--button-small-fontSize: var(--typography_fluid-arial-m);
+--button-small-radius: 0.5rem;
+--button-small-padding: var(--spacing-size-2) var(--spacing-size-3);
 }
 ```
 
 <!-- /md:generate -->
 
+## Referencing Variables
+
+### Basic Referencing
+
+To reference any variable, use the `.` notation to navigate through the schema without using `.value`.
+
+For example, if an object has the following structure :
+
+```typescript
+{
+  spacing: {
+    custom: {
+      size: {
+        value: {
+          1: "0.25rem",
+        },
+      },
+    },
+  },
+}
+```
+
+The reference would be : `spacing.custom.size.1`, not `spacing.custom.size.value.1`.
+
+#### Referencing Fluid Spacing
+
+To reference fluid spacing, use the `@` symbol and the label of the scale; ie:
+`spacing_fluid-base@xs`. Do not include the prefix in the reference. The labels follow the
+following convention :
+
+- 3xs
+- 2xs
+- xs
+- s
+- m
+- l
+- xl
+- 2xl
+- 3xl
+
+### Referencing Fluid Typography
+
+To reference fluid typography, use the `@` symbol and the label of the scale; ie:
+`typography_fluid.comicsans@a`. Do not include the prefix in the reference. The labels
+follow the following convention :
+
+- 3xs
+- 2xs
+- xs
+- s
+- m
+- l
+- xl
+- 2xl
+- 3xl
+
 ## CLI Usage
+
+Assuming you have added the script to your `package.json`, you can run CSS Forge like this : 
 
 ```bash
 # Basic usage
-cssforge
+npm run cssforge
 
 # Watch mode
-cssforge --watch
+npm run cssforge -- --watch
 
 # Custom paths and output 
-cssforge --config ./foo/bar/custom-path.ts --css ./dist/design-tokens.css --ts ./dist/design-tokens.ts --json ./dist/design-tokens.json --mode all
+npm run cssforge --config ./foo/bar/custom-path.ts --css ./dist/design-tokens.css --ts ./dist/design-tokens.ts --json ./dist/design-tokens.json --mode all
 ```
 
 ## Programmatic Usage
@@ -867,10 +973,18 @@ import { generateCSS } from "jsr:@hebilicious/cssforge";
 const css = generateCSS(config);
 ```
 
+## Agentic usage
+
+CSSForge is intentionally designed to be extremely simple and integrate well with various agents, such as Github Copilot, Gemini, Claude Code ...
+While there's no documentation yet, you can add the README file to the agent context directly.
+
+For most agents, this syntax works `@https://raw.githubusercontent.com/Hebilicious/cssforge/refs/heads/main/README.md`.
+
 ## Best Practices
 
 - **Version Control**: Commit your generated CSS files
 - **CSS Layers**: Use `@layer` to manage specificity
+- **Config First**: Always edit the config file, never edit the generated files
 
 ## Examples
 

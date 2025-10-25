@@ -115,7 +115,7 @@ export function processSpacing(spacing: SpacingConfig): Output {
         const varName = `--${moduleKey}-${scaleName}-${scaleKey}`;
         const variable = `${varName}: ${convertedValue};`;
         cssOutput.push(variable);
-        resolveMap.set(`${moduleKey}.custom.${scaleName}.value.${scaleKey}`, {
+        resolveMap.set(`${moduleKey}.custom.${scaleName}.${scaleKey}`, {
           variable,
           key: varName,
           value: convertedValue,
