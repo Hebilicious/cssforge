@@ -6,8 +6,8 @@
 
 - 41bff15: # Conditions and variables access
 
-  Add the posibility to add conditions for colors modules. This is a breaking change for the
-  configuration format.
+  Add the posibility to add conditions for colors modules. This is a breaking change for
+  the configuration format.
 
 ## 0.2.1
 
