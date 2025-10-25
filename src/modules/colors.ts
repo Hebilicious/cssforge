@@ -29,11 +29,40 @@ interface ColorVariants {
   [key: string]: ColorValueOrString;
 }
 
+export interface WithCondition {
+  /**
+   * CSS condition to wrap variables in (e.g., ".MyClass", "@media (prefers-color-scheme: dark)")
+   */
+  condition?: string;
+}
+/**
+ * Settings for palette colors, including optional conditions like media queries.
+ */
+export interface PaletteColorSettings extends WithCondition {}
+
+/**
+ * Settings for gradients, including optional conditions like media queries.
+ */
+export interface GradientSettings extends WithCondition {}
+
+/**
+ * Settings for themes, including optional conditions like media queries.
+ */
+export interface ThemeSettings extends WithCondition {}
+
+/**
+ * A single palette color configuration with its values and optional settings.
+ */
+export interface PaletteColorConfig {
+  value: ColorVariants;
+  settings?: PaletteColorSettings;
+}
+
 /**
  * A palette of colors, organized by name and variants.
  */
 export interface ColorPalette {
-  [key: string]: ColorVariants;
+  [key: string]: PaletteColorConfig;
 }
 
 interface GradientDefinition {
@@ -51,7 +80,7 @@ interface GradientValue {
  */
 export interface Gradient {
   value: GradientValue;
-  settings?: unknown;
+  settings?: GradientSettings;
 }
 
 /**
@@ -65,12 +94,21 @@ interface ColorInThemeValues {
   [key: string]: string;
 }
 
-interface ColorTheme {
-  [key: string]: {
-    value: ColorInThemeValues;
-    variables?: Variables;
-    settings?: unknown;
+interface ColorInTheme {
+  value: ColorInThemeValues;
+  variables?: Variables;
+  settings?: unknown;
+}
+
+export interface ThemeConfig {
+  value: {
+    [colorName: string]: ColorInTheme;
   };
+  settings?: ThemeSettings;
+}
+
+export interface ColorTheme {
+  [themeName: string]: ThemeConfig;
 }
 
 /**
@@ -95,10 +133,7 @@ export interface ColorConfig {
    * A collection of themes.
    */
   theme?: {
-    value: {
-      [key: string]: ColorTheme;
-    };
-    settings?: unknown;
+    [themeName: string]: ThemeConfig;
   };
 }
 
@@ -182,35 +217,78 @@ export function processColors(colors: ColorConfig): Output {
   const resolveMap: ResolveMap = new Map();
   cssOutput.push(`/* Palette */`);
   const moduleKey = "palette";
-  for (const [colorName, variants] of Object.entries(colors.palette.value)) {
+
+  function conditionalBuilder(
+    settings: WithCondition | undefined,
+    initialComment: string,
+  ) {
+    const comments: string[] = [];
+    const vars: string[] = [];
+
+    if (settings?.condition) {
+      comments.push(initialComment);
+    } else {
+      cssOutput.push(initialComment);
+    }
+
+    return {
+      addComment(c: string) {
+        if (settings?.condition) comments.push(c);
+        else cssOutput.push(c);
+      },
+      pushVariable(v: string) {
+        if (settings?.condition) vars.push(v);
+        else cssOutput.push(v);
+      },
+      finalize() {
+        if (settings?.condition && vars.length > 0) {
+          cssOutput.push(`${settings.condition} {`);
+          cssOutput.push(...comments.map((c) => `  ${c}`));
+          cssOutput.push(...vars.map((v) => `  ${v}`));
+          cssOutput.push(`}`);
+        }
+      },
+    };
+  }
+
+  for (const [colorName, colorConfig] of Object.entries(colors.palette.value)) {
     validateName(colorName);
-    for (const [variantId, colorValue] of Object.entries(variants)) {
-      try {
+
+    try {
+      const handler = conditionalBuilder(
+        colorConfig.settings,
+        `/* ${colorName} */`,
+      );
+
+      for (const [variantId, colorValue] of Object.entries(colorConfig.value)) {
         validateName(variantId);
         const key = `--${moduleKey}-${colorName}-${variantId}`;
         const value = colorValueToOklch(colorValue);
         const variable = `${key}: ${value};`;
 
-        cssOutput.push(variable);
+        handler.pushVariable(variable);
+
         resolveMap.set(
-          `${moduleKey}.value.${colorName}.${variantId}`,
+          `${moduleKey}.${colorName}.${variantId}`,
           { key, value, variable },
         );
-      } catch (error) {
-        console.error(
-          `Error processing color ${colorName}-${variantId}:`,
-          error,
-        );
       }
+
+      handler.finalize();
+    } catch (error) {
+      console.error(`Error processing color ${colorName}:`, error);
     }
   }
 
   if (colors.gradients) {
-    cssOutput.push(`/*  Gradients  */`);
+    cssOutput.push(`/* Gradients */`);
     const moduleKey = "gradients";
     const palette = { css: cssOutput.join("\n"), resolveMap };
+
     for (const [gradientName, gradient] of Object.entries(colors.gradients.value)) {
       validateName(gradientName);
+      const handler = conditionalBuilder(gradient.settings, `/* ${gradientName} */`);
+
       for (
         const [variantName, { value, variables }] of Object.entries(
           gradient.value,
@@ -227,8 +305,10 @@ export function processColors(colors: ColorConfig): Output {
 
           const key = `--${moduleKey}-${gradientName}-${variantName}`;
           const variable = `${key}: ${gradientValue};`;
-          cssOutput.push(variable);
-          resolveMap.set(`${moduleKey}.value.${gradientName}.${variantName}`, {
+
+          handler.pushVariable(variable);
+
+          resolveMap.set(`${moduleKey}.${gradientName}.${variantName}`, {
             variable,
             key,
             value: gradientValue,
@@ -241,49 +321,56 @@ export function processColors(colors: ColorConfig): Output {
           throw error;
         }
       }
+
+      handler.finalize();
     }
   }
 
   if (colors.theme) {
+    cssOutput.push(`/* Themes */`);
     const moduleKey = "theme";
-    for (const [themeName, theme] of Object.entries(colors.theme.value)) {
+    const palette = { css: cssOutput.join("\n"), resolveMap };
+
+    for (const [themeName, themeConfig] of Object.entries(colors.theme)) {
       validateName(themeName);
-      cssOutput.push(`/* Theme: ${themeName} */`);
-      const palette = { css: cssOutput.join("\n"), resolveMap };
-      for (
-        const [colorName, { value: colorInThemeValues, variables }] of Object
-          .entries(theme)
-      ) {
-        validateName(colorName);
-        cssOutput.push(`/* ${colorName} */`);
-        try {
+      const handler = conditionalBuilder(
+        themeConfig.settings,
+        `/* Theme: ${themeName} */`,
+      );
+
+      try {
+        for (const [colorName, colorInTheme] of Object.entries(themeConfig.value)) {
+          validateName(colorName);
+          const colorComment = `/* ${colorName} */`;
+          handler.addComment(colorComment);
+
           const resolvedMap = getResolvedVariablesMap({
-            variables,
+            variables: colorInTheme.variables,
             colors: palette,
           });
 
-          for (
-            const [variantName, variantValue] of Object.entries(
-              colorInThemeValues,
-            )
-          ) {
+          for (const [variantName, variantValue] of Object.entries(colorInTheme.value)) {
             validateName(variantName);
-            const resolvedValue = resolveValue({ map: resolvedMap, value: variantValue });
+            const resolvedValue = resolveValue({
+              map: resolvedMap,
+              value: variantValue as string,
+            });
 
             const key = `--${moduleKey}-${themeName}-${colorName}-${variantName}`;
             const variable = `${key}: ${resolvedValue};`;
-            cssOutput.push(`${key}: ${resolvedValue};`);
+
+            handler.pushVariable(variable);
+
             resolveMap.set(
-              `${moduleKey}.value.${themeName}.${colorName}.${variantName}`,
+              `${moduleKey}.${themeName}.${colorName}.${variantName}`,
               { key, value: resolvedValue, variable },
             );
           }
-        } catch (error) {
-          console.error(
-            `Error processing color ${themeName}-${colorName}:`,
-            error,
-          );
         }
+
+        handler.finalize();
+      } catch (error) {
+        console.error(`Error processing theme ${themeName}:`, error);
       }
     }
   }

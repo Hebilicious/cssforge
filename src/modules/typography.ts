@@ -110,7 +110,7 @@ export function processTypography(config: TypographyConfig): Output {
         const key = `--${moduleKey}-weight-${weightName}-${token}`;
         const variable = `${key}: ${weightValue};`;
         cssOutput.push(variable);
-        resolveMap.set(`${moduleKey}.weight.${weightName}.value.${token}`, {
+        resolveMap.set(`${moduleKey}.weight.${weightName}.${token}`, {
           variable,
           key,
           value: weightValue,

@@ -1,0 +1,376 @@
+export const snapshot = {};
+
+snapshot[`processColors - converts hex to oklch 1`] = `
+"/* Palette */
+/* coral */
+--palette-coral-100: oklch(73.511% 0.16799 40.24666);
+--palette-coral-200: oklch(69.622% 0.19552 32.32143);"
+`;
+
+snapshot[`processColors - converts hex to oklch 2`] = `
+[
+  [
+    "palette.coral.100",
+    {
+      key: "--palette-coral-100",
+      value: "oklch(73.511% 0.16799 40.24666)",
+      variable: "--palette-coral-100: oklch(73.511% 0.16799 40.24666);",
+    },
+  ],
+  [
+    "palette.coral.200",
+    {
+      key: "--palette-coral-200",
+      value: "oklch(69.622% 0.19552 32.32143)",
+      variable: "--palette-coral-200: oklch(69.622% 0.19552 32.32143);",
+    },
+  ],
+]
+`;
+
+snapshot[`processColors - handles different color formats 1`] = `
+"/* Palette */
+/* brand */
+--palette-brand-200: oklch(86.644% 0.29483 142.49535);
+--palette-brand-300: oklch(45.201% 0.31321 264.05202);
+--palette-brand-400: oklch(70% 0.2 270);
+--palette-brand-default: oklch(62.796% 0.25768 29.23388);"
+`;
+
+snapshot[`processColors - handles different color formats 2`] = `
+[
+  [
+    "palette.brand.200",
+    {
+      key: "--palette-brand-200",
+      value: "oklch(86.644% 0.29483 142.49535)",
+      variable: "--palette-brand-200: oklch(86.644% 0.29483 142.49535);",
+    },
+  ],
+  [
+    "palette.brand.300",
+    {
+      key: "--palette-brand-300",
+      value: "oklch(45.201% 0.31321 264.05202)",
+      variable: "--palette-brand-300: oklch(45.201% 0.31321 264.05202);",
+    },
+  ],
+  [
+    "palette.brand.400",
+    {
+      key: "--palette-brand-400",
+      value: "oklch(70% 0.2 270)",
+      variable: "--palette-brand-400: oklch(70% 0.2 270);",
+    },
+  ],
+  [
+    "palette.brand.default",
+    {
+      key: "--palette-brand-default",
+      value: "oklch(62.796% 0.25768 29.23388)",
+      variable: "--palette-brand-default: oklch(62.796% 0.25768 29.23388);",
+    },
+  ],
+]
+`;
+
+snapshot[`processColors - handles string values 1`] = `
+"/* Palette */
+/* simple */
+--palette-simple-white: oklch(100% 0 0);
+--palette-simple-black: oklch(0% 0 0);"
+`;
+
+snapshot[`processColors - handles string values 2`] = `
+[
+  [
+    "palette.simple.white",
+    {
+      key: "--palette-simple-white",
+      value: "oklch(100% 0 0)",
+      variable: "--palette-simple-white: oklch(100% 0 0);",
+    },
+  ],
+  [
+    "palette.simple.black",
+    {
+      key: "--palette-simple-black",
+      value: "oklch(0% 0 0)",
+      variable: "--palette-simple-black: oklch(0% 0 0);",
+    },
+  ],
+]
+`;
+
+snapshot[`processColors - handles themes 1`] = `
+"/* Palette */
+/* simple */
+--palette-simple-white: oklch(100% 0 0);
+--palette-simple-black: oklch(0% 0 0);
+/* Themes */
+/* Theme: light */
+/* background */
+--theme-light-background-primary: var(--palette-simple-white);
+--theme-light-background-secondary: var(--palette-simple-black);"
+`;
+
+snapshot[`processColors - handles themes 2`] = `
+[
+  [
+    "palette.simple.white",
+    {
+      key: "--palette-simple-white",
+      value: "oklch(100% 0 0)",
+      variable: "--palette-simple-white: oklch(100% 0 0);",
+    },
+  ],
+  [
+    "palette.simple.black",
+    {
+      key: "--palette-simple-black",
+      value: "oklch(0% 0 0)",
+      variable: "--palette-simple-black: oklch(0% 0 0);",
+    },
+  ],
+  [
+    "theme.light.background.primary",
+    {
+      key: "--theme-light-background-primary",
+      value: "var(--palette-simple-white)",
+      variable: "--theme-light-background-primary: var(--palette-simple-white);",
+    },
+  ],
+  [
+    "theme.light.background.secondary",
+    {
+      key: "--theme-light-background-secondary",
+      value: "var(--palette-simple-black)",
+      variable: "--theme-light-background-secondary: var(--palette-simple-black);",
+    },
+  ],
+]
+`;
+
+snapshot[`processColors - handles transparency 1`] = `
+"/* Palette */
+/* alpha */
+--palette-alpha-softGray1: oklch(14.48% 0 0 / 12%);
+--palette-alpha-softGray2: oklch(14.48% 0 0 / 24%);"
+`;
+
+snapshot[`processColors - handles transparency 2`] = `
+[
+  [
+    "palette.alpha.softGray1",
+    {
+      key: "--palette-alpha-softGray1",
+      value: "oklch(14.48% 0 0 / 12%)",
+      variable: "--palette-alpha-softGray1: oklch(14.48% 0 0 / 12%);",
+    },
+  ],
+  [
+    "palette.alpha.softGray2",
+    {
+      key: "--palette-alpha-softGray2",
+      value: "oklch(14.48% 0 0 / 24%)",
+      variable: "--palette-alpha-softGray2: oklch(14.48% 0 0 / 24%);",
+    },
+  ],
+]
+`;
+
+snapshot[`processColors - generates gradient with color variables 1`] = `
+"/* Palette */
+/* coral */
+--palette-coral-50: oklch(73.58% 0.16378 34.33822);
+--palette-coral-90: oklch(73.341% 0.17338 44.64289);
+--palette-coral-100: oklch(69.622% 0.19552 32.32143);
+/* indigo */
+--palette-indigo-100: oklch(51.057% 0.23005 276.96564);
+/* Gradients */
+/* orangeGradient */
+--gradients-orangeGradient-primary: linear-gradient(261.78deg, var(--palette-coral-50) 33.1%, var(--palette-coral-90) 56.3%, var(--palette-coral-100) 65.78%, var(--palette-indigo-100) 84.23%);"
+`;
+
+snapshot[`processColors - generates gradient with color variables 2`] = `
+[
+  [
+    "palette.coral.50",
+    {
+      key: "--palette-coral-50",
+      value: "oklch(73.58% 0.16378 34.33822)",
+      variable: "--palette-coral-50: oklch(73.58% 0.16378 34.33822);",
+    },
+  ],
+  [
+    "palette.coral.90",
+    {
+      key: "--palette-coral-90",
+      value: "oklch(73.341% 0.17338 44.64289)",
+      variable: "--palette-coral-90: oklch(73.341% 0.17338 44.64289);",
+    },
+  ],
+  [
+    "palette.coral.100",
+    {
+      key: "--palette-coral-100",
+      value: "oklch(69.622% 0.19552 32.32143)",
+      variable: "--palette-coral-100: oklch(69.622% 0.19552 32.32143);",
+    },
+  ],
+  [
+    "palette.indigo.100",
+    {
+      key: "--palette-indigo-100",
+      value: "oklch(51.057% 0.23005 276.96564)",
+      variable: "--palette-indigo-100: oklch(51.057% 0.23005 276.96564);",
+    },
+  ],
+  [
+    "gradients.orangeGradient.primary",
+    {
+      key: "--gradients-orangeGradient-primary",
+      value: "linear-gradient(261.78deg, var(--palette-coral-50) 33.1%, var(--palette-coral-90) 56.3%, var(--palette-coral-100) 65.78%, var(--palette-indigo-100) 84.23%)",
+      variable: "--gradients-orangeGradient-primary: linear-gradient(261.78deg, var(--palette-coral-50) 33.1%, var(--palette-coral-90) 56.3%, var(--palette-coral-100) 65.78%, var(--palette-indigo-100) 84.23%);",
+    },
+  ],
+]
+`;
+
+snapshot[`processColors - handles themes referencing gradients 1`] = `
+"/* Palette */
+/* coral */
+--palette-coral-50: oklch(73.58% 0.16378 34.33822);
+/* Gradients */
+/* orangeGradient */
+--gradients-orangeGradient-primary: linear-gradient(to right, var(--palette-coral-50), var(--palette-coral-50));
+/* Themes */
+/* Theme: light */
+/* background */
+--theme-light-background-primary: var(--gradients-orangeGradient-primary);"
+`;
+
+snapshot[`processColors - handles themes referencing gradients 2`] = `
+[
+  [
+    "palette.coral.50",
+    {
+      key: "--palette-coral-50",
+      value: "oklch(73.58% 0.16378 34.33822)",
+      variable: "--palette-coral-50: oklch(73.58% 0.16378 34.33822);",
+    },
+  ],
+  [
+    "gradients.orangeGradient.primary",
+    {
+      key: "--gradients-orangeGradient-primary",
+      value: "linear-gradient(to right, var(--palette-coral-50), var(--palette-coral-50))",
+      variable: "--gradients-orangeGradient-primary: linear-gradient(to right, var(--palette-coral-50), var(--palette-coral-50));",
+    },
+  ],
+  [
+    "theme.light.background.primary",
+    {
+      key: "--theme-light-background-primary",
+      value: "var(--gradients-orangeGradient-primary)",
+      variable: "--theme-light-background-primary: var(--gradients-orangeGradient-primary);",
+    },
+  ],
+]
+`;
+
+snapshot[`processColors - handles gradients with conditions 1`] = `
+"/* Palette */
+/* coral */
+--palette-coral-50: oklch(73.58% 0.16378 34.33822);
+/* Gradients */
+@media (prefers-color-scheme: dark) {
+  /* orangeGradient */
+  --gradients-orangeGradient-primary: linear-gradient(to right, var(--palette-coral-50), var(--palette-coral-50));
+}"
+`;
+
+snapshot[`processColors - handles gradients with conditions 2`] = `
+[
+  [
+    "palette.coral.50",
+    {
+      key: "--palette-coral-50",
+      value: "oklch(73.58% 0.16378 34.33822)",
+      variable: "--palette-coral-50: oklch(73.58% 0.16378 34.33822);",
+    },
+  ],
+  [
+    "gradients.orangeGradient.primary",
+    {
+      key: "--gradients-orangeGradient-primary",
+      value: "linear-gradient(to right, var(--palette-coral-50), var(--palette-coral-50))",
+      variable: "--gradients-orangeGradient-primary: linear-gradient(to right, var(--palette-coral-50), var(--palette-coral-50));",
+    },
+  ],
+]
+`;
+
+snapshot[`processColors - handles palette colors with conditions 1`] = `
+"/* Palette */
+/* background */
+--palette-background-light: oklch(100% 0 0);
+@media (prefers-color-scheme: dark) {
+  /* backgroundDark */
+  --palette-backgroundDark-dark: oklch(0% 0 0);
+}"
+`;
+
+snapshot[`processColors - handles palette colors with conditions 2`] = `
+[
+  [
+    "palette.background.light",
+    {
+      key: "--palette-background-light",
+      value: "oklch(100% 0 0)",
+      variable: "--palette-background-light: oklch(100% 0 0);",
+    },
+  ],
+  [
+    "palette.backgroundDark.dark",
+    {
+      key: "--palette-backgroundDark-dark",
+      value: "oklch(0% 0 0)",
+      variable: "--palette-backgroundDark-dark: oklch(0% 0 0);",
+    },
+  ],
+]
+`;
+
+snapshot[`processColors - handles themes with class condition 1`] = `
+"/* Palette */
+/* base */
+--palette-base-primary: oklch(73.511% 0.16799 40.24666);
+/* Themes */
+.dark-theme {
+  /* Theme: dark */
+  /* background */
+  --theme-dark-background-primary: var(--palette-base-primary);
+}"
+`;
+
+snapshot[`processColors - handles themes with class condition 2`] = `
+[
+  [
+    "palette.base.primary",
+    {
+      key: "--palette-base-primary",
+      value: "oklch(73.511% 0.16799 40.24666)",
+      variable: "--palette-base-primary: oklch(73.511% 0.16799 40.24666);",
+    },
+  ],
+  [
+    "theme.dark.background.primary",
+    {
+      key: "--theme-dark-background-primary",
+      value: "var(--palette-base-primary)",
+      variable: "--theme-dark-background-primary: var(--palette-base-primary);",
+    },
+  ],
+]
+`;

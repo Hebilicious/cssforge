@@ -1,8 +1,9 @@
 import { assertEquals } from "@std/assert";
+import { assertSnapshot } from "@std/testing/snapshot";
 import { processPrimitives } from "../src/modules/primitive.ts";
 import { defineConfig } from "../src/mod.ts";
 
-Deno.test("processPrimitives - processes button with variables", () => {
+Deno.test("processPrimitives - processes button with variables", async (t) => {
   const config = defineConfig({
     typography: {
       fluid: {
@@ -44,8 +45,8 @@ Deno.test("processPrimitives - processes button with variables", () => {
             },
             variables: {
               "base": "typography_fluid.arial@m",
-              "2": "spacing.custom.size.value.2",
-              "3": "spacing.custom.size.value.3",
+              "2": "spacing.custom.size.2",
+              "3": "spacing.custom.size.3",
             },
             settings: { pxToRem: false },
           },
@@ -65,9 +66,11 @@ Deno.test("processPrimitives - processes button with variables", () => {
   ].join("\n");
 
   assertEquals(result.css, expected);
+  await assertSnapshot(t, result.css);
+  await assertSnapshot(t, Array.from(result.resolveMap.entries()));
 });
 
-Deno.test("processPrimitives - processes buttons with settings", () => {
+Deno.test("processPrimitives - processes buttons with settings", async (t) => {
   const config = defineConfig({
     primitives: {
       button: {
@@ -105,15 +108,19 @@ Deno.test("processPrimitives - processes buttons with settings", () => {
   ].join("\n");
 
   assertEquals(result.css, expected);
+  await assertSnapshot(t, result.css);
+  await assertSnapshot(t, Array.from(result.resolveMap.entries()));
 });
 
-Deno.test("processPrimitives - references colors, gradients, and themes", () => {
+Deno.test("processPrimitives - references colors, gradients, and themes", async (t) => {
   const config = defineConfig({
     colors: {
       palette: {
         value: {
           coral: {
-            "50": { hex: "#FF7E60" },
+            value: {
+              "50": { hex: "#FF7E60" },
+            },
           },
         },
       },
@@ -124,8 +131,8 @@ Deno.test("processPrimitives - references colors, gradients, and themes", () => 
               primary: {
                 value: "linear-gradient(to right, var(--c1), var(--c2))",
                 variables: {
-                  "c1": "palette.value.coral.50",
-                  "c2": "palette.value.coral.50",
+                  "c1": "palette.coral.50",
+                  "c2": "palette.coral.50",
                 },
               },
             },
@@ -133,14 +140,14 @@ Deno.test("processPrimitives - references colors, gradients, and themes", () => 
         },
       },
       theme: {
-        value: {
-          light: {
+        light: {
+          value: {
             background: {
               value: {
                 primary: "var(--grad)",
               },
               variables: {
-                "grad": "gradients.value.orangeGradient.primary",
+                "grad": "gradients.orangeGradient.primary",
               },
             },
           },
@@ -157,9 +164,9 @@ Deno.test("processPrimitives - references colors, gradients, and themes", () => 
               "border-color": "var(--border)",
             },
             variables: {
-              "bg": "theme.value.light.background.primary",
-              "grad": "gradients.value.orangeGradient.primary",
-              "border": "palette.value.coral.50",
+              "bg": "theme.light.background.primary",
+              "grad": "gradients.orangeGradient.primary",
+              "border": "palette.coral.50",
             },
           },
         },
@@ -176,9 +183,11 @@ Deno.test("processPrimitives - references colors, gradients, and themes", () => 
   ].join("\n");
 
   assertEquals(result.css, expected);
+  await assertSnapshot(t, result.css);
+  await assertSnapshot(t, Array.from(result.resolveMap.entries()));
 });
 
-Deno.test("processPrimitives - uses fluid spacing references", () => {
+Deno.test("processPrimitives - uses fluid spacing references", async (t) => {
   const config = defineConfig({
     spacing: {
       fluid: {
@@ -218,4 +227,6 @@ Deno.test("processPrimitives - uses fluid spacing references", () => {
     "--box-default-padding: var(--spacing_fluid-gap-gs-s) var(--spacing_fluid-gap-gs-m);",
   ].join("\n");
   assertEquals(primitives.css, expected);
+  await assertSnapshot(t, primitives.css);
+  await assertSnapshot(t, Array.from(primitives.resolveMap.entries()));
 });

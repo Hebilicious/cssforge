@@ -39,21 +39,27 @@ For programmatic usage, you can install CSS Forge as a dependency:
 # Using npm
 npx jsr add @hebilicious/cssforge
 
-# Using Deno
-deno install jsr:@hebilicious/cssforge
+# Using pnpm (10.9 +)
+pnpm i jsr:@hebilicious/cssforge
 ```
 
-For CLI usage, you can also run CSS Forge directly from JSR or install it globally:
+Then to run CSS forge, add the following script to your `package.json` or `deno.json` :
+
+```json
+{
+  "scripts": {
+    "cssforge": "node node_modules/@hebilicious/cssforge/src/cli"
+  }
+}
+```
+
+then run :
 
 ```bash
-# Run directly from jsr with npx
-npx jsr run @hebilicious/cssforge/cli
-
-# Run directly from jsr with deno
-deno run -A jsr:@hebilicious/cssforge/cli 
-
-# Or install globally
-deno install -A -n cssforge jsr:@hebilicious/cssforge/cli
+#npm
+npm run cssforge
+#pnpm
+pnpm run cssforge
 ```
 
 ## Quick Start
@@ -96,13 +102,19 @@ export default defineConfig({
     palette: {
       value: {
         coral: {
-          100: { hex: "#FF7F50" },
+          value: {
+            100: { hex: "#FF7F50" },
+          },
         },
         mint: {
-          100: { hex: "#4ADE80" },
+          value: {
+            100: { hex: "#4ADE80" },
+          },
         },
         indigo: {
-          100: { hex: "#4F46E5" },
+          value: {
+            100: { hex: "#4F46E5" },
+          },
         },
       },
     },
@@ -112,7 +124,7 @@ export default defineConfig({
 
 2. Run CSS Forge with the CLI :
 
-If you're using a package.json, you can add the follwing into your scripts :
+If you're using a package.json, add the follwing to your scripts :
 
 ```json
 {
@@ -163,13 +175,16 @@ For example, you can import as a layer :
 }
 ```
 
+> !IMPORTANT Do not manually edit the generated CSS file, edit the configuration file
+> instead and regenerate.
+
 4. Use the generated css in your JS/TS :
 
 ```typescript
 import { cssForge } from "./.cssforge/output.ts";
 
 // Use like this anywhere :
-//`cssForge.colors.palette.value.basic.white` is fully typed { key: --myKey, value: white, variable: --key: white }
+//`cssForge.colors.palette.basic.white` is fully typed { key: --myKey, value: white, variable: --key: white }
 
 export { cssForge };
 ```
@@ -187,12 +202,23 @@ export default defineConfig({
     palette: {
       value: {
         simple: {
-          white: "oklch(100% 0 0)",
-          black: "#000",
-          green: { rgb: [0, 255, 0] },
-          blue: { hsl: [240, 100, 50] },
-          violet: { oklch: "oklch(0.7 0.2 270)" },
-          red: { hex: "#FF0000" },
+          value: {
+            white: "oklch(100% 0 0)",
+            black: "#000",
+            green: { rgb: [0, 255, 0] },
+            blue: { hsl: [240, 100, 50] },
+            violet: { oklch: "oklch(0.7 0.2 270)" },
+            red: { hex: "#FF0000" },
+          },
+        },
+        another: {
+          value: {
+            yellow: { hex: "#FFFF00" },
+            cyan: { hex: "#00FFFF" },
+          },
+          settings: {
+            condition: ".Another",
+          },
         },
       },
     },
@@ -203,8 +229,8 @@ export default defineConfig({
             primary: {
               value: "linear-gradient(to right, var(--c1), var(--c2))",
               variables: {
-                "c1": "palette.value.simple.white",
-                "c2": "palette.value.simple.green",
+                "c1": "palette.simple.white",
+                "c2": "palette.simple.green",
               },
             },
           },
@@ -212,18 +238,35 @@ export default defineConfig({
       },
     },
     theme: {
-      value: {
-        light: {
+      light: {
+        value: {
           background: {
             value: {
               primary: "var(--1)",
               secondary: "var(--2)",
             },
             variables: {
-              1: "palette.value.simple.white",
-              2: "gradients.value.white-green", //Reference the color name directly.
+              1: "palette.simple.white",
+              2: "gradients.white-green.primary",
             },
           },
+        },
+      },
+      dark: {
+        value: {
+          background: {
+            value: {
+              primary: "var(--1)",
+              secondary: "var(--2)",
+            },
+            variables: {
+              1: "palette.another.yellow",
+              2: "palette.another.cyan",
+            },
+          },
+        },
+        settings: {
+          condition: "@media (prefers-color-scheme: dark)",
         },
       },
     },
@@ -237,12 +280,23 @@ export default defineConfig({
     palette: {
       value: {
         simple: {
-          white: "oklch(100% 0 0)",
-          black: "#000",
-          green: { rgb: [0, 255, 0] },
-          blue: { hsl: [240, 100, 50] },
-          violet: { oklch: "oklch(0.7 0.2 270)" },
-          red: { hex: "#FF0000" },
+          value: {
+            white: "oklch(100% 0 0)",
+            black: "#000",
+            green: { rgb: [0, 255, 0] },
+            blue: { hsl: [240, 100, 50] },
+            violet: { oklch: "oklch(0.7 0.2 270)" },
+            red: { hex: "#FF0000" },
+          },
+        },
+        another: {
+          value: {
+            yellow: { hex: "#FFFF00" },
+            cyan: { hex: "#00FFFF" },
+          },
+          settings: {
+            condition: ".Another",
+          },
         },
       },
     },
@@ -253,8 +307,8 @@ export default defineConfig({
             primary: {
               value: "linear-gradient(to right, var(--c1), var(--c2))",
               variables: {
-                "c1": "palette.value.simple.white",
-                "c2": "palette.value.simple.green",
+                "c1": "palette.simple.white",
+                "c2": "palette.simple.green",
               },
             },
           },
@@ -262,18 +316,35 @@ export default defineConfig({
       },
     },
     theme: {
-      value: {
-        light: {
+      light: {
+        value: {
           background: {
             value: {
               primary: "var(--1)",
               secondary: "var(--2)",
             },
             variables: {
-              1: "palette.value.simple.white",
-              2: "gradients.value.white-green", //Reference the color name directly.
+              1: "palette.simple.white",
+              2: "gradients.white-green", //Reference the color name directly.
             },
           },
+        },
+      },
+      dark: {
+        value: {
+          background: {
+            value: {
+              primary: "var(--1)",
+              secondary: "var(--2)",
+            },
+            variables: {
+              1: "palette.another.yellow",
+              2: "palette.another.cyan",
+            },
+          },
+        },
+        settings: {
+          condition: "@media (prefers-color-scheme: dark)",
         },
       },
     },
@@ -288,20 +359,33 @@ This will generate the following CSS :
 :root {
   /*____ Colors ____*/
   /* Palette */
+  /* simple */
   --palette-simple-white: oklch(100% 0 0);
   --palette-simple-black: oklch(0% 0 0);
   --palette-simple-green: oklch(86.644% 0.29483 142.49535);
   --palette-simple-blue: oklch(45.201% 0.31321 264.05202);
   --palette-simple-violet: oklch(70% 0.2 270);
   --palette-simple-red: oklch(62.796% 0.25768 29.23388);
+  .Another {
+    /* another */
+    --palette-another-yellow: oklch(96.798% 0.21101 109.76924);
+    --palette-another-cyan: oklch(90.54% 0.15455 194.76896);
+  }
   /*  Gradients  */
   --gradients-white-green-primary: linear-gradient(
     to right,
     var(--palette-simple-white),
     var(--palette-simple-green)
   );
+  /*  Themes  */
   /* Theme: light */
   /* background */
+  @media (prefers-color-scheme: dark) {
+    /* Theme: dark */
+    /* background */
+    --theme-dark-background-primary: var(--palette-another-yellow);
+    --theme-dark-background-secondary: var(--palette-another-cyan);
+  }
 }
 ```
 
@@ -508,22 +592,6 @@ This will generate the following CSS :
 
 <!-- /md:generate -->
 
-#### Referencing Fluid Spacing
-
-To reference fluid spacing, use the `@` symbol and the label of the scale; ie:
-`spacing_fluid-base@xs`. Do not include the prefix in the reference. The labels follow the
-following convention :
-
-- 3xs
-- 2xs
-- xs
-- s
-- m
-- l
-- xl
-- 2xl
-- 3xl
-
 ### Typography
 
 Define your typography, with fluid typescales powered by
@@ -689,22 +757,6 @@ This will generate the following CSS :
 
 <!-- /md:generate -->
 
-#### Referencing Fluid Typography
-
-To reference fluid typography, use the `@` symbol and the label of the scale; ie:
-`typography_fluid.comicsans@a`. Do not include the prefix in the reference. The labels
-follow the following convention :
-
-- 3xs
-- 2xs
-- xs
-- s
-- m
-- l
-- xl
-- 2xl
-- 3xl
-
 ### Primitives
 
 More flexible than other types, primitives allow you to define any type of token by
@@ -751,8 +803,8 @@ export default defineConfig({
           },
           variables: {
             "base": "typography_fluid.arial@m",
-            "2": "spacing.custom.size.value.2",
-            "3": "spacing.custom.size.value.3",
+            "2": "spacing.custom.size.2",
+            "3": "spacing.custom.size.3",
           },
         },
       },
@@ -803,8 +855,8 @@ export default defineConfig({
           },
           variables: {
             "base": "typography_fluid.arial@m",
-            "2": "spacing.custom.size.value.2",
-            "3": "spacing.custom.size.value.3",
+            "2": "spacing.custom.size.2",
+            "3": "spacing.custom.size.3",
           },
         },
       },
@@ -843,17 +895,77 @@ This will generate the following CSS :
 
 <!-- /md:generate -->
 
+## Referencing Variables
+
+### Basic Referencing
+
+To reference any variable, use the `.` notation to navigate through the schema without
+using `.value`.
+
+For example, if an object has the following structure :
+
+```typescript
+{
+  spacing: {
+    custom: {
+      size: {
+        value: {
+          1: "0.25rem",
+        },
+      },
+    },
+  },
+}
+```
+
+The reference would be : `spacing.custom.size.1`, not `spacing.custom.size.value.1`.
+
+#### Referencing Fluid Spacing
+
+To reference fluid spacing, use the `@` symbol and the label of the scale; ie:
+`spacing_fluid-base@xs`. Do not include the prefix in the reference. The labels follow the
+following convention :
+
+- 3xs
+- 2xs
+- xs
+- s
+- m
+- l
+- xl
+- 2xl
+- 3xl
+
+### Referencing Fluid Typography
+
+To reference fluid typography, use the `@` symbol and the label of the scale; ie:
+`typography_fluid.comicsans@a`. Do not include the prefix in the reference. The labels
+follow the following convention :
+
+- 3xs
+- 2xs
+- xs
+- s
+- m
+- l
+- xl
+- 2xl
+- 3xl
+
 ## CLI Usage
+
+Assuming you have added the script to your `package.json`, you can run CSS Forge like this
+:
 
 ```bash
 # Basic usage
-cssforge
+npm run cssforge
 
 # Watch mode
-cssforge --watch
+npm run cssforge -- --watch
 
 # Custom paths and output 
-cssforge --config ./foo/bar/custom-path.ts --css ./dist/design-tokens.css --ts ./dist/design-tokens.ts --json ./dist/design-tokens.json --mode all
+npm run cssforge --config ./foo/bar/custom-path.ts --css ./dist/design-tokens.css --ts ./dist/design-tokens.ts --json ./dist/design-tokens.json --mode all
 ```
 
 ## Programmatic Usage
@@ -867,10 +979,20 @@ import { generateCSS } from "jsr:@hebilicious/cssforge";
 const css = generateCSS(config);
 ```
 
+## Agentic usage
+
+CSSForge is intentionally designed to be extremely simple and integrate well with various
+agents, such as Github Copilot, Gemini, Claude Code ... While there's no documentation
+yet, you can add the README file to the agent context directly.
+
+For most agents, this syntax works
+`@https://raw.githubusercontent.com/Hebilicious/cssforge/refs/heads/main/README.md`.
+
 ## Best Practices
 
 - **Version Control**: Commit your generated CSS files
 - **CSS Layers**: Use `@layer` to manage specificity
+- **Config First**: Always edit the config file, never edit the generated files
 
 ## Examples
 

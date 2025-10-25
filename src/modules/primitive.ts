@@ -125,7 +125,7 @@ export function processPrimitives(
           const variable = `${key}: ${resolvedValue};`;
           cssOutput.push(variable);
           resolveMap.set(
-            `${moduleKey}.${primitiveName}.value.${variantName}.${propName}`,
+            `${moduleKey}.${primitiveName}.${variantName}.${propName}`,
             {
               key,
               value: resolvedValue,

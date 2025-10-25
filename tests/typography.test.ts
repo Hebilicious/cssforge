@@ -1,8 +1,9 @@
 import { assertEquals } from "@std/assert";
+import { assertSnapshot } from "@std/testing/snapshot";
 import { defineConfig, processTypography } from "../src/mod.ts";
 import { getLines } from "./helpers.ts";
 
-Deno.test("processTypography - generates correct CSS variables", () => {
+Deno.test("processTypography - generates correct CSS variables", async (t) => {
   const config = defineConfig({
     typography: {
       fluid: {
@@ -56,9 +57,11 @@ Deno.test("processTypography - generates correct CSS variables", () => {
     );
     assertEquals(hasSize, true, `Missing size ${size}`);
   });
+  await assertSnapshot(t, result.css);
+  await assertSnapshot(t, Array.from(result.resolveMap.entries()));
 });
 
-Deno.test("typography - can handle custom labels and prefixes", () => {
+Deno.test("typography - can handle custom labels and prefixes", async (t) => {
   const config = defineConfig({
     typography: {
       fluid: {
@@ -128,9 +131,11 @@ Deno.test("typography - can handle custom labels and prefixes", () => {
     );
     assertEquals(hasSize, true, `Missing size ${size}`);
   });
+  await assertSnapshot(t, result.css);
+  await assertSnapshot(t, Array.from(result.resolveMap.entries()));
 });
 
-Deno.test("processTypography - can process weights", () => {
+Deno.test("processTypography - can process weights", async (t) => {
   const positiveSteps = 3;
   const negativeSteps = 3;
   const config = defineConfig({
@@ -169,7 +174,7 @@ Deno.test("processTypography - can process weights", () => {
       "typography_fluid.arial@s",
       "typography_fluid.arial@xs",
       "typography_fluid.arial@2xs",
-      "typography.weight.arial.value.regular",
+      "typography.weight.arial.regular",
     ],
   );
   // Test that we have the weight variable
@@ -177,4 +182,6 @@ Deno.test("processTypography - can process weights", () => {
     line.includes("--typography-weight-arial-regular:")
   );
   assertEquals(xlLine, "--typography-weight-arial-regular: 500;");
+  await assertSnapshot(t, result.css);
+  await assertSnapshot(t, Array.from(result.resolveMap.entries()));
 });
