@@ -247,7 +247,10 @@ export default defineConfig({
             },
             variables: {
               1: "palette.simple.white",
-              2: "gradients.white-green.primary",
+              2: "gradients.white-green.primary", //Reference the color name directly.
+            },
+            settings: {
+              variantNameOnly: true,
             },
           },
         },
@@ -263,10 +266,33 @@ export default defineConfig({
               1: "palette.another.yellow",
               2: "palette.another.cyan",
             },
+            settings: {
+              variantNameOnly: true,
+            },
           },
         },
         settings: {
           condition: "@media (prefers-color-scheme: dark)",
+        },
+      },
+      pink: {
+        value: {
+          background: {
+            value: {
+              primary: "var(--1)",
+              secondary: "var(--2)",
+            },
+            variables: {
+              1: "palette.simple.red",
+              2: "palette.simple.violet",
+            },
+            settings: {
+              variantNameOnly: true,
+            },
+          },
+        },
+        settings: {
+          condition: ".ThemePink",
         },
       },
     },
@@ -325,7 +351,10 @@ export default defineConfig({
             },
             variables: {
               1: "palette.simple.white",
-              2: "gradients.white-green", //Reference the color name directly.
+              2: "gradients.white-green.primary", //Reference the color name directly.
+            },
+            settings: {
+              variantNameOnly: true,
             },
           },
         },
@@ -341,10 +370,33 @@ export default defineConfig({
               1: "palette.another.yellow",
               2: "palette.another.cyan",
             },
+            settings: {
+              variantNameOnly: true,
+            },
           },
         },
         settings: {
           condition: "@media (prefers-color-scheme: dark)",
+        },
+      },
+      pink: {
+        value: {
+          background: {
+            value: {
+              primary: "var(--1)",
+              secondary: "var(--2)",
+            },
+            variables: {
+              1: "palette.simple.red",
+              2: "palette.simple.violet",
+            },
+            settings: {
+              variantNameOnly: true,
+            },
+          },
+        },
+        settings: {
+          condition: ".ThemePink",
         },
       },
     },
@@ -357,39 +409,57 @@ This will generate the following CSS :
 ```css
 /*____ CSSForge ____*/
 :root {
-  /*____ Colors ____*/
-  /* Palette */
-  /* simple */
-  --palette-simple-white: oklch(100% 0 0);
-  --palette-simple-black: oklch(0% 0 0);
-  --palette-simple-green: oklch(86.644% 0.29483 142.49535);
-  --palette-simple-blue: oklch(45.201% 0.31321 264.05202);
-  --palette-simple-violet: oklch(70% 0.2 270);
-  --palette-simple-red: oklch(62.796% 0.25768 29.23388);
-  .Another {
-    /* another */
-    --palette-another-yellow: oklch(96.798% 0.21101 109.76924);
-    --palette-another-cyan: oklch(90.54% 0.15455 194.76896);
-  }
-  /*  Gradients  */
-  --gradients-white-green-primary: linear-gradient(
-    to right,
-    var(--palette-simple-white),
-    var(--palette-simple-green)
-  );
-  /*  Themes  */
-  /* Theme: light */
+/*____ Colors ____*/
+/* Palette */
+/* simple */
+--palette-simple-white: oklch(100% 0 0);
+--palette-simple-black: oklch(0% 0 0);
+--palette-simple-green: oklch(86.644% 0.29483 142.49535);
+--palette-simple-blue: oklch(45.201% 0.31321 264.05202);
+--palette-simple-violet: oklch(70% 0.2 270);
+--palette-simple-red: oklch(62.796% 0.25768 29.23388);
+/* another */
+.Another {
+  --palette-another-yellow: oklch(96.798% 0.21101 109.76924);
+  --palette-another-cyan: oklch(90.54% 0.15455 194.76896);
+}
+/* Gradients */
+/* white-green */
+--gradients-white-green-primary: linear-gradient(to right, var(--palette-simple-white), var(--palette-simple-green));
+/* Themes */
+/* Theme: light */
+/* background */
+--primary: var(--palette-simple-white);
+--secondary: var(--gradients-white-green-primary);
+/* Theme: dark */
+@media (prefers-color-scheme: dark) {
   /* background */
-  @media (prefers-color-scheme: dark) {
-    /* Theme: dark */
-    /* background */
-    --theme-dark-background-primary: var(--palette-another-yellow);
-    --theme-dark-background-secondary: var(--palette-another-cyan);
-  }
+  --primary: var(--palette-another-yellow);
+  --secondary: var(--palette-another-cyan);
+}
+/* Theme: pink */
+.ThemePink {
+  /* background */
+  --primary: var(--palette-simple-red);
+  --secondary: var(--palette-simple-violet);
+}
 }
 ```
 
 <!-- /md:generate -->
+
+#### Condition
+
+You can conditionnally apply colors, gradients or themes by setting the `condition` property to a selector or media query. Your variables will be wrapped within the condition.
+
+#### Theme: Variant Name Only
+
+When working with themes, you can choose to only include the variant name in the CSS variable name by setting
+`variantNameOnly: true` in the color definition settings. This is usually used in combination with `condition` to conditionnally apply themes.
+
+- Default: `--theme-${themeName}-${colorName}-${variantName}`
+- VariantOnly Name: `--${variantName}`
+- Path : `theme.${themeName}.${colorName}.${variantName}`
 
 ### Spacing
 
@@ -438,11 +508,11 @@ This will generate the following CSS :
 ```css
 /*____ CSSForge ____*/
 :root {
-  /*____ Spacing ____*/
-  --spacing-size-1: 0.25rem;
-  --spacing-size-2: 0.5rem;
-  --spacing-size-3: 0.75rem;
-  --spacing-size-4: 1rem;
+/*____ Spacing ____*/
+--spacing-size-1: 0.25rem;
+--spacing-size-2: 0.5rem;
+--spacing-size-3: 0.75rem;
+--spacing-size-4: 1rem;
 }
 ```
 
@@ -499,12 +569,12 @@ This will generate the following CSS :
 ```css
 /*____ CSSForge ____*/
 :root {
-  /*____ Spacing ____*/
-  --spacing_fluid-base-hi-xs: clamp(0rem, 0rem + 0vw, 0rem);
-  --spacing_fluid-base-hi-s: clamp(0.25rem, -0.1667rem + 2.0833vw, 1.5rem);
-  --spacing_fluid-base-hi-m: clamp(0.75rem, -0.5rem + 6.25vw, 4.5rem);
-  --spacing_fluid-base-hi-xs-s: clamp(0rem, -0.5rem + 2.5vw, 1.5rem);
-  --spacing_fluid-base-hi-s-m: clamp(0.25rem, -1.1667rem + 7.0833vw, 4.5rem);
+/*____ Spacing ____*/
+--spacing_fluid-base-hi-xs: clamp(0rem, 0rem + 0vw, 0rem);
+--spacing_fluid-base-hi-s: clamp(0.25rem, -0.1667rem + 2.0833vw, 1.5rem);
+--spacing_fluid-base-hi-m: clamp(0.75rem, -0.5rem + 6.25vw, 4.5rem);
+--spacing_fluid-base-hi-xs-s: clamp(0rem, -0.5rem + 2.5vw, 1.5rem);
+--spacing_fluid-base-hi-s-m: clamp(0.25rem, -1.1667rem + 7.0833vw, 4.5rem);
 }
 ```
 
@@ -567,26 +637,26 @@ This will generate the following CSS :
 ```css
 /*____ CSSForge ____*/
 :root {
-  /*____ Spacing ____*/
-  --spacing_fluid-base-smooth-3xs: clamp(0.0625rem, -0.0417rem + 0.5208vw, 0.375rem);
-  --spacing_fluid-base-smooth-2xs: clamp(0.125rem, -0.0833rem + 1.0417vw, 0.75rem);
-  --spacing_fluid-base-smooth-xs: clamp(0.1875rem, -0.125rem + 1.5625vw, 1.125rem);
-  --spacing_fluid-base-smooth-s: clamp(0.25rem, -0.1667rem + 2.0833vw, 1.5rem);
-  --spacing_fluid-base-smooth-m: clamp(0.375rem, -0.25rem + 3.125vw, 2.25rem);
-  --spacing_fluid-base-smooth-l: clamp(0.5rem, -0.3333rem + 4.1667vw, 3rem);
-  --spacing_fluid-base-smooth-xl: clamp(0.75rem, -0.5rem + 6.25vw, 4.5rem);
-  --spacing_fluid-base-smooth-2xl: clamp(1rem, -0.6667rem + 8.3333vw, 6rem);
-  --spacing_fluid-base-smooth-3xl: clamp(1.5rem, -1rem + 12.5vw, 9rem);
-  --spacing_fluid-base-smooth-3xs-2xs: clamp(0.0625rem, -0.1667rem + 1.1458vw, 0.75rem);
-  --spacing_fluid-base-smooth-2xs-xs: clamp(0.125rem, -0.2083rem + 1.6667vw, 1.125rem);
-  --spacing_fluid-base-smooth-xs-s: clamp(0.1875rem, -0.25rem + 2.1875vw, 1.5rem);
-  --spacing_fluid-base-smooth-s-m: clamp(0.25rem, -0.4167rem + 3.3333vw, 2.25rem);
-  --spacing_fluid-base-smooth-m-l: clamp(0.375rem, -0.5rem + 4.375vw, 3rem);
-  --spacing_fluid-base-smooth-l-xl: clamp(0.5rem, -0.8333rem + 6.6667vw, 4.5rem);
-  --spacing_fluid-base-smooth-xl-2xl: clamp(0.75rem, -1rem + 8.75vw, 6rem);
-  --spacing_fluid-base-smooth-2xl-3xl: clamp(1rem, -1.6667rem + 13.3333vw, 9rem);
-  --spacing-gap-1: 0.25rem;
-  --spacing-gap-2: 0.5rem;
+/*____ Spacing ____*/
+--spacing_fluid-base-smooth-3xs: clamp(0.0625rem, -0.0417rem + 0.5208vw, 0.375rem);
+--spacing_fluid-base-smooth-2xs: clamp(0.125rem, -0.0833rem + 1.0417vw, 0.75rem);
+--spacing_fluid-base-smooth-xs: clamp(0.1875rem, -0.125rem + 1.5625vw, 1.125rem);
+--spacing_fluid-base-smooth-s: clamp(0.25rem, -0.1667rem + 2.0833vw, 1.5rem);
+--spacing_fluid-base-smooth-m: clamp(0.375rem, -0.25rem + 3.125vw, 2.25rem);
+--spacing_fluid-base-smooth-l: clamp(0.5rem, -0.3333rem + 4.1667vw, 3rem);
+--spacing_fluid-base-smooth-xl: clamp(0.75rem, -0.5rem + 6.25vw, 4.5rem);
+--spacing_fluid-base-smooth-2xl: clamp(1rem, -0.6667rem + 8.3333vw, 6rem);
+--spacing_fluid-base-smooth-3xl: clamp(1.5rem, -1rem + 12.5vw, 9rem);
+--spacing_fluid-base-smooth-3xs-2xs: clamp(0.0625rem, -0.1667rem + 1.1458vw, 0.75rem);
+--spacing_fluid-base-smooth-2xs-xs: clamp(0.125rem, -0.2083rem + 1.6667vw, 1.125rem);
+--spacing_fluid-base-smooth-xs-s: clamp(0.1875rem, -0.25rem + 2.1875vw, 1.5rem);
+--spacing_fluid-base-smooth-s-m: clamp(0.25rem, -0.4167rem + 3.3333vw, 2.25rem);
+--spacing_fluid-base-smooth-m-l: clamp(0.375rem, -0.5rem + 4.375vw, 3rem);
+--spacing_fluid-base-smooth-l-xl: clamp(0.5rem, -0.8333rem + 6.6667vw, 4.5rem);
+--spacing_fluid-base-smooth-xl-2xl: clamp(0.75rem, -1rem + 8.75vw, 6rem);
+--spacing_fluid-base-smooth-2xl-3xl: clamp(1rem, -1.6667rem + 13.3333vw, 9rem);
+--spacing-gap-1: 0.25rem;
+--spacing-gap-2: 0.5rem;
 }
 ```
 
@@ -658,17 +728,17 @@ This will generate the following CSS :
 ```css
 /*____ CSSForge ____*/
 :root {
-  /*____ Typography ____*/
-  --typography_fluid-arial-4xl: clamp(2.6703rem, 2.5608rem + 0.5474vw, 3.0518rem);
-  --typography_fluid-arial-3xl: clamp(2.1362rem, 2.0486rem + 0.4379vw, 2.4414rem);
-  --typography_fluid-arial-2xl: clamp(1.709rem, 1.6389rem + 0.3503vw, 1.9531rem);
-  --typography_fluid-arial-xl: clamp(1.3672rem, 1.3111rem + 0.2803vw, 1.5625rem);
-  --typography_fluid-arial-l: clamp(1.0938rem, 1.0489rem + 0.2242vw, 1.25rem);
-  --typography_fluid-arial-m: clamp(0.875rem, 0.8391rem + 0.1794vw, 1rem);
-  --typography_fluid-arial-s: clamp(0.7rem, 0.6713rem + 0.1435vw, 0.8rem);
-  --typography_fluid-arial-xs: clamp(0.56rem, 0.537rem + 0.1148vw, 0.64rem);
-  --typography_fluid-arial-2xs: clamp(0.448rem, 0.4296rem + 0.0918vw, 0.512rem);
-  --typography-weight-arial-regular: 600;
+/*____ Typography ____*/
+--typography_fluid-arial-4xl: clamp(2.6703rem, 2.5608rem + 0.5474vw, 3.0518rem);
+--typography_fluid-arial-3xl: clamp(2.1362rem, 2.0486rem + 0.4379vw, 2.4414rem);
+--typography_fluid-arial-2xl: clamp(1.709rem, 1.6389rem + 0.3503vw, 1.9531rem);
+--typography_fluid-arial-xl: clamp(1.3672rem, 1.3111rem + 0.2803vw, 1.5625rem);
+--typography_fluid-arial-l: clamp(1.0938rem, 1.0489rem + 0.2242vw, 1.25rem);
+--typography_fluid-arial-m: clamp(0.875rem, 0.8391rem + 0.1794vw, 1rem);
+--typography_fluid-arial-s: clamp(0.7rem, 0.6713rem + 0.1435vw, 0.8rem);
+--typography_fluid-arial-xs: clamp(0.56rem, 0.537rem + 0.1148vw, 0.64rem);
+--typography_fluid-arial-2xs: clamp(0.448rem, 0.4296rem + 0.0918vw, 0.512rem);
+--typography-weight-arial-regular: 600;
 }
 ```
 
@@ -746,12 +816,12 @@ This will generate the following CSS :
 ```css
 /*____ CSSForge ____*/
 :root {
-  /*____ Typography ____*/
-  --typography_fluid-comicsans-text-e: clamp(1.3672rem, 1.3111rem + 0.2803vw, 1.5625rem);
-  --typography_fluid-comicsans-text-d: clamp(1.0938rem, 1.0489rem + 0.2242vw, 1.25rem);
-  --typography_fluid-comicsans-text-c: clamp(0.875rem, 0.8391rem + 0.1794vw, 1rem);
-  --typography_fluid-comicsans-text-b: clamp(0.7rem, 0.6713rem + 0.1435vw, 0.8rem);
-  --typography_fluid-comicsans-text-a: clamp(0.56rem, 0.537rem + 0.1148vw, 0.64rem);
+/*____ Typography ____*/
+--typography_fluid-comicsans-text-e: clamp(1.3672rem, 1.3111rem + 0.2803vw, 1.5625rem);
+--typography_fluid-comicsans-text-d: clamp(1.0938rem, 1.0489rem + 0.2242vw, 1.25rem);
+--typography_fluid-comicsans-text-c: clamp(0.875rem, 0.8391rem + 0.1794vw, 1rem);
+--typography_fluid-comicsans-text-b: clamp(0.7rem, 0.6713rem + 0.1435vw, 0.8rem);
+--typography_fluid-comicsans-text-a: clamp(0.56rem, 0.537rem + 0.1148vw, 0.64rem);
 }
 ```
 
@@ -870,26 +940,26 @@ This will generate the following CSS :
 ```css
 /*____ CSSForge ____*/
 :root {
-  /*____ Spacing ____*/
-  --spacing-size-2: 0.5rem;
-  --spacing-size-3: 0.75rem;
-  /*____ Typography ____*/
-  --typography_fluid-arial-4xl: clamp(2.6703rem, 2.5608rem + 0.5474vw, 3.0518rem);
-  --typography_fluid-arial-3xl: clamp(2.1362rem, 2.0486rem + 0.4379vw, 2.4414rem);
-  --typography_fluid-arial-2xl: clamp(1.709rem, 1.6389rem + 0.3503vw, 1.9531rem);
-  --typography_fluid-arial-xl: clamp(1.3672rem, 1.3111rem + 0.2803vw, 1.5625rem);
-  --typography_fluid-arial-l: clamp(1.0938rem, 1.0489rem + 0.2242vw, 1.25rem);
-  --typography_fluid-arial-m: clamp(0.875rem, 0.8391rem + 0.1794vw, 1rem);
-  --typography_fluid-arial-s: clamp(0.7rem, 0.6713rem + 0.1435vw, 0.8rem);
-  --typography_fluid-arial-xs: clamp(0.56rem, 0.537rem + 0.1148vw, 0.64rem);
-  --typography_fluid-arial-2xs: clamp(0.448rem, 0.4296rem + 0.0918vw, 0.512rem);
-  /*____ Primitives ____*/
-  /* button */
-  --button-small-width: 7.5rem;
-  --button-small-height: 2.5rem;
-  --button-small-fontSize: var(--typography_fluid-arial-m);
-  --button-small-radius: 0.5rem;
-  --button-small-padding: var(--spacing-size-2) var(--spacing-size-3);
+/*____ Spacing ____*/
+--spacing-size-2: 0.5rem;
+--spacing-size-3: 0.75rem;
+/*____ Typography ____*/
+--typography_fluid-arial-4xl: clamp(2.6703rem, 2.5608rem + 0.5474vw, 3.0518rem);
+--typography_fluid-arial-3xl: clamp(2.1362rem, 2.0486rem + 0.4379vw, 2.4414rem);
+--typography_fluid-arial-2xl: clamp(1.709rem, 1.6389rem + 0.3503vw, 1.9531rem);
+--typography_fluid-arial-xl: clamp(1.3672rem, 1.3111rem + 0.2803vw, 1.5625rem);
+--typography_fluid-arial-l: clamp(1.0938rem, 1.0489rem + 0.2242vw, 1.25rem);
+--typography_fluid-arial-m: clamp(0.875rem, 0.8391rem + 0.1794vw, 1rem);
+--typography_fluid-arial-s: clamp(0.7rem, 0.6713rem + 0.1435vw, 0.8rem);
+--typography_fluid-arial-xs: clamp(0.56rem, 0.537rem + 0.1148vw, 0.64rem);
+--typography_fluid-arial-2xs: clamp(0.448rem, 0.4296rem + 0.0918vw, 0.512rem);
+/*____ Primitives ____*/
+/* button */
+--button-small-width: 7.5rem;
+--button-small-height: 2.5rem;
+--button-small-fontSize: var(--typography_fluid-arial-m);
+--button-small-radius: 0.5rem;
+--button-small-padding: var(--spacing-size-2) var(--spacing-size-3);
 }
 ```
 
