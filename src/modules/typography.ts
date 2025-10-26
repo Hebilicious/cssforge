@@ -119,5 +119,5 @@ export function processTypography(config: TypographyConfig): Output {
     }
   }
 
-  return { css: cssOutput.join("\n"), resolveMap };
+  return { css: { root: cssOutput.join("\n") }, resolveMap };
 }

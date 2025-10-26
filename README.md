@@ -217,7 +217,7 @@ export default defineConfig({
             cyan: { hex: "#00FFFF" },
           },
           settings: {
-            condition: ".Another",
+            selector: ".Another",
           },
         },
       },
@@ -272,7 +272,7 @@ export default defineConfig({
           },
         },
         settings: {
-          condition: "@media (prefers-color-scheme: dark)",
+          atRule: "@media (prefers-color-scheme: dark)",
         },
       },
       pink: {
@@ -292,7 +292,7 @@ export default defineConfig({
           },
         },
         settings: {
-          condition: ".ThemePink",
+          selector: ".ThemePink",
         },
       },
     },
@@ -321,7 +321,7 @@ export default defineConfig({
             cyan: { hex: "#00FFFF" },
           },
           settings: {
-            condition: ".Another",
+            selector: ".Another",
           },
         },
       },
@@ -376,7 +376,7 @@ export default defineConfig({
           },
         },
         settings: {
-          condition: "@media (prefers-color-scheme: dark)",
+          atRule: "@media (prefers-color-scheme: dark)",
         },
       },
       pink: {
@@ -396,7 +396,7 @@ export default defineConfig({
           },
         },
         settings: {
-          condition: ".ThemePink",
+          selector: ".ThemePink",
         },
       },
     },
@@ -418,11 +418,6 @@ This will generate the following CSS :
   --palette-simple-blue: oklch(45.201% 0.31321 264.05202);
   --palette-simple-violet: oklch(70% 0.2 270);
   --palette-simple-red: oklch(62.796% 0.25768 29.23388);
-  /* another */
-  .Another {
-    --palette-another-yellow: oklch(96.798% 0.21101 109.76924);
-    --palette-another-cyan: oklch(90.54% 0.15455 194.76896);
-  }
   /* Gradients */
   /* white-green */
   --gradients-white-green-primary: linear-gradient(
@@ -441,12 +436,17 @@ This will generate the following CSS :
     --primary: var(--palette-another-yellow);
     --secondary: var(--palette-another-cyan);
   }
-  /* Theme: pink */
-  .ThemePink {
-    /* background */
-    --primary: var(--palette-simple-red);
-    --secondary: var(--palette-simple-violet);
-  }
+}
+/* another */
+.Another {
+  --palette-another-yellow: oklch(96.798% 0.21101 109.76924);
+  --palette-another-cyan: oklch(90.54% 0.15455 194.76896);
+}
+/* Theme: pink */
+.ThemePink {
+  /* background */
+  --primary: var(--palette-simple-red);
+  --secondary: var(--palette-simple-violet);
 }
 ```
 
@@ -454,15 +454,15 @@ This will generate the following CSS :
 
 #### Condition
 
-You can conditionnally apply colors, gradients or themes by setting the `condition`
-property to a selector or media query. Your variables will be wrapped within the
-condition.
+You can conditionnally apply colors, gradients or themes by setting the `atRule` or the
+`selector` properties. Your variables will be wrapped within `:root` and the selectors
+will be placed outside of it.
 
 #### Theme: Variant Name Only
 
 When working with themes, you can choose to only include the variant name in the CSS
 variable name by setting `variantNameOnly: true` in the color definition settings. This is
-usually used in combination with `condition` to conditionnally apply themes.
+usually used in combination with `selector` to conditionnally apply themes.
 
 - Default: `--theme-${themeName}-${colorName}-${variantName}`
 - VariantOnly Name: `--${variantName}`

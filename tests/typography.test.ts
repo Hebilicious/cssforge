@@ -35,7 +35,7 @@ Deno.test("processTypography - generates correct CSS variables", async (t) => {
     "2xs",
   ];
   const result = processTypography(config.typography);
-  const lines = getLines(result.css);
+  const lines = getLines(result.css.root);
   assertEquals(lines.length, expectedSizes.length);
 
   // Test a specific value for precision
@@ -109,7 +109,7 @@ Deno.test("typography - can handle custom labels and prefixes", async (t) => {
     "h1",
   ];
   const result = processTypography(config.typography);
-  const lines = getLines(result.css);
+  const lines = getLines(result.css.root);
   assertEquals(lines.length, expectedSizes.length);
 
   // Test a specific value for precision
@@ -161,7 +161,7 @@ Deno.test("processTypography - can process weights", async (t) => {
   });
 
   const result = processTypography(config.typography);
-  const lines = getLines(result.css);
+  const lines = getLines(result.css.root);
   assertEquals(lines.length, positiveSteps + negativeSteps + 1 + 1); // 1 for base size and 1 for weight
 
   assertEquals(
