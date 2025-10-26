@@ -60,13 +60,13 @@ export default defineConfig(
               100: { hex: "#4F46E5" },
             },
           },
-          // dark-mode overrides wrapped in a condition
+          // dark-mode overrides wrapped in a atRule
           coral_dark: {
             value: {
               100: { hex: "#FF6347" },
             },
             settings: {
-              condition: "@media (prefers-color-scheme: dark)",
+              atRule: "@media (prefers-color-scheme: dark)",
             },
           },
           mint_dark: {
@@ -74,7 +74,7 @@ export default defineConfig(
               100: { hex: "#22C55E" },
             },
             settings: {
-              condition: "@media (prefers-color-scheme: dark)",
+              atRule: "@media (prefers-color-scheme: dark)",
             },
           },
           indigo_dark: {
@@ -82,7 +82,7 @@ export default defineConfig(
               100: { hex: "#4338CA" },
             },
             settings: {
-              condition: "@media (prefers-color-scheme: dark)",
+              atRule: "@media (prefers-color-scheme: dark)",
             },
           },
         },

@@ -65,7 +65,7 @@ Deno.test("processPrimitives - processes button with variables", async (t) => {
     "--button-small-padding: var(--spacing-size-2) var(--spacing-size-3);",
   ].join("\n");
 
-  assertEquals(result.css, expected);
+  assertEquals(result.css.root, expected);
   await assertSnapshot(t, result.css);
   await assertSnapshot(t, Array.from(result.resolveMap.entries()));
 });
@@ -107,7 +107,7 @@ Deno.test("processPrimitives - processes buttons with settings", async (t) => {
     "--button-big-radius: 1rem;",
   ].join("\n");
 
-  assertEquals(result.css, expected);
+  assertEquals(result.css.root, expected);
   await assertSnapshot(t, result.css);
   await assertSnapshot(t, Array.from(result.resolveMap.entries()));
 });
@@ -182,7 +182,7 @@ Deno.test("processPrimitives - references colors, gradients, and themes", async 
     "--card-default-border-color: var(--palette-coral-50);",
   ].join("\n");
 
-  assertEquals(result.css, expected);
+  assertEquals(result.css.root, expected);
   await assertSnapshot(t, result.css);
   await assertSnapshot(t, Array.from(result.resolveMap.entries()));
 });
@@ -226,7 +226,7 @@ Deno.test("processPrimitives - uses fluid spacing references", async (t) => {
     "/* box */",
     "--box-default-padding: var(--spacing_fluid-gap-gs-s) var(--spacing_fluid-gap-gs-m);",
   ].join("\n");
-  assertEquals(primitives.css, expected);
+  assertEquals(primitives.css.root, expected);
   await assertSnapshot(t, primitives.css);
   await assertSnapshot(t, Array.from(primitives.resolveMap.entries()));
 });

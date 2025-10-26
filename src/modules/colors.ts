@@ -31,9 +31,13 @@ interface ColorVariants {
 
 export interface WithCondition {
   /**
-   * CSS condition to wrap variables in (e.g., ".MyClass", "@media (prefers-color-scheme: dark)")
+   * CSS selector to wrap variables in (e.g., ".MyClass"). This will be extracted out of the root.
    */
-  condition?: string;
+  selector?: string;
+  /**
+   * CSS at-rule to wrap variables in (e.g., "@supports (display: grid)")
+   */
+  atRule?: string;
 }
 /**
  * Settings for palette colors, including optional conditions like media queries.
@@ -219,41 +223,65 @@ function colorValueToOklch(value: ColorValueOrString): string {
  * ```
  */
 export function processColors(colors: ColorConfig): Output {
-  const cssOutput: string[] = [];
+  const rootOutput: string[] = [];
+  const outsideOutput: string[] = [];
   const resolveMap: ResolveMap = new Map();
-  cssOutput.push(`/* Palette */`);
+  rootOutput.push(`/* Palette */`);
   const moduleKey = "palette";
 
   function conditionalBuilder(
     settings: WithCondition | undefined,
     initialComment: string,
   ) {
-    const leadingComments: string[] = [];
     const innerComments: string[] = [];
     const vars: string[] = [];
 
-    if (settings?.condition) {
-      leadingComments.push(initialComment);
-    } else {
-      cssOutput.push(initialComment);
-    }
+    const hasSelector = Boolean(settings?.selector);
+    const hasAtRule = Boolean(settings?.atRule);
+
+    // If no settings provided, emit comment immediately into root output
+    if (!hasSelector && !hasAtRule) rootOutput.push(initialComment);
 
     return {
       addComment(c: string) {
-        if (settings?.condition) innerComments.push(c);
-        else cssOutput.push(c);
+        if (hasSelector || hasAtRule) innerComments.push(c);
+        else rootOutput.push(c);
       },
       pushVariable(v: string) {
-        if (settings?.condition) vars.push(v);
-        else cssOutput.push(v);
+        if (hasSelector || hasAtRule) vars.push(v);
+        else rootOutput.push(v);
       },
       finalize() {
-        if (settings?.condition && vars.length > 0) {
-          cssOutput.push(...leadingComments);
-          cssOutput.push(`${settings.condition} {`);
-          cssOutput.push(...innerComments.map((c) => `  ${c}`));
-          cssOutput.push(...vars.map((v) => `  ${v}`));
-          cssOutput.push(`}`);
+        if (!hasSelector && !hasAtRule) return;
+        if (vars.length === 0 && innerComments.length === 0) return;
+        if (!settings) return;
+        if (hasSelector && hasAtRule) {
+          outsideOutput.push(initialComment);
+          outsideOutput.push(`${settings.atRule} {`);
+          outsideOutput.push(`  ${settings.selector} {`);
+          outsideOutput.push(...innerComments.map((c) => `    ${c}`));
+          outsideOutput.push(...vars.map((v) => `    ${v}`));
+          outsideOutput.push(`  }`);
+          outsideOutput.push(`}`);
+          return;
+        }
+
+        if (hasSelector) {
+          outsideOutput.push(initialComment);
+          outsideOutput.push(`${settings.selector} {`);
+          outsideOutput.push(...innerComments.map((c) => `  ${c}`));
+          outsideOutput.push(...vars.map((v) => `  ${v}`));
+          outsideOutput.push(`}`);
+          return;
+        }
+
+        if (hasAtRule) {
+          rootOutput.push(initialComment);
+          rootOutput.push(`${settings.atRule} {`);
+          rootOutput.push(...innerComments.map((c) => `  ${c}`));
+          rootOutput.push(...vars.map((v) => `  ${v}`));
+          rootOutput.push(`}`);
+          return;
         }
       },
     };
@@ -289,9 +317,12 @@ export function processColors(colors: ColorConfig): Output {
   }
 
   if (colors.gradients) {
-    cssOutput.push(`/* Gradients */`);
+    rootOutput.push(`/* Gradients */`);
     const moduleKey = "gradients";
-    const palette = { css: cssOutput.join("\n"), resolveMap };
+    const palette = {
+      css: { root: rootOutput.join("\n"), outside: outsideOutput.join("\n") },
+      resolveMap,
+    };
 
     for (const [gradientName, gradient] of Object.entries(colors.gradients.value)) {
       validateName(gradientName);
@@ -335,9 +366,12 @@ export function processColors(colors: ColorConfig): Output {
   }
 
   if (colors.theme) {
-    cssOutput.push(`/* Themes */`);
+    rootOutput.push(`/* Themes */`);
     const moduleKey = "theme";
-    const palette = { css: cssOutput.join("\n"), resolveMap };
+    const palette = {
+      css: { root: rootOutput.join("\n"), outside: outsideOutput.join("\n") },
+      resolveMap,
+    };
 
     for (const [themeName, themeConfig] of Object.entries(colors.theme)) {
       validateName(themeName);
@@ -387,7 +421,9 @@ export function processColors(colors: ColorConfig): Output {
     }
   }
 
-  const output = { css: cssOutput.join("\n"), resolveMap };
-  // console.log(output);
+  const output = {
+    css: { root: rootOutput.join("\n"), outside: outsideOutput.join("\n") },
+    resolveMap,
+  };
   return output;
 }

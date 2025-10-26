@@ -143,16 +143,24 @@ export function generateTS(config: Partial<CSSForgeConfig>): string {
  */
 export function generateCSS(config: Partial<CSSForgeConfig>): string {
   const chunks: string[] = ["/*____ CSSForge ____*/", ":root {"];
+  const outsideChunks: string[] = [];
   const processedConfig: {
-    [key: string]: { css: string; resolveMap: ResolveMap } | undefined;
+    [key: string]:
+      | { css: { root?: string; outside?: string }; resolveMap: ResolveMap }
+      | undefined;
   } = {};
 
   // Process colors if present
   if (config.colors) {
     processedConfig.colors = processColors(config.colors);
     if (processedConfig.colors) {
-      chunks.push("/*____ Colors ____*/");
-      chunks.push(processedConfig.colors.css);
+      if (processedConfig.colors.css.root) {
+        chunks.push("/*____ Colors ____*/");
+        chunks.push(processedConfig.colors.css.root);
+      }
+      if (processedConfig.colors.css.outside) {
+        outsideChunks.push(processedConfig.colors.css.outside);
+      }
     }
   }
 
@@ -160,8 +168,13 @@ export function generateCSS(config: Partial<CSSForgeConfig>): string {
   if (config.spacing) {
     processedConfig.spacing = processSpacing(config.spacing);
     if (processedConfig.spacing) {
-      chunks.push("/*____ Spacing ____*/");
-      chunks.push(processedConfig.spacing.css);
+      if (processedConfig.spacing.css.root) {
+        chunks.push("/*____ Spacing ____*/");
+        chunks.push(processedConfig.spacing.css.root);
+      }
+      if (processedConfig.spacing.css.outside) {
+        outsideChunks.push(processedConfig.spacing.css.outside);
+      }
     }
   }
 
@@ -169,8 +182,13 @@ export function generateCSS(config: Partial<CSSForgeConfig>): string {
   if (config.typography) {
     processedConfig.typography = processTypography(config.typography);
     if (processedConfig.typography) {
-      chunks.push("/*____ Typography ____*/");
-      chunks.push(processedConfig.typography.css);
+      if (processedConfig.typography.css.root) {
+        chunks.push("/*____ Typography ____*/");
+        chunks.push(processedConfig.typography.css.root);
+      }
+      if (processedConfig.typography.css.outside) {
+        outsideChunks.push(processedConfig.typography.css.outside);
+      }
     }
   }
 
@@ -182,12 +200,19 @@ export function generateCSS(config: Partial<CSSForgeConfig>): string {
       spacing: config.spacing,
     });
     if (primitiveVars) {
-      chunks.push("/*____ Primitives ____*/");
-      chunks.push(primitiveVars.css);
+      if (primitiveVars.css.root) {
+        chunks.push("/*____ Primitives ____*/");
+        chunks.push(primitiveVars.css.root);
+      }
+      if (primitiveVars.css.outside) {
+        outsideChunks.push(primitiveVars.css.outside);
+      }
     }
   }
 
   chunks.push("}");
-  // Join all chunks with double newline for readability
+
+  if (outsideChunks.length > 0) chunks.push(outsideChunks.join("\n"));
+
   return chunks.join("\n");
 }

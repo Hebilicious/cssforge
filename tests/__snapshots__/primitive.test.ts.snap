@@ -1,12 +1,14 @@
 export const snapshot = {};
 
 snapshot[`processPrimitives - processes button with variables 1`] = `
-"/* button */
+{
+  root: "/* button */
 --button-small-width: 120px;
 --button-small-height: 40px;
 --button-small-fontSize: var(--typography_fluid-arial-foo-m);
 --button-small-radius: 8px;
---button-small-padding: var(--spacing-size-2) var(--spacing-size-3);"
+--button-small-padding: var(--spacing-size-2) var(--spacing-size-3);",
+}
 `;
 
 snapshot[`processPrimitives - processes button with variables 2`] = `
@@ -55,13 +57,15 @@ snapshot[`processPrimitives - processes button with variables 2`] = `
 `;
 
 snapshot[`processPrimitives - processes buttons with settings 1`] = `
-"/* button */
+{
+  root: "/* button */
 --button-small-width: 120px;
 --button-small-height: 40px;
 --button-small-radius: 8px;
 --button-big-width: 15rem;
 --button-big-height: 5rem;
---button-big-radius: 1rem;"
+--button-big-radius: 1rem;",
+}
 `;
 
 snapshot[`processPrimitives - processes buttons with settings 2`] = `
@@ -118,10 +122,12 @@ snapshot[`processPrimitives - processes buttons with settings 2`] = `
 `;
 
 snapshot[`processPrimitives - references colors, gradients, and themes 1`] = `
-"/* card */
+{
+  root: "/* card */
 --card-default-background-color: var(--theme-light-background-primary);
 --card-default-background-image: var(--gradients-orangeGradient-primary);
---card-default-border-color: var(--palette-coral-50);"
+--card-default-border-color: var(--palette-coral-50);",
+}
 `;
 
 snapshot[`processPrimitives - references colors, gradients, and themes 2`] = `
@@ -154,8 +160,10 @@ snapshot[`processPrimitives - references colors, gradients, and themes 2`] = `
 `;
 
 snapshot[`processPrimitives - uses fluid spacing references 1`] = `
-"/* box */
---box-default-padding: var(--spacing_fluid-gap-gs-s) var(--spacing_fluid-gap-gs-m);"
+{
+  root: "/* box */
+--box-default-padding: var(--spacing_fluid-gap-gs-s) var(--spacing_fluid-gap-gs-m);",
+}
 `;
 
 snapshot[`processPrimitives - uses fluid spacing references 2`] = `

@@ -1,7 +1,7 @@
 import { assert, assertEquals } from "@std/assert";
 import { assertSnapshot } from "@std/testing/snapshot";
 import { defineConfig, processColors } from "../src/mod.ts";
-import { getLines } from "./helpers.ts";
+import { combine, getLines } from "./helpers.ts";
 
 Deno.test("processColors - converts hex to oklch", async (t) => {
   const config = defineConfig({
@@ -20,7 +20,8 @@ Deno.test("processColors - converts hex to oklch", async (t) => {
   });
 
   const { css, resolveMap } = processColors(config.colors);
-  const lines = getLines(css);
+  const combined = combine(css);
+  const lines = getLines(combined);
   assertEquals(
     lines[2].trim(),
     "--palette-coral-100: oklch(73.511% 0.16799 40.24666);",
@@ -33,7 +34,7 @@ Deno.test("processColors - converts hex to oklch", async (t) => {
     "palette.coral.100",
     "palette.coral.200",
   ]);
-  await assertSnapshot(t, css);
+  await assertSnapshot(t, combined);
   await assertSnapshot(t, Array.from(resolveMap.entries()));
 });
 
@@ -57,7 +58,8 @@ Deno.test("processColors - handles different color formats", async (t) => {
     } as const,
   );
   const { css, resolveMap } = processColors(config.colors);
-  const lines = getLines(css);
+  const combined = combine(css);
+  const lines = getLines(combined);
 
   assertEquals(
     lines[2].trim(),
@@ -79,7 +81,7 @@ Deno.test("processColors - handles different color formats", async (t) => {
     "palette.brand.400",
     "palette.brand.default",
   ]);
-  await assertSnapshot(t, css);
+  await assertSnapshot(t, combined);
   await assertSnapshot(t, Array.from(resolveMap.entries()));
 });
 
@@ -99,7 +101,8 @@ Deno.test("processColors - handles string values", async (t) => {
     },
   });
   const { css, resolveMap } = processColors(config.colors);
-  const lines = getLines(css);
+  const combined = combine(css);
+  const lines = getLines(combined);
   assertEquals(
     lines[2].trim(),
     "--palette-simple-white: oklch(100% 0 0);",
@@ -112,7 +115,7 @@ Deno.test("processColors - handles string values", async (t) => {
     "palette.simple.white",
     "palette.simple.black",
   ]);
-  await assertSnapshot(t, css);
+  await assertSnapshot(t, combined);
   await assertSnapshot(t, Array.from(resolveMap.entries()));
 });
 
@@ -148,7 +151,8 @@ Deno.test("processColors - handles themes", async (t) => {
     },
   });
   const { css, resolveMap } = processColors(config.colors);
-  const lines = getLines(css);
+  const combined = combine(css);
+  const lines = getLines(combined);
   assertEquals(
     lines[7].trim(),
     "--theme-light-background-primary: var(--palette-simple-white);",
@@ -163,7 +167,7 @@ Deno.test("processColors - handles themes", async (t) => {
     "theme.light.background.primary",
     "theme.light.background.secondary",
   ]);
-  await assertSnapshot(t, css);
+  await assertSnapshot(t, combined);
   await assertSnapshot(t, Array.from(resolveMap.entries()));
 });
 
@@ -183,7 +187,8 @@ Deno.test("processColors - handles transparency", async (t) => {
     },
   });
   const { css, resolveMap } = processColors(config.colors);
-  const lines = getLines(css);
+  const combined = combine(css);
+  const lines = getLines(combined);
   assertEquals(
     lines[2].trim(),
     "--palette-alpha-softGray1: oklch(14.48% 0 0 / 12%);",
@@ -196,7 +201,7 @@ Deno.test("processColors - handles transparency", async (t) => {
     "palette.alpha.softGray1",
     "palette.alpha.softGray2",
   ]);
-  await assertSnapshot(t, css);
+  await assertSnapshot(t, combined);
   await assertSnapshot(t, Array.from(resolveMap.entries()));
 });
 
@@ -241,7 +246,8 @@ Deno.test("processColors - generates gradient with color variables", async (t) =
   });
 
   const result = processColors(config.colors);
-  const lines = getLines(result.css);
+  const combined = [result.css.root, result.css.outside].filter(Boolean).join("\n");
+  const lines = getLines(combined);
   const expected = [
     "--gradients-orangeGradient-primary: linear-gradient(261.78deg, var(--palette-coral-50) 33.1%, var(--palette-coral-90) 56.3%, var(--palette-coral-100) 65.78%, var(--palette-indigo-100) 84.23%);",
   ].join("\n");
@@ -254,7 +260,7 @@ Deno.test("processColors - generates gradient with color variables", async (t) =
     "palette.indigo.100",
     "gradients.orangeGradient.primary",
   ]);
-  await assertSnapshot(t, result.css);
+  await assertSnapshot(t, combined);
   await assertSnapshot(t, Array.from(result.resolveMap.entries()));
 });
 
@@ -303,7 +309,8 @@ Deno.test("processColors - handles themes referencing gradients", async (t) => {
   });
 
   const { css, resolveMap } = processColors(config.colors);
-  const lines = getLines(css);
+  const combined = combine(css);
+  const lines = getLines(combined);
   const lastLine = lines.pop();
   assertEquals(
     lastLine,
@@ -314,11 +321,11 @@ Deno.test("processColors - handles themes referencing gradients", async (t) => {
     "gradients.orangeGradient.primary",
     "theme.light.background.primary",
   ]);
-  await assertSnapshot(t, css);
+  await assertSnapshot(t, combined);
   await assertSnapshot(t, Array.from(resolveMap.entries()));
 });
 
-Deno.test("processColors - handles gradients with conditions", async (t) => {
+Deno.test("processColors - handles gradients with atRule", async (t) => {
   const config = defineConfig({
     colors: {
       palette: {
@@ -343,7 +350,7 @@ Deno.test("processColors - handles gradients with conditions", async (t) => {
               },
             },
             settings: {
-              condition: "@media (prefers-color-scheme: dark)",
+              atRule: "@media (prefers-color-scheme: dark)",
             },
           },
         },
@@ -352,7 +359,8 @@ Deno.test("processColors - handles gradients with conditions", async (t) => {
   });
 
   const { css, resolveMap } = processColors(config.colors);
-  const lines = getLines(css);
+  const combined = combine(css);
+  const lines = getLines(combined);
 
   const mediaQueryIndex = lines.findIndex((line) =>
     line.includes("@media (prefers-color-scheme: dark)")
@@ -378,11 +386,11 @@ Deno.test("processColors - handles gradients with conditions", async (t) => {
     "palette.coral.50",
     "gradients.orangeGradient.primary",
   ]);
-  await assertSnapshot(t, css);
+  await assertSnapshot(t, combined);
   await assertSnapshot(t, Array.from(resolveMap.entries()));
 });
 
-Deno.test("processColors - handles palette colors with conditions", async (t) => {
+Deno.test("processColors - handles palette colors with atRule", async (t) => {
   const config = defineConfig({
     colors: {
       palette: {
@@ -397,7 +405,7 @@ Deno.test("processColors - handles palette colors with conditions", async (t) =>
               dark: { hex: "#000" },
             },
             settings: {
-              condition: "@media (prefers-color-scheme: dark)",
+              atRule: "@media (prefers-color-scheme: dark)",
             },
           },
         },
@@ -405,7 +413,8 @@ Deno.test("processColors - handles palette colors with conditions", async (t) =>
     },
   });
   const { css, resolveMap } = processColors(config.colors);
-  const lines = getLines(css);
+  const combined = combine(css);
+  const lines = getLines(combined);
 
   assertEquals(
     lines[2].trim(),
@@ -439,11 +448,11 @@ Deno.test("processColors - handles palette colors with conditions", async (t) =>
     "palette.background.light",
     "palette.backgroundDark.dark",
   ]);
-  await assertSnapshot(t, css);
+  await assertSnapshot(t, combined);
   await assertSnapshot(t, Array.from(resolveMap.entries()));
 });
 
-Deno.test("processColors - handles themes with class condition", async (t) => {
+Deno.test("processColors - handles themes with selector", async (t) => {
   const config = defineConfig({
     colors: {
       palette: {
@@ -468,7 +477,7 @@ Deno.test("processColors - handles themes with class condition", async (t) => {
             },
           },
           settings: {
-            condition: ".dark-theme",
+            selector: ".dark-theme",
           },
         },
       },
@@ -476,7 +485,8 @@ Deno.test("processColors - handles themes with class condition", async (t) => {
   });
 
   const { css, resolveMap } = processColors(config.colors);
-  const lines = getLines(css);
+  const combined = combine(css);
+  const lines = getLines(combined);
 
   const classIndex = lines.findIndex((l) => l.includes(".dark-theme"));
   assertEquals(lines[classIndex], ".dark-theme {");
@@ -488,7 +498,72 @@ Deno.test("processColors - handles themes with class condition", async (t) => {
     "palette.base.primary",
     "theme.dark.background.primary",
   ]);
-  await assertSnapshot(t, css);
+  await assertSnapshot(t, combined);
+  await assertSnapshot(t, Array.from(resolveMap.entries()));
+});
+
+Deno.test("processColors - handles selector + atRule", async (t) => {
+  const config = defineConfig({
+    colors: {
+      palette: {
+        value: {
+          base: {
+            value: {
+              primary: { hex: "#FF7F50" },
+            },
+          },
+        },
+      },
+      theme: {
+        dark: {
+          value: {
+            background: {
+              value: {
+                primary: "var(--1)",
+              },
+              variables: {
+                "1": "palette.base.primary",
+              },
+            },
+          },
+          settings: {
+            selector: ".dark-theme",
+            atRule: "@media (prefers-color-scheme: dark)",
+          },
+        },
+      },
+    },
+  });
+
+  const { css, resolveMap } = processColors(config.colors);
+  const combined = combine(css);
+  const lines = getLines(combined);
+
+  const mediaIndex = lines.findIndex((l) =>
+    l.includes("@media (prefers-color-scheme: dark)")
+  );
+  assertEquals(lines[mediaIndex], "@media (prefers-color-scheme: dark) {");
+
+  const classIndex = lines.findIndex((l, idx) =>
+    idx > mediaIndex && l.includes(".dark-theme")
+  );
+  assert(classIndex > mediaIndex, "selector should be inside the media query block");
+  assertEquals(lines[classIndex].trim(), ".dark-theme {");
+
+  const varIndex = lines.findIndex((l, idx) =>
+    idx > classIndex && l.includes("--theme-dark-background-primary:")
+  );
+  assert(
+    varIndex > classIndex,
+    "theme variable should be inside the selector block within the media query",
+  );
+
+  assertEquals(Array.from(resolveMap.keys()), [
+    "palette.base.primary",
+    "theme.dark.background.primary",
+  ]);
+
+  await assertSnapshot(t, combined);
   await assertSnapshot(t, Array.from(resolveMap.entries()));
 });
 
@@ -528,7 +603,8 @@ Deno.test("processColors - handles theme variantNameOnly", async (t) => {
   });
 
   const { css, resolveMap } = processColors(config.colors);
-  const lines = getLines(css);
+  const combined = combine(css);
+  const lines = getLines(combined);
 
   const primaryLine = lines.find((l) => l.includes("--primary:"));
   const secondaryLine = lines.find((l) => l.includes("--secondary:"));
@@ -543,6 +619,6 @@ Deno.test("processColors - handles theme variantNameOnly", async (t) => {
     "theme.light.background.secondary",
   ]);
 
-  await assertSnapshot(t, css);
+  await assertSnapshot(t, combined);
   await assertSnapshot(t, Array.from(resolveMap.entries()));
 });

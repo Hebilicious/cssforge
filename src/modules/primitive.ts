@@ -143,5 +143,5 @@ export function processPrimitives(
     }
   }
 
-  return { css: cssOutput.join("\n"), resolveMap };
+  return { css: { root: cssOutput.join("\n") }, resolveMap };
 }

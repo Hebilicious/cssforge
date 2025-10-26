@@ -124,5 +124,5 @@ export function processSpacing(spacing: SpacingConfig): Output {
     }
   }
 
-  return { css: cssOutput.join("\n"), resolveMap };
+  return { css: { root: cssOutput.join("\n") }, resolveMap };
 }

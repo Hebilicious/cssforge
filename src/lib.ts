@@ -12,8 +12,8 @@ export type ResolveMap = Map<
  * CSS and a resolve map.
  */
 export interface Output {
-  /** The generated CSS string. */
-  css: string;
+  /** The generated CSS strings. */
+  css: { root?: string; outside?: string };
   /** A map for resolving variable paths. */
   resolveMap: ResolveMap;
 }

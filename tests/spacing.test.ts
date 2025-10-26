@@ -21,7 +21,7 @@ Deno.test("processSpacing - generates correct spacing scale", async (t) => {
     "--spacing-size-3: 0.75rem;",
     "--spacing-size-s: 1rem;",
   ].join("\n");
-  assertEquals(result.css, expected);
+  assertEquals(result.css.root, expected);
 
   assertEquals(Array.from(result.resolveMap.keys()), [
     "spacing.custom.size.1",
@@ -29,7 +29,7 @@ Deno.test("processSpacing - generates correct spacing scale", async (t) => {
     "spacing.custom.size.3",
     "spacing.custom.size.s",
   ]);
-  await assertSnapshot(t, result.css);
+  await assertSnapshot(t, result.css.root);
   await assertSnapshot(t, Array.from(result.resolveMap.entries()));
 });
 
@@ -58,7 +58,7 @@ Deno.test("processSpacing - handles settings", async (t) => {
     "--spacing-scale-lg: 0.75rem;",
   ].join("\n");
 
-  assertEquals(result.css, expected);
+  assertEquals(result.css.root, expected);
 
   assertEquals(Array.from(result.resolveMap.keys()), [
     "spacing.custom.size.1",
@@ -66,7 +66,7 @@ Deno.test("processSpacing - handles settings", async (t) => {
     "spacing.custom.scale.md",
     "spacing.custom.scale.lg",
   ]);
-  await assertSnapshot(t, result.css);
+  await assertSnapshot(t, result.css.root);
   await assertSnapshot(t, Array.from(result.resolveMap.entries()));
 });
 
@@ -101,7 +101,7 @@ Deno.test("processSpacing - generates fluid spacing (prefix)", async (t) => {
     "--spacing_fluid-base-foo-s-m: clamp(0.25rem, -0.1667rem + 2.0833vw, 1.5rem);",
     "--spacing_fluid-base-foo-m-l: clamp(0.25rem, -0.6667rem + 4.5833vw, 3rem);",
   ].join("\n");
-  assertEquals(css, expected);
+  assertEquals(css.root, expected);
 
   assertEquals(Array.from(resolveMap.keys()), [
     "spacing_fluid.base@xs",
@@ -113,7 +113,7 @@ Deno.test("processSpacing - generates fluid spacing (prefix)", async (t) => {
     "spacing_fluid.base@s-m",
     "spacing_fluid.base@m-l",
   ]);
-  await assertSnapshot(t, css);
+  await assertSnapshot(t, css.root);
   await assertSnapshot(t, Array.from(resolveMap.entries()));
 });
 
@@ -142,7 +142,7 @@ Deno.test("processSpacing - fluid without prefix falls back to scale name", asyn
     "--spacing_fluid-rhythm-xs-s: clamp(0rem, -0.4167rem + 2.0833vw, 1.25rem);",
     "--spacing_fluid-rhythm-s-m: clamp(0.125rem, -0.25rem + 1.875vw, 1.25rem);",
   ].join("\n");
-  assertEquals(css, expected);
+  assertEquals(css.root, expected);
 
   assertEquals(Array.from(resolveMap.keys()), [
     "spacing_fluid.rhythm@xs",
@@ -151,7 +151,7 @@ Deno.test("processSpacing - fluid without prefix falls back to scale name", asyn
     "spacing_fluid.rhythm@xs-s",
     "spacing_fluid.rhythm@s-m",
   ]);
-  await assertSnapshot(t, css);
+  await assertSnapshot(t, css.root);
   await assertSnapshot(t, Array.from(resolveMap.entries()));
 });
 
@@ -189,7 +189,7 @@ Deno.test("processSpacing - combines fluid and custom spacing", async (t) => {
     "--spacing-gap-1: 4px;",
     "--spacing-gap-2: 8px;",
   ].join("\n");
-  assertEquals(css, expected);
+  assertEquals(css.root, expected);
   assertEquals(Array.from(resolveMap.keys()), [
     "spacing_fluid.base@xs",
     "spacing_fluid.base@s",
@@ -199,6 +199,6 @@ Deno.test("processSpacing - combines fluid and custom spacing", async (t) => {
     "spacing.custom.gap.1",
     "spacing.custom.gap.2",
   ]);
-  await assertSnapshot(t, css);
+  await assertSnapshot(t, css.root);
   await assertSnapshot(t, Array.from(resolveMap.entries()));
 });
