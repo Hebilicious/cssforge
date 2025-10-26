@@ -1,5 +1,11 @@
 # @hebilicious/cssforge
 
+## 0.4.1
+
+### Patch Changes
+
+- 8b3f5ab: fix nesting for selector and atRules
+
 ## 0.4.0
 
 ### Minor Changes
