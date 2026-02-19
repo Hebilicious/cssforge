@@ -1,49 +1,37 @@
-name: Format & Publish Dry Run
+name: CI
 
 on:
   push:
     branches:
       - main
-
   pull_request:
     branches:
       - main
 
 jobs:
-  format:
+  quality:
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
 
-      - uses: denoland/setup-deno@v2
-        with:
-          deno-version: v2.x
+      - name: Install proto
+        run: curl -fsSL https://moonrepo.dev/install/proto.sh | bash -s -- 0.55.2 --yes
+
+      - name: Add proto to PATH
+        run: echo "$HOME/.proto/bin" >> "$GITHUB_PATH"
+
+      - name: Install toolchains from .prototools
+        run: proto install
+
+      - name: Install dependencies
+        run: proto run pnpm -- install --frozen-lockfile
 
       - name: Format
-        run: deno fmt --check
+        run: moon run :format
 
-  publish-dry-run:
-    runs-on: ubuntu-latest
+      - name: Test
+        run: moon run :test
 
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: denoland/setup-deno@v2
-        with:
-          deno-version: v2.x
-
-      - name: Publish dry run
-        run: deno publish --dry-run
-
-  test:
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: denoland/setup-deno@v2
-        with:
-          deno-version: v2.x
-
-      - name: Run tests
-        run: deno test -A
+      - name: Typecheck
+        run: moon run :typecheck

@@ -1,0 +1,112 @@
+$schema: "https://moonrepo.dev/schemas/project.json"
+
+language: "typescript"
+layer: "library"
+
+tags:
+  - "cssforge"
+
+tasks:
+  format:
+    command: "biome"
+    args:
+      - "format"
+      - "src"
+      - "tests"
+      - "scripts"
+      - "package.json"
+      - "tsconfig.json"
+      - "vitest.config.ts"
+      - "tsup.config.ts"
+      - "deno.json"
+    inputs:
+      - "src/**/*"
+      - "tests/**/*"
+      - "scripts/**/*"
+      - "package.json"
+      - "tsconfig.json"
+      - "vitest.config.ts"
+      - "tsup.config.ts"
+      - "deno.json"
+      - "/biome.json"
+  format-write:
+    command: "biome"
+    args:
+      - "format"
+      - "src"
+      - "tests"
+      - "scripts"
+      - "package.json"
+      - "tsconfig.json"
+      - "vitest.config.ts"
+      - "tsup.config.ts"
+      - "deno.json"
+      - "--write"
+    options:
+      runInCI: false
+  lint:
+    command: "biome"
+    args: ["lint", "src", "tests", "scripts"]
+    inputs:
+      - "src/**/*"
+      - "tests/**/*"
+      - "scripts/**/*"
+      - "/biome.json"
+  typecheck:
+    command: "tsc"
+    args: ["--project", "tsconfig.json", "--noEmit"]
+    inputs:
+      - "src/**/*"
+      - "tests/**/*"
+      - "scripts/**/*"
+      - "tsconfig.json"
+      - "/tsconfig.base.json"
+  test:
+    command: "vitest"
+    args: ["run"]
+    inputs:
+      - "src/**/*"
+      - "tests/**/*"
+      - "vitest.config.ts"
+  test-watch:
+    command: "vitest"
+    options:
+      runInCI: false
+      persistent: true
+      cache: false
+      outputStyle: "stream"
+  build:
+    command: "tsup"
+    inputs:
+      - "src/**/*"
+      - "tsup.config.ts"
+      - "tsconfig.json"
+    outputs:
+      - "dist"
+  jsr-dry-run:
+    command: "npx"
+    args: ["jsr", "publish", "--dry-run", "--allow-dirty"]
+    deps:
+      - "~:build"
+    inputs:
+      - "src/**/*"
+      - "deno.json"
+      - "README.md"
+      - "CHANGELOG.md"
+  jsr-publish:
+    command: "npx"
+    args: ["jsr", "publish"]
+    deps:
+      - "~:build"
+    inputs:
+      - "src/**/*"
+      - "deno.json"
+      - "README.md"
+      - "CHANGELOG.md"
+    options:
+      runInCI: "only"
+  readme-update:
+    command: "tsx"
+    args: ["./scripts/update-readme.ts"]
+    options:
+      runInCI: false

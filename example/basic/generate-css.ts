@@ -1,10 +1,13 @@
 /**
- * /!\ This script uses deno and is only for demonstration purposes.
- * Note that you can use the CLI instead of this script.
+ * This script demonstrates programmatic generation.
+ * For most workflows, prefer the CLI.
  */
 
-import type { CSSForgeConfig } from "../../src/config.ts";
-import { generateCSS } from "../../src/mod.ts";
+import { writeFile } from "node:fs/promises";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+import type { CSSForgeConfig } from "../../packages/cssforge/src/config.ts";
+import { generateCSS } from "../../packages/cssforge/src/mod.ts";
 import config from "./cssforge.config.ts";
 
 async function writeCSS(
@@ -12,10 +15,10 @@ async function writeCSS(
   outputPath: string,
 ): Promise<void> {
   const css = generateCSS(config);
-  await Deno.writeTextFile(outputPath, css);
+  await writeFile(outputPath, css, "utf8");
 }
 
-// Get the directory of the current file
-const currentFilePathname = new URL(".", import.meta.url).pathname;
+const currentFilePathname = fileURLToPath(import.meta.url);
+const currentDir = dirname(currentFilePathname);
 
-writeCSS(config, currentFilePathname + "cssforge.css");
+writeCSS(config, join(currentDir, "cssforge.css"));

@@ -1,0 +1,7 @@
+@import "../../../.cssforge/output.css" layer(cssforge);
+@import "tailwindcss";
+
+body {
+  margin: 0;
+  font-family: Arial, Helvetica, sans-serif;
+}

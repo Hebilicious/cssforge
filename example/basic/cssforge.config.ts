@@ -1,4 +1,4 @@
-import { defineConfig } from "../../src/mod.ts";
+import { defineConfig } from "../../packages/cssforge/src/mod.ts";
 
 export default defineConfig(
   {
