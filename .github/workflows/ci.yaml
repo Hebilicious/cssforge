@@ -23,8 +23,5 @@ jobs:
           moon-version: "2.0.0"
           auto-install: true
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
       - name: Run CI
         run: moon ci
