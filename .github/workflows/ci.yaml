@@ -14,24 +14,17 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Install proto
-        run: curl -fsSL https://moonrepo.dev/install/proto.sh | bash -s -- 0.55.2 --yes
-
-      - name: Add proto to PATH
-        run: echo "$HOME/.proto/bin" >> "$GITHUB_PATH"
-
-      - name: Install toolchains from .prototools
-        run: proto install
+      - name: Setup toolchain
+        uses: moonrepo/setup-toolchain@v0
+        with:
+          moon-version: "2.0.0"
+          auto-install: true
 
       - name: Install dependencies
-        run: proto run pnpm -- install --frozen-lockfile
+        run: pnpm install --frozen-lockfile
 
-      - name: Format
-        run: moon run :format
-
-      - name: Test
-        run: moon run :test
-
-      - name: Typecheck
-        run: moon run :typecheck
+      - name: Run CI
+        run: moon ci

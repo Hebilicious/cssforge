@@ -9,12 +9,16 @@ dependsOn:
 tasks:
   prepare:
     script: "svelte-kit sync || echo ''"
+    options:
+      runInCI: false
   build:
     command: "vite"
     args: ["build"]
     deps:
       - "^:build"
       - "~:prepare"
+    options:
+      runInCI: false
   dev:
     command: "vite"
     args: ["dev"]

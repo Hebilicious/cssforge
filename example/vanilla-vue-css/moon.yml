@@ -11,6 +11,8 @@ tasks:
     script: "vue-tsc -b && vite build"
     deps:
       - "^:build"
+    options:
+      runInCI: false
   dev:
     command: "vite"
     deps:

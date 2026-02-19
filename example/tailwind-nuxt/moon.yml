@@ -10,12 +10,16 @@ tasks:
   prepare:
     command: "nuxt"
     args: ["prepare"]
+    options:
+      runInCI: false
   build:
     command: "nuxt"
     args: ["build"]
     deps:
       - "^:build"
       - "~:prepare"
+    options:
+      runInCI: false
   dev:
     command: "nuxt"
     args: ["dev"]

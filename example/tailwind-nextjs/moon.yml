@@ -12,6 +12,8 @@ tasks:
     args: ["build"]
     deps:
       - "^:build"
+    options:
+      runInCI: false
   dev:
     command: "next"
     args: ["dev"]

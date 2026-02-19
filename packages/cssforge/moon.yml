@@ -29,6 +29,8 @@ tasks:
       - "tsup.config.ts"
       - "deno.json"
       - "/biome.json"
+    options:
+      runInCI: "always"
   format-write:
     command: "biome"
     args:
@@ -52,6 +54,8 @@ tasks:
       - "tests/**/*"
       - "scripts/**/*"
       - "/biome.json"
+    options:
+      runInCI: false
   typecheck:
     command: "tsc"
     args: ["--project", "tsconfig.json", "--noEmit"]
@@ -61,6 +65,8 @@ tasks:
       - "scripts/**/*"
       - "tsconfig.json"
       - "/tsconfig.base.json"
+    options:
+      runInCI: "always"
   test:
     command: "vitest"
     args: ["run"]
@@ -68,6 +74,8 @@ tasks:
       - "src/**/*"
       - "tests/**/*"
       - "vitest.config.ts"
+    options:
+      runInCI: "always"
   test-watch:
     command: "vitest"
     options:
@@ -83,6 +91,8 @@ tasks:
       - "tsconfig.json"
     outputs:
       - "dist"
+    options:
+      runInCI: false
   jsr-dry-run:
     command: "npx"
     args: ["jsr", "publish", "--dry-run", "--allow-dirty"]
@@ -93,6 +103,8 @@ tasks:
       - "deno.json"
       - "README.md"
       - "CHANGELOG.md"
+    options:
+      runInCI: false
   jsr-publish:
     command: "npx"
     args: ["jsr", "publish"]
@@ -104,7 +116,7 @@ tasks:
       - "README.md"
       - "CHANGELOG.md"
     options:
-      runInCI: "only"
+      runInCI: false
   readme-update:
     command: "tsx"
     args: ["./scripts/update-readme.ts"]

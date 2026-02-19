@@ -13,3 +13,4 @@ tasks:
     script: "npx changeset version && node packages/cssforge/scripts/sync-version.js"
     options:
       runFromWorkspaceRoot: true
+      runInCI: false
