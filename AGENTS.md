@@ -1,12 +1,12 @@
 # Css Forge Library
 
-This is a library for generating CSS variables from design tokens. This library uses Deno
-and TypeScript.
+This is a library for generating CSS variables from design tokens. The repository is a
+Node.js + pnpm workspace using moon v2 and proto.
 
 ## Creating new features and modules
 
-Make sure to follow the established conventions for modules in `src/modules`. Make sure to
-add tests following the pattern in the `tests` folder.
+Follow the established module conventions in `packages/cssforge/src/modules` and add tests
+following the pattern in `packages/cssforge/tests`.
 
 ## Dependencies
 
@@ -15,8 +15,9 @@ standard library or writing code from first principles.
 
 ## Updating the README.md
 
-To update the README, use the `deno task readme:update` command. There is a special syntax
-in the README that generates the codeblocks. For a comment like this:
+To update the README, run `moon run cssforge:readme-update` from the workspace root.
+There is a special syntax in the README that generates codeblocks. For a comment like
+this:
 
 <comment>
 <!-- md:generate defineConfig

@@ -1,0 +1,16 @@
+@import "../.cssforge/output.css" layer(cssforge);
+
+:root {
+  color: #fff;
+  background: var(--palette-brand-surface);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+body {
+  margin: 0;
+}
+
+#root {
+  min-height: 100vh;
+  padding: var(--spacing-size-4);
+}

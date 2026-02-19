@@ -1,0 +1,15 @@
+$schema: "https://moonrepo.dev/schemas/workspace.json"
+
+defaultProject: "cssforge"
+
+projects:
+  - "packages/*"
+  - "example/*"
+  - "!example/basic"
+
+vcs:
+  client: "git"
+  defaultBranch: "main"
+
+pipeline:
+  cacheLifetime: "7 days"

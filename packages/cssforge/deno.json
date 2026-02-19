@@ -1,0 +1,18 @@
+{
+	"name": "@hebilicious/cssforge",
+	"version": "0.4.0",
+	"license": "MIT",
+	"exports": {
+		".": "./src/mod.ts",
+		"./cli": "./src/cli.ts"
+	},
+	"imports": {
+		"citty": "npm:citty@0.1.6",
+		"chokidar": "npm:chokidar@4.0.3",
+		"colorjs.io": "npm:colorjs.io@0.5.2",
+		"utopia-core": "npm:utopia-core@1.6.0"
+	},
+	"publish": {
+		"include": ["src/**/*.ts", "README.md", "CHANGELOG.md"]
+	}
+}

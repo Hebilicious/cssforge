@@ -1,0 +1,73 @@
+$schema: "https://moonrepo.dev/schemas/project.json"
+
+language: "typescript"
+layer: "application"
+
+dependsOn:
+  - "cssforge"
+
+tasks:
+  build:
+    command: "vinxi"
+    args: ["build"]
+    deps:
+      - "^:build"
+  dev:
+    command: "vinxi"
+    args: ["dev"]
+    deps:
+      - "^:build"
+    preset: "server"
+    options:
+      runInCI: false
+  dev-e2e:
+    command: "vinxi"
+    args: ["dev", "--host", "127.0.0.1", "--port", "4175"]
+    deps:
+      - "^:build"
+    preset: "server"
+    options:
+      runInCI: false
+  start:
+    command: "vinxi"
+    args: ["start"]
+    deps:
+      - "~:build"
+    preset: "server"
+    options:
+      runInCI: false
+  cssforge-generate:
+    command: "tsx"
+    args:
+      - "../../packages/cssforge/src/cli.ts"
+      - "--prefix"
+      - "."
+      - "--config"
+      - "./cssforge.config.ts"
+      - "--mode"
+      - "css"
+      - "--css"
+      - "./.cssforge/output.css"
+    deps:
+      - "^:build"
+    options:
+      runInCI: false
+  e2e:
+    command: "playwright"
+    args: ["test"]
+    deps:
+      - "~:cssforge-generate"
+    options:
+      runInCI: false
+  e2e-headed:
+    command: "playwright"
+    args: ["test", "--headed"]
+    deps:
+      - "~:cssforge-generate"
+    options:
+      runInCI: false
+  cssforge-build-local:
+    command: "moon"
+    args: ["run", "cssforge:jsr-dry-run"]
+    options:
+      runInCI: false

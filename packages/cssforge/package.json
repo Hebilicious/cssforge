@@ -1,0 +1,39 @@
+{
+	"name": "@hebilicious/cssforge",
+	"version": "0.4.0",
+	"description": "0 runtime design tokens generator for modern style systems.",
+	"license": "MIT",
+	"type": "module",
+	"main": "./dist/mod.js",
+	"types": "./dist/mod.d.ts",
+	"exports": {
+		".": {
+			"types": "./dist/mod.d.ts",
+			"import": "./dist/mod.js",
+			"default": "./dist/mod.js"
+		},
+		"./cli": "./dist/cli.js"
+	},
+	"files": [
+		"dist",
+		"src",
+		"README.md",
+		"CHANGELOG.md",
+		"deno.json"
+	],
+	"dependencies": {
+		"chokidar": "4.0.3",
+		"citty": "0.1.6",
+		"colorjs.io": "0.5.2",
+		"utopia-core": "1.6.0"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "2.4.2",
+		"@types/node": "24.3.0",
+		"mdbox": "0.1.1",
+		"tsup": "8.5.0",
+		"tsx": "4.20.6",
+		"typescript": "5.9.3",
+		"vitest": "4.0.18"
+	}
+}
