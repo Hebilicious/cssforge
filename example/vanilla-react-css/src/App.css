@@ -1,0 +1,14 @@
+.token-card {
+  max-width: 42rem;
+  margin: 0 auto;
+  padding: var(--spacing-size-4);
+  border-radius: var(--spacing-size-2);
+  background: var(--palette-brand-primary);
+  font-size: var(--typography_fluid-base-text-m);
+  box-shadow: 0 12px 28px rgb(15 23 42 / 35%);
+}
+
+.token-card h1 {
+  margin: 0 0 var(--spacing-size-2);
+  font-size: var(--typography_fluid-base-text-l);
+}

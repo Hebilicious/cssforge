@@ -1,49 +1,27 @@
-name: Format & Publish Dry Run
+name: CI
 
 on:
   push:
     branches:
       - main
-
   pull_request:
     branches:
       - main
 
 jobs:
-  format:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: denoland/setup-deno@v2
-        with:
-          deno-version: v2.x
-
-      - name: Format
-        run: deno fmt --check
-
-  publish-dry-run:
+  quality:
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
-
-      - uses: denoland/setup-deno@v2
         with:
-          deno-version: v2.x
+          fetch-depth: 0
 
-      - name: Publish dry run
-        run: deno publish --dry-run
-
-  test:
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: denoland/setup-deno@v2
+      - name: Setup toolchain
+        uses: moonrepo/setup-toolchain@v0
         with:
-          deno-version: v2.x
+          moon-version: "2.0.0"
+          auto-install: true
 
-      - name: Run tests
-        run: deno test -A
+      - name: Run CI
+        run: moon ci

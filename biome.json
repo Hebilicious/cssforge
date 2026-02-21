@@ -1,0 +1,18 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.4.2/schema.json",
+  "assist": {
+    "actions": {
+      "source": {
+        "organizeImports": "on"
+      }
+    }
+  },
+  "formatter": {
+    "lineWidth": 90
+  },
+  "linter": {
+    "rules": {
+      "recommended": true
+    }
+  }
+}

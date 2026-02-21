@@ -1,0 +1,142 @@
+$schema: "https://moonrepo.dev/schemas/v2/project.json"
+
+language: "typescript"
+layer: "library"
+
+tags:
+  - "cssforge"
+
+tasks:
+  format:
+    command: "biome"
+    args:
+      - "check"
+      - "src"
+      - "tests"
+      - "scripts"
+      - "package.json"
+      - "tsconfig.json"
+      - "vitest.config.ts"
+      - "tsup.config.ts"
+      - "jsr.json"
+      - "--linter-enabled=false"
+      - "--assist-enabled=true"
+      - "--enforce-assist=true"
+    inputs:
+      - "src/**/*"
+      - "tests/**/*"
+      - "scripts/**/*"
+      - "package.json"
+      - "tsconfig.json"
+      - "vitest.config.ts"
+      - "tsup.config.ts"
+      - "jsr.json"
+      - "/biome.json"
+    options:
+      runInCI: "always"
+  format-write:
+    command: "biome"
+    args:
+      - "check"
+      - "src"
+      - "tests"
+      - "scripts"
+      - "package.json"
+      - "tsconfig.json"
+      - "vitest.config.ts"
+      - "tsup.config.ts"
+      - "jsr.json"
+      - "--linter-enabled=false"
+      - "--assist-enabled=true"
+      - "--enforce-assist=true"
+      - "--write"
+    options:
+      runInCI: false
+  lint:
+    command: "biome"
+    args:
+      - "check"
+      - "src"
+      - "tests"
+      - "scripts"
+      - "--formatter-enabled=false"
+      - "--assist-enabled=true"
+      - "--enforce-assist=true"
+    inputs:
+      - "src/**/*"
+      - "tests/**/*"
+      - "scripts/**/*"
+      - "/biome.json"
+    options:
+      runInCI: false
+  typecheck:
+    command: "npx"
+    args:
+      - "-y"
+      - "@typescript/native-preview"
+      - "--project"
+      - "tsconfig.json"
+      - "--noEmit"
+    inputs:
+      - "src/**/*"
+      - "tests/**/*"
+      - "scripts/**/*"
+      - "tsconfig.json"
+      - "/tsconfig.base.json"
+    options:
+      runInCI: "always"
+  test:
+    command: "vitest"
+    args: ["run"]
+    inputs:
+      - "src/**/*"
+      - "tests/**/*"
+      - "vitest.config.ts"
+    options:
+      runInCI: "always"
+  test-watch:
+    command: "vitest"
+    options:
+      runInCI: false
+      persistent: true
+      cache: false
+      outputStyle: "stream"
+  build:
+    command: "tsup"
+    inputs:
+      - "src/**/*"
+      - "tsup.config.ts"
+      - "tsconfig.json"
+    outputs:
+      - "dist"
+    options:
+      runInCI: false
+  jsr-dry-run:
+    command: "npx"
+    args: ["jsr", "publish", "--dry-run", "--allow-dirty"]
+    deps:
+      - "~:build"
+    inputs:
+      - "src/**/*"
+      - "jsr.json"
+      - "README.md"
+      - "CHANGELOG.md"
+    options:
+      runInCI: false
+  jsr-publish:
+    command: "npx"
+    args: ["jsr", "publish"]
+    deps:
+      - "~:build"
+    inputs:
+      - "src/**/*"
+      - "jsr.json"
+      - "README.md"
+      - "CHANGELOG.md"
+    options:
+      runInCI: false
+  readme-update:
+    command: "tsx"
+    args: ["./scripts/update-readme.ts"]
+    options:
+      runInCI: false
