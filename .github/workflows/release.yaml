@@ -33,7 +33,7 @@ jobs:
         with:
           commit: "chore(release): update release metadata"
           title: "release: update packages"
-          version: moon run root:version
+          version: moon exec --ignore-ci-checks root:version
           publish: echo "No npm publish step"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -46,4 +46,4 @@ jobs:
 
       - name: Publish to JSR
         if: steps.changesets.outputs.hasChangesets == 'false'
-        run: moon run cssforge:jsr-publish
+        run: moon exec --ignore-ci-checks cssforge:jsr-publish
