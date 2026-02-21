@@ -1,0 +1,10 @@
+{
+  "name": "cssforge-docs",
+  "private": true,
+  "type": "module",
+  "devDependencies": {
+    "@hebilicious/cssforge": "workspace:*",
+    "tsx": "4.20.6",
+    "vitepress": "1.6.3"
+  }
+}
