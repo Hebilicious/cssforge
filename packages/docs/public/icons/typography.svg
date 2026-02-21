@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100px" height="100px">
+  <defs>
+    <filter id="glowCyan" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="3" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+    <filter id="glowMagenta" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="3" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </defs>
+  <style>
+    .float { animation: float 4s infinite ease-in-out; }
+    .scan { animation: scan 3s infinite linear; }
+    @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+    @keyframes scan { 0% { stroke-dashoffset: 200; } 100% { stroke-dashoffset: 0; } }
+  </style>
+
+  <rect x="15" y="15" width="70" height="70" rx="4" fill="none" stroke="#2b2b3a" stroke-width="2" />
+  
+  <!-- "Ag" Text for typography -->
+  <g class="float">
+    <text x="50" y="65" font-family="monospace" font-size="40" font-weight="900" fill="#00f3ff" text-anchor="middle" filter="url(#glowCyan)">Aa</text>
+  </g>
+
+  <!-- Typography bounding box scanning -->
+  <rect x="25" y="30" width="50" height="40" fill="none" stroke="#ff00a0" stroke-width="1.5" stroke-dasharray="8 4" class="scan" filter="url(#glowMagenta)" />
+  <line x1="15" y1="70" x2="85" y2="70" stroke="#00f3ff" stroke-width="1" opacity="0.4" />
+</svg>
