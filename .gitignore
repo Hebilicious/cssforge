@@ -1,6 +1,4 @@
-node_modules
-generated
-convert.ts
-/cssforge.config.ts
-/.cssforge
-TODO.md
+.vitepress/cache
+.vitepress/dist
+.cssforge
+docs.md

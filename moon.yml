@@ -1,0 +1,70 @@
+$schema: "https://moonrepo.dev/schemas/v2/project.json"
+
+language: "typescript"
+layer: "application"
+
+dependsOn:
+  - "cssforge"
+
+tasks:
+  sync-docs:
+    command: "tsx"
+    args: ["./scripts/sync-readme.ts"]
+    inputs:
+      - "scripts/sync-readme.ts"
+      - "/packages/cssforge/README.md"
+    outputs:
+      - "docs.md"
+    options:
+      runInCI: false
+
+  generate:
+    command: "tsx"
+    args:
+      - "../../packages/cssforge/src/cli.ts"
+      - "--prefix"
+      - "."
+      - "--config"
+      - "./cssforge.config.ts"
+      - "--mode"
+      - "css"
+      - "--css"
+      - "./.cssforge/output.css"
+    deps:
+      - "^:build"
+    inputs:
+      - "cssforge.config.ts"
+    outputs:
+      - ".cssforge/output.css"
+    options:
+      runInCI: false
+
+  dev:
+    command: "vitepress"
+    args: ["dev"]
+    deps:
+      - "~:generate"
+      - "~:sync-docs"
+    preset: "server"
+    options:
+      runInCI: false
+
+  build:
+    command: "vitepress"
+    args: ["build"]
+    deps:
+      - "~:generate"
+      - "~:sync-docs"
+    outputs:
+      - ".vitepress/dist"
+    options:
+      runInCI: false
+
+  preview:
+    command: "vitepress"
+    args: ["preview"]
+    deps:
+      - "~:build"
+    preset: "server"
+    options:
+      runInCI: false
