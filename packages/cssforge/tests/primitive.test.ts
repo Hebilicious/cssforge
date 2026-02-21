@@ -1,6 +1,6 @@
-import { Deno, assertEquals, assertSnapshot } from "./vitest-compat.ts";
-import { processPrimitives } from "../src/modules/primitive.ts";
 import { defineConfig } from "../src/mod.ts";
+import { processPrimitives } from "../src/modules/primitive.ts";
+import { assertEquals, assertSnapshot, Deno } from "./vitest-compat.ts";
 
 Deno.test("processPrimitives - processes button with variables", async (t) => {
 	const config = defineConfig({

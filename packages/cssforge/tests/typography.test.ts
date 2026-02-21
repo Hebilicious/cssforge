@@ -1,6 +1,6 @@
-import { Deno, assertEquals, assertSnapshot } from "./vitest-compat.ts";
 import { defineConfig, processTypography } from "../src/mod.ts";
 import { getLines } from "./helpers.ts";
+import { assertEquals, assertSnapshot, Deno } from "./vitest-compat.ts";
 
 Deno.test("processTypography - generates correct CSS variables", async (t) => {
 	const config = defineConfig({

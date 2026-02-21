@@ -1,5 +1,5 @@
-import { expect, test } from "vitest";
 import type { TestContext } from "vitest";
+import { expect, test } from "vitest";
 
 export const Deno = {
 	test,

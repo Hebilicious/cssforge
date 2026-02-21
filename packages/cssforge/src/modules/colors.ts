@@ -1,8 +1,12 @@
 import Color from "colorjs.io";
-import { type Output, type ResolveMap, resolveValue } from "../lib.ts";
 import { validateName } from "../helpers.ts";
-import { getResolvedVariablesMap } from "../lib.ts";
 import type { Variables } from "../lib.ts";
+import {
+	getResolvedVariablesMap,
+	type Output,
+	type ResolveMap,
+	resolveValue,
+} from "../lib.ts";
 
 type ExactlyOne<T> = {
 	[K in keyof T]: {

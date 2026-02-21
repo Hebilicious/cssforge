@@ -1,6 +1,6 @@
-import { Deno, assertEquals, assertSnapshot } from "./vitest-compat.ts";
-import { processSpacing } from "../src/modules/spacing.ts";
 import { defineConfig } from "../src/config.ts";
+import { processSpacing } from "../src/modules/spacing.ts";
+import { assertEquals, assertSnapshot, Deno } from "./vitest-compat.ts";
 
 Deno.test("processSpacing - generates correct spacing scale", async (t) => {
 	const config = defineConfig({

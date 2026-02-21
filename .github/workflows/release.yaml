@@ -33,7 +33,7 @@ jobs:
         with:
           commit: "chore(release): update release metadata"
           title: "release: update packages"
-          version: moon run repo-tools:version
+          version: moon run root:version
           publish: echo "No npm publish step"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,5 +1,6 @@
 $schema: "https://moonrepo.dev/schemas/project.json"
 
+language: "bash"
 layer: "tool"
 
 tasks:
@@ -7,10 +8,8 @@ tasks:
     command: "npx"
     args: ["changeset"]
     options:
-      runFromWorkspaceRoot: true
       runInCI: false
   version:
     script: "npx changeset version && node packages/cssforge/scripts/sync-version.js"
     options:
-      runFromWorkspaceRoot: true
       runInCI: false

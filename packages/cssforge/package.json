@@ -19,7 +19,7 @@
 		"src",
 		"README.md",
 		"CHANGELOG.md",
-		"deno.json"
+		"jsr.json"
 	],
 	"dependencies": {
 		"chokidar": "4.0.3",

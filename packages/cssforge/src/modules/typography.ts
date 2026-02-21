@@ -1,6 +1,6 @@
 import { calculateTypeScale, type UtopiaTypeConfig } from "utopia-core";
-import type { Output, ResolveMap } from "../lib.ts";
 import { validateName } from "../helpers.ts";
+import type { Output, ResolveMap } from "../lib.ts";
 
 export interface FluidTypeScaleDefinition {
 	/**

@@ -3,9 +3,12 @@ $schema: "https://moonrepo.dev/schemas/workspace.json"
 defaultProject: "cssforge"
 
 projects:
-  - "packages/*"
-  - "example/*"
-  - "!example/basic"
+  sources:
+    root: "."
+  globs:
+    - "packages/*"
+    - "example/*"
+    - "!example/basic"
 
 vcs:
   client: "git"

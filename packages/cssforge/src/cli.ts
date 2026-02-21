@@ -1,4 +1,10 @@
 #!/usr/bin/env node
+import fs from "node:fs/promises";
+import { resolve } from "node:path";
+import process from "node:process";
+import { pathToFileURL } from "node:url";
+import chokidar from "chokidar";
+import type { CommandDef } from "citty";
 /**
  * This module provides the command-line interface (CLI) for CSSForge.
  * It allows generating CSS variables from a configuration file, with options
@@ -7,14 +13,8 @@
  * @module
  */
 import { defineCommand, runMain } from "citty";
-import chokidar from "chokidar";
-import fs from "node:fs/promises";
-import { resolve } from "node:path";
-import { pathToFileURL } from "node:url";
-import { generateCSS, generateJSON, generateTS } from "./generator.ts";
-import process from "node:process";
 import type { CSSForgeConfig } from "./config.ts";
-import type { CommandDef } from "citty";
+import { generateCSS, generateJSON, generateTS } from "./generator.ts";
 
 const writeFileRecursive = (path: string, data: string) =>
 	fs

@@ -11,11 +11,11 @@ import { randomUUID } from "node:crypto";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
+import process from "node:process";
 import { pathToFileURL } from "node:url";
 import { md } from "mdbox";
-import process from "node:process";
-import { generateCSS } from "../src/generator.ts";
 import type { CSSForgeConfig } from "../src/config.ts";
+import { generateCSS } from "../src/generator.ts";
 
 const PACKAGE_ROOT = process.cwd();
 const README_PATH = resolve(PACKAGE_ROOT, "../../README.md");

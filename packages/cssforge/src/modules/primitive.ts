@@ -1,17 +1,16 @@
-import type { ColorConfig } from "./colors.ts";
-import { processColors } from "./colors.ts";
-import type { TypographyConfig } from "./typography.ts";
-import { processTypography } from "./typography.ts";
-import type { PixelSettings, SpacingConfig } from "./spacing.ts";
-import { processSpacing } from "./spacing.ts";
+import { pxToRem, validateName } from "../helpers.ts";
 import {
 	getResolvedVariablesMap,
 	type Output,
 	resolveValue,
 	type Variables,
 } from "../lib.ts";
-import { validateName } from "../helpers.ts";
-import { pxToRem } from "../helpers.ts";
+import type { ColorConfig } from "./colors.ts";
+import { processColors } from "./colors.ts";
+import type { PixelSettings, SpacingConfig } from "./spacing.ts";
+import { processSpacing } from "./spacing.ts";
+import type { TypographyConfig } from "./typography.ts";
+import { processTypography } from "./typography.ts";
 
 interface PrimitiveProperties {
 	[key: string]: string;

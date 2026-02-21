@@ -1,5 +1,5 @@
-import type { ResolveMap } from "./lib.ts";
 import type { CSSForgeConfig } from "./config.ts";
+import type { ResolveMap } from "./lib.ts";
 import { processColors } from "./modules/colors.ts";
 import { processPrimitives } from "./modules/primitive.ts";
 import { processSpacing } from "./modules/spacing.ts";

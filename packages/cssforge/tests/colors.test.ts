@@ -1,6 +1,6 @@
-import { Deno, assert, assertEquals, assertSnapshot } from "./vitest-compat.ts";
 import { defineConfig, processColors } from "../src/mod.ts";
 import { combine, getLines } from "./helpers.ts";
+import { assert, assertEquals, assertSnapshot, Deno } from "./vitest-compat.ts";
 
 Deno.test("processColors - converts hex to oklch", async (t) => {
 	const config = defineConfig({

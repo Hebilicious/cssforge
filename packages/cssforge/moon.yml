@@ -1,4 +1,4 @@
-$schema: "https://moonrepo.dev/schemas/project.json"
+$schema: "https://moonrepo.dev/schemas/v2/project.json"
 
 language: "typescript"
 layer: "library"
@@ -10,7 +10,7 @@ tasks:
   format:
     command: "biome"
     args:
-      - "format"
+      - "check"
       - "src"
       - "tests"
       - "scripts"
@@ -18,7 +18,10 @@ tasks:
       - "tsconfig.json"
       - "vitest.config.ts"
       - "tsup.config.ts"
-      - "deno.json"
+      - "jsr.json"
+      - "--linter-enabled=false"
+      - "--assist-enabled=true"
+      - "--enforce-assist=true"
     inputs:
       - "src/**/*"
       - "tests/**/*"
@@ -27,14 +30,14 @@ tasks:
       - "tsconfig.json"
       - "vitest.config.ts"
       - "tsup.config.ts"
-      - "deno.json"
+      - "jsr.json"
       - "/biome.json"
     options:
       runInCI: "always"
   format-write:
     command: "biome"
     args:
-      - "format"
+      - "check"
       - "src"
       - "tests"
       - "scripts"
@@ -42,13 +45,23 @@ tasks:
       - "tsconfig.json"
       - "vitest.config.ts"
       - "tsup.config.ts"
-      - "deno.json"
+      - "jsr.json"
+      - "--linter-enabled=false"
+      - "--assist-enabled=true"
+      - "--enforce-assist=true"
       - "--write"
     options:
       runInCI: false
   lint:
     command: "biome"
-    args: ["lint", "src", "tests", "scripts"]
+    args:
+      - "check"
+      - "src"
+      - "tests"
+      - "scripts"
+      - "--formatter-enabled=false"
+      - "--assist-enabled=true"
+      - "--enforce-assist=true"
     inputs:
       - "src/**/*"
       - "tests/**/*"
@@ -57,8 +70,13 @@ tasks:
     options:
       runInCI: false
   typecheck:
-    command: "tsc"
-    args: ["--project", "tsconfig.json", "--noEmit"]
+    command: "npx"
+    args:
+      - "-y"
+      - "@typescript/native-preview"
+      - "--project"
+      - "tsconfig.json"
+      - "--noEmit"
     inputs:
       - "src/**/*"
       - "tests/**/*"
@@ -100,7 +118,7 @@ tasks:
       - "~:build"
     inputs:
       - "src/**/*"
-      - "deno.json"
+      - "jsr.json"
       - "README.md"
       - "CHANGELOG.md"
     options:
@@ -112,7 +130,7 @@ tasks:
       - "~:build"
     inputs:
       - "src/**/*"
-      - "deno.json"
+      - "jsr.json"
       - "README.md"
       - "CHANGELOG.md"
     options:
