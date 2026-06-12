@@ -95,6 +95,9 @@ export function processSpacing(spacing: SpacingConfig): Output {
 					variable: cssVar,
 					key: variableName,
 					value: clamp,
+					sourcePath: `${moduleKey}.${scaleName}@${label}`,
+					type: "spacing",
+					tier: "primitive",
 				});
 			}
 		}
@@ -119,6 +122,9 @@ export function processSpacing(spacing: SpacingConfig): Output {
 					variable,
 					key: varName,
 					value: convertedValue,
+					sourcePath: `${moduleKey}.custom.${scaleName}.${scaleKey}`,
+					type: "spacing",
+					tier: "primitive",
 				});
 			}
 		}

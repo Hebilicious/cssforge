@@ -179,6 +179,17 @@ import { cssForge } from "./.cssforge/output.ts";
 export { cssForge };
 ```
 
+5. Use the Style Dictionary-compatible token JSON in token-aware tools:
+
+CSS Forge can also generate token JSON where each leaf keeps the CSS variable reference
+as `value`, the fully resolved value as `$resolvedValue`, and provenance metadata under
+`attributes`. This is useful for tools such as Musea that scan component styles for
+`var(--token)` usage while still needing resolved values for labels and swatches.
+
+```bash
+pnpm run cssforge -- --mode style-dictionary --style-dictionary ./.cssforge/tokens.sd.json
+```
+
 ## Configuration
 
 ### Colors
@@ -1027,8 +1038,11 @@ pnpm run cssforge
 # Watch mode
 pnpm run cssforge -- --watch
 
-# Custom paths and output 
-pnpm run cssforge -- --config ./foo/bar/custom-path.ts --css ./dist/design-tokens.css --ts ./dist/design-tokens.ts --json ./dist/design-tokens.json --mode all
+# Custom paths and output
+pnpm run cssforge -- --config ./foo/bar/custom-path.ts --css ./dist/design-tokens.css --ts ./dist/design-tokens.ts --json ./dist/design-tokens.json --style-dictionary ./dist/design-tokens.sd.json --mode all
+
+# Style Dictionary-compatible JSON only
+pnpm run cssforge -- --mode style-dictionary --style-dictionary ./dist/design-tokens.sd.json
 ```
 
 ## Programmatic Usage
@@ -1036,10 +1050,13 @@ pnpm run cssforge -- --config ./foo/bar/custom-path.ts --css ./dist/design-token
 You can also use CSS Forge programmatically:
 
 ```typescript
-import { generateCSS } from "jsr:@hebilicious/cssforge";
+import { generateCSS, generateStyleDictionaryJSON } from "jsr:@hebilicious/cssforge";
 
 // Generate CSS string
 const css = generateCSS(config);
+
+// Generate Style Dictionary-compatible token JSON
+const tokens = generateStyleDictionaryJSON(config);
 ```
 
 ## Agentic usage

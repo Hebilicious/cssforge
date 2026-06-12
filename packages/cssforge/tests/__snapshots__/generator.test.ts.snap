@@ -1,0 +1,112 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`generateStyleDictionaryJSON - preserves references and resolved values 1`] = `
+{
+  "palette": {
+    "neutral": {
+      "0": {
+        "$resolvedValue": "oklch(100% 0 0)",
+        "$tier": "primitive",
+        "attributes": {
+          "cssVariable": "--palette-neutral-0",
+          "cssVariableReference": "var(--palette-neutral-0)",
+          "resolvedValue": "oklch(100% 0 0)",
+          "sourcePath": "palette.neutral.0",
+        },
+        "type": "color",
+        "value": "var(--palette-neutral-0)",
+      },
+      "900": {
+        "$resolvedValue": "oklch(17.764% 0 0)",
+        "$tier": "primitive",
+        "attributes": {
+          "cssVariable": "--palette-neutral-900",
+          "cssVariableReference": "var(--palette-neutral-900)",
+          "resolvedValue": "oklch(17.764% 0 0)",
+          "sourcePath": "palette.neutral.900",
+        },
+        "type": "color",
+        "value": "var(--palette-neutral-900)",
+      },
+    },
+  },
+  "primitives": {
+    "button": {
+      "default": {
+        "color": {
+          "$reference": "theme.light.content.primary",
+          "$resolvedValue": "oklch(17.764% 0 0)",
+          "$tier": "semantic",
+          "attributes": {
+            "cssVariable": "--button-default-color",
+            "cssVariableReference": "var(--button-default-color)",
+            "referencePaths": [
+              "theme.light.content.primary",
+            ],
+            "resolvedValue": "oklch(17.764% 0 0)",
+            "sourcePath": "primitives.button.default.color",
+          },
+          "type": "component",
+          "value": "var(--button-default-color)",
+        },
+        "padding": {
+          "$reference": "spacing.custom.size.2",
+          "$resolvedValue": "0.5rem",
+          "$tier": "semantic",
+          "attributes": {
+            "cssVariable": "--button-default-padding",
+            "cssVariableReference": "var(--button-default-padding)",
+            "referencePaths": [
+              "spacing.custom.size.2",
+            ],
+            "resolvedValue": "0.5rem",
+            "sourcePath": "primitives.button.default.padding",
+          },
+          "type": "component",
+          "value": "var(--button-default-padding)",
+        },
+      },
+    },
+  },
+  "spacing": {
+    "custom": {
+      "size": {
+        "2": {
+          "$resolvedValue": "0.5rem",
+          "$tier": "primitive",
+          "attributes": {
+            "cssVariable": "--spacing-size-2",
+            "cssVariableReference": "var(--spacing-size-2)",
+            "resolvedValue": "0.5rem",
+            "sourcePath": "spacing.custom.size.2",
+          },
+          "type": "spacing",
+          "value": "var(--spacing-size-2)",
+        },
+      },
+    },
+  },
+  "theme": {
+    "light": {
+      "content": {
+        "primary": {
+          "$reference": "palette.neutral.900",
+          "$resolvedValue": "oklch(17.764% 0 0)",
+          "$tier": "semantic",
+          "attributes": {
+            "cssVariable": "--theme-light-content-primary",
+            "cssVariableReference": "var(--theme-light-content-primary)",
+            "referencePaths": [
+              "palette.neutral.900",
+            ],
+            "resolvedValue": "oklch(17.764% 0 0)",
+            "sourcePath": "theme.light.content.primary",
+          },
+          "type": "color",
+          "value": "var(--theme-light-content-primary)",
+        },
+      },
+    },
+  },
+}
+`;

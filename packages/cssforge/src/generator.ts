@@ -1,5 +1,5 @@
 import type { CSSForgeConfig } from "./config.ts";
-import type { ResolveMap } from "./lib.ts";
+import type { ResolvedToken, ResolveMap, TokenTier, TokenType } from "./lib.ts";
 import { processColors } from "./modules/colors.ts";
 import { processPrimitives } from "./modules/primitive.ts";
 import { processSpacing } from "./modules/spacing.ts";
@@ -15,6 +15,38 @@ type ForgeValue = {
 	[key: string]: ForgeValue | CssValue;
 };
 
+type StyleDictionaryToken = {
+	value: string;
+	type: TokenType;
+	description?: string;
+	attributes: {
+		cssVariable: string;
+		cssVariableReference: string;
+		resolvedValue: string;
+		sourcePath: string;
+		referencePaths?: string[];
+	};
+	$tier: TokenTier;
+	$reference?: string;
+	$resolvedValue: string;
+};
+
+type StyleDictionaryValue = {
+	[key: string]: StyleDictionaryValue | StyleDictionaryToken;
+};
+
+export interface StyleDictionaryJSONOptions {
+	/**
+	 * Controls the top-level token `value`.
+	 *
+	 * `css-reference` is useful for tools that scan authored CSS using
+	 * `var(--token)` values. `resolved` puts the fully resolved value in `value`.
+	 *
+	 * @default "css-reference"
+	 */
+	valueMode?: "css-reference" | "resolved";
+}
+
 const isRecord = (value: unknown): value is Record<string, unknown> =>
 	typeof value === "object" && value !== null && !Array.isArray(value);
 
@@ -29,6 +61,50 @@ const deepMerge = (target: ForgeValue, source: ForgeValue): ForgeValue => {
 		result[key] = sourceValue;
 	}
 	return result as ForgeValue;
+};
+
+const deepMergeStyleDictionary = (
+	target: StyleDictionaryValue,
+	source: StyleDictionaryValue,
+): StyleDictionaryValue => {
+	const result: Record<string, unknown> = { ...target };
+	for (const [key, sourceValue] of Object.entries(source)) {
+		const targetValue = result[key];
+		if (isRecord(targetValue) && isRecord(sourceValue)) {
+			result[key] = deepMergeStyleDictionary(
+				targetValue as StyleDictionaryValue,
+				sourceValue as StyleDictionaryValue,
+			);
+			continue;
+		}
+		result[key] = sourceValue;
+	}
+	return result as StyleDictionaryValue;
+};
+
+const collectResolveMap = (config: Partial<CSSForgeConfig>): ResolveMap => {
+	const forge = {
+		colors: config.colors ? processColors(config.colors) : undefined,
+		spacing: config.spacing ? processSpacing(config.spacing) : undefined,
+		typography: config.typography ? processTypography(config.typography) : undefined,
+		primitives: config.primitives
+			? processPrimitives({
+					primitives: config.primitives,
+					colors: config.colors,
+					typography: config.typography,
+					spacing: config.spacing,
+				})
+			: undefined,
+	};
+
+	const resolveMap: ResolveMap = new Map();
+	for (const value of Object.values(forge)) {
+		if (!value) continue;
+		for (const [path, token] of value.resolveMap.entries()) {
+			resolveMap.set(path, token);
+		}
+	}
+	return resolveMap;
 };
 
 /**
@@ -88,28 +164,99 @@ export function createForgeValues(config: Partial<CSSForgeConfig>) {
 		}, {} as ForgeValue);
 	}
 
-	const forge = {
-		colors: config.colors ? processColors(config.colors) : undefined,
-		spacing: config.spacing ? processSpacing(config.spacing) : undefined,
-		typography: config.typography ? processTypography(config.typography) : undefined,
-		primitives: config.primitives
-			? processPrimitives({
-					primitives: config.primitives,
-					colors: config.colors,
-					typography: config.typography,
-					spacing: config.spacing,
-				})
-			: undefined,
-	};
-	const jsonKeys = [];
-	for (const [_, value] of Object.entries(forge)) {
-		if (value) {
-			const mapArray = [...value.resolveMap.entries()];
-			jsonKeys.push(...mapArray);
-		}
-	}
+	const jsonKeys = [...collectResolveMap(config).entries()].map(
+		([path, token]) =>
+			[
+				path,
+				{ key: token.key, value: token.value, variable: token.variable },
+			] satisfies Input,
+	);
 	const forgeValues = createForgeValuesFromKeys(jsonKeys);
 	return forgeValues;
+}
+
+const toStyleDictionaryPath = (sourcePath: string) => sourcePath.replaceAll("@", ".");
+
+const createNestedStyleDictionaryObject = (
+	path: string[],
+	value: StyleDictionaryToken | StyleDictionaryValue,
+): StyleDictionaryValue => {
+	if (path.length === 0) {
+		return value as StyleDictionaryValue;
+	}
+
+	const [currentKey, ...remainingPath] = path;
+
+	return {
+		[currentKey]: createNestedStyleDictionaryObject(remainingPath, value),
+	};
+};
+
+const resolveTokenValue = (
+	token: ResolvedToken,
+	tokensByCssVariable: Map<string, ResolvedToken>,
+	seen: Set<string> = new Set(),
+): string =>
+	token.value.replace(/var\(\s*(--[\w-]+)\s*\)/g, (match, cssVariable: string) => {
+		if (seen.has(cssVariable)) return match;
+
+		const referencedToken = tokensByCssVariable.get(cssVariable);
+		if (!referencedToken) return match;
+
+		return resolveTokenValue(
+			referencedToken,
+			tokensByCssVariable,
+			new Set([...seen, cssVariable]),
+		);
+	});
+
+/**
+ * Generates a Style Dictionary-compatible JSON string from the CSSForge configuration.
+ *
+ * The default output is optimized for CSS variable usage scanners: token leaves use
+ * `value: "var(--token)"` while the fully resolved value is preserved in
+ * `$resolvedValue` and `attributes.resolvedValue`.
+ */
+export function generateStyleDictionaryJSON(
+	config: Partial<CSSForgeConfig>,
+	options: StyleDictionaryJSONOptions = {},
+): string {
+	const valueMode = options.valueMode ?? "css-reference";
+	const resolveMap = collectResolveMap(config);
+	const tokensByCssVariable = new Map(
+		[...resolveMap.values()].map((token) => [token.key, token]),
+	);
+
+	const styleDictionaryValues = [...resolveMap.entries()].reduce(
+		(acc, [sourcePath, token]) => {
+			const resolvedValue = resolveTokenValue(token, tokensByCssVariable);
+			const cssVariableReference = `var(${token.key})`;
+			const referencePaths = token.referencePaths?.map(toStyleDictionaryPath);
+			const tier = token.tier ?? (referencePaths?.length ? "semantic" : "primitive");
+			const styleDictionaryToken: StyleDictionaryToken = {
+				value: valueMode === "resolved" ? resolvedValue : cssVariableReference,
+				type: token.type,
+				attributes: {
+					cssVariable: token.key,
+					cssVariableReference,
+					resolvedValue,
+					sourcePath: token.sourcePath,
+					...(referencePaths ? { referencePaths } : {}),
+				},
+				$tier: tier,
+				...(referencePaths?.[0] ? { $reference: referencePaths[0] } : {}),
+				$resolvedValue: resolvedValue,
+			};
+			const nestedObject = createNestedStyleDictionaryObject(
+				toStyleDictionaryPath(sourcePath).split("."),
+				styleDictionaryToken,
+			);
+			return deepMergeStyleDictionary(acc, nestedObject);
+		},
+		{} as StyleDictionaryValue,
+	);
+
+	return JSON.stringify(styleDictionaryValues, null, 2);
 }
 
 /**

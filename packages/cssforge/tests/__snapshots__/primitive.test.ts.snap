@@ -17,6 +17,9 @@ exports[`processPrimitives - processes button with variables 2`] = `
     "primitives.button.small.width",
     {
       "key": "--button-small-width",
+      "sourcePath": "primitives.button.small.width",
+      "tier": "primitive",
+      "type": "component",
       "value": "120px",
       "variable": "--button-small-width: 120px;",
     },
@@ -25,6 +28,9 @@ exports[`processPrimitives - processes button with variables 2`] = `
     "primitives.button.small.height",
     {
       "key": "--button-small-height",
+      "sourcePath": "primitives.button.small.height",
+      "tier": "primitive",
+      "type": "component",
       "value": "40px",
       "variable": "--button-small-height: 40px;",
     },
@@ -33,6 +39,12 @@ exports[`processPrimitives - processes button with variables 2`] = `
     "primitives.button.small.fontSize",
     {
       "key": "--button-small-fontSize",
+      "referencePaths": [
+        "typography_fluid.arial@m",
+      ],
+      "sourcePath": "primitives.button.small.fontSize",
+      "tier": "semantic",
+      "type": "component",
       "value": "var(--typography_fluid-arial-foo-m)",
       "variable": "--button-small-fontSize: var(--typography_fluid-arial-foo-m);",
     },
@@ -41,6 +53,9 @@ exports[`processPrimitives - processes button with variables 2`] = `
     "primitives.button.small.radius",
     {
       "key": "--button-small-radius",
+      "sourcePath": "primitives.button.small.radius",
+      "tier": "primitive",
+      "type": "component",
       "value": "8px",
       "variable": "--button-small-radius: 8px;",
     },
@@ -49,6 +64,13 @@ exports[`processPrimitives - processes button with variables 2`] = `
     "primitives.button.small.padding",
     {
       "key": "--button-small-padding",
+      "referencePaths": [
+        "spacing.custom.size.2",
+        "spacing.custom.size.3",
+      ],
+      "sourcePath": "primitives.button.small.padding",
+      "tier": "semantic",
+      "type": "component",
       "value": "var(--spacing-size-2) var(--spacing-size-3)",
       "variable": "--button-small-padding: var(--spacing-size-2) var(--spacing-size-3);",
     },
@@ -74,6 +96,9 @@ exports[`processPrimitives - processes buttons with settings 2`] = `
     "primitives.button.small.width",
     {
       "key": "--button-small-width",
+      "sourcePath": "primitives.button.small.width",
+      "tier": "primitive",
+      "type": "component",
       "value": "120px",
       "variable": "--button-small-width: 120px;",
     },
@@ -82,6 +107,9 @@ exports[`processPrimitives - processes buttons with settings 2`] = `
     "primitives.button.small.height",
     {
       "key": "--button-small-height",
+      "sourcePath": "primitives.button.small.height",
+      "tier": "primitive",
+      "type": "component",
       "value": "40px",
       "variable": "--button-small-height: 40px;",
     },
@@ -90,6 +118,9 @@ exports[`processPrimitives - processes buttons with settings 2`] = `
     "primitives.button.small.radius",
     {
       "key": "--button-small-radius",
+      "sourcePath": "primitives.button.small.radius",
+      "tier": "primitive",
+      "type": "component",
       "value": "8px",
       "variable": "--button-small-radius: 8px;",
     },
@@ -98,6 +129,9 @@ exports[`processPrimitives - processes buttons with settings 2`] = `
     "primitives.button.big.width",
     {
       "key": "--button-big-width",
+      "sourcePath": "primitives.button.big.width",
+      "tier": "primitive",
+      "type": "component",
       "value": "15rem",
       "variable": "--button-big-width: 15rem;",
     },
@@ -106,6 +140,9 @@ exports[`processPrimitives - processes buttons with settings 2`] = `
     "primitives.button.big.height",
     {
       "key": "--button-big-height",
+      "sourcePath": "primitives.button.big.height",
+      "tier": "primitive",
+      "type": "component",
       "value": "5rem",
       "variable": "--button-big-height: 5rem;",
     },
@@ -114,6 +151,9 @@ exports[`processPrimitives - processes buttons with settings 2`] = `
     "primitives.button.big.radius",
     {
       "key": "--button-big-radius",
+      "sourcePath": "primitives.button.big.radius",
+      "tier": "primitive",
+      "type": "component",
       "value": "1rem",
       "variable": "--button-big-radius: 1rem;",
     },
@@ -136,6 +176,12 @@ exports[`processPrimitives - references colors, gradients, and themes 2`] = `
     "primitives.card.default.background-color",
     {
       "key": "--card-default-background-color",
+      "referencePaths": [
+        "theme.light.background.primary",
+      ],
+      "sourcePath": "primitives.card.default.background-color",
+      "tier": "semantic",
+      "type": "component",
       "value": "var(--theme-light-background-primary)",
       "variable": "--card-default-background-color: var(--theme-light-background-primary);",
     },
@@ -144,6 +190,12 @@ exports[`processPrimitives - references colors, gradients, and themes 2`] = `
     "primitives.card.default.background-image",
     {
       "key": "--card-default-background-image",
+      "referencePaths": [
+        "gradients.orangeGradient.primary",
+      ],
+      "sourcePath": "primitives.card.default.background-image",
+      "tier": "semantic",
+      "type": "component",
       "value": "var(--gradients-orangeGradient-primary)",
       "variable": "--card-default-background-image: var(--gradients-orangeGradient-primary);",
     },
@@ -152,6 +204,12 @@ exports[`processPrimitives - references colors, gradients, and themes 2`] = `
     "primitives.card.default.border-color",
     {
       "key": "--card-default-border-color",
+      "referencePaths": [
+        "palette.coral.50",
+      ],
+      "sourcePath": "primitives.card.default.border-color",
+      "tier": "semantic",
+      "type": "component",
       "value": "var(--palette-coral-50)",
       "variable": "--card-default-border-color: var(--palette-coral-50);",
     },
@@ -172,6 +230,13 @@ exports[`processPrimitives - uses fluid spacing references 2`] = `
     "primitives.box.default.padding",
     {
       "key": "--box-default-padding",
+      "referencePaths": [
+        "spacing_fluid.gap@s",
+        "spacing_fluid.gap@m",
+      ],
+      "sourcePath": "primitives.box.default.padding",
+      "tier": "semantic",
+      "type": "component",
       "value": "var(--spacing_fluid-gap-gs-s) var(--spacing_fluid-gap-gs-m)",
       "variable": "--box-default-padding: var(--spacing_fluid-gap-gs-s) var(--spacing_fluid-gap-gs-m);",
     },

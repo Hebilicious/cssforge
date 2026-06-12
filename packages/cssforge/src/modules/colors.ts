@@ -2,6 +2,7 @@ import Color from "colorjs.io";
 import { validateName } from "../helpers.ts";
 import type { Variables } from "../lib.ts";
 import {
+	getReferencePaths,
 	getResolvedVariablesMap,
 	type Output,
 	type ResolveMap,
@@ -64,11 +65,13 @@ export interface PaletteColorConfig {
 	settings?: PaletteColorSettings;
 }
 
+type PaletteColorEntry = PaletteColorConfig | ColorVariants;
+
 /**
  * A palette of colors, organized by name and variants.
  */
 export interface ColorPalette {
-	[key: string]: PaletteColorConfig;
+	[key: string]: PaletteColorEntry;
 }
 
 interface GradientDefinition {
@@ -144,10 +147,44 @@ export interface ColorConfig {
 	/**
 	 * A collection of themes.
 	 */
-	theme?: {
-		[themeName: string]: ThemeConfig;
-	};
+	theme?:
+		| {
+				[themeName: string]: ThemeConfig;
+		  }
+		| {
+				value: {
+					[themeName: string]: ThemeConfig | ThemeConfig["value"];
+				};
+		  };
 }
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+	typeof value === "object" && value !== null && !Array.isArray(value);
+
+const isColorValueObject = (value: unknown): value is ColorValue =>
+	isRecord(value) &&
+	("hex" in value || "rgb" in value || "hsl" in value || "oklch" in value);
+
+const getPaletteColorConfig = (entry: PaletteColorEntry): PaletteColorConfig => {
+	if (isRecord(entry) && isRecord(entry.value) && !isColorValueObject(entry.value)) {
+		return entry as unknown as PaletteColorConfig;
+	}
+
+	return { value: entry as unknown as ColorVariants };
+};
+
+const getThemeConfig = (theme: ColorConfig["theme"]): ColorTheme | undefined => {
+	if (!theme) return undefined;
+	const themes = "value" in theme ? theme.value : theme;
+	return Object.fromEntries(
+		Object.entries(themes).map(([themeName, themeConfig]) => [
+			themeName,
+			"value" in themeConfig
+				? themeConfig
+				: { value: themeConfig as ThemeConfig["value"] },
+		]),
+	);
+};
 
 /**
  * Gets the color string from a color value object.
@@ -294,9 +331,13 @@ export function processColors(colors: ColorConfig): Output {
 		validateName(colorName);
 
 		try {
-			const handler = conditionalBuilder(colorConfig.settings, `/* ${colorName} */`);
+			const normalizedColorConfig = getPaletteColorConfig(colorConfig);
+			const handler = conditionalBuilder(
+				normalizedColorConfig.settings,
+				`/* ${colorName} */`,
+			);
 
-			for (const [variantId, colorValue] of Object.entries(colorConfig.value)) {
+			for (const [variantId, colorValue] of Object.entries(normalizedColorConfig.value)) {
 				validateName(variantId);
 				const key = `--${moduleKey}-${colorName}-${variantId}`;
 				const value = colorValueToOklch(colorValue);
@@ -308,6 +349,9 @@ export function processColors(colors: ColorConfig): Output {
 					key,
 					value,
 					variable,
+					sourcePath: `${moduleKey}.${colorName}.${variantId}`,
+					type: "color",
+					tier: "primitive",
 				});
 			}
 
@@ -338,6 +382,7 @@ export function processColors(colors: ColorConfig): Output {
 					});
 
 					const gradientValue = resolveValue({ map: resolvedMapForGradient, value });
+					const referencePaths = getReferencePaths({ value, variables });
 
 					const key = `--${moduleKey}-${gradientName}-${variantName}`;
 					const variable = `${key}: ${gradientValue};`;
@@ -348,6 +393,10 @@ export function processColors(colors: ColorConfig): Output {
 						variable,
 						key,
 						value: gradientValue,
+						sourcePath: `${moduleKey}.${gradientName}.${variantName}`,
+						...(referencePaths ? { referencePaths } : {}),
+						type: "gradient",
+						tier: referencePaths ? "semantic" : "primitive",
 					});
 				} catch (error) {
 					console.error(
@@ -362,7 +411,9 @@ export function processColors(colors: ColorConfig): Output {
 		}
 	}
 
-	if (colors.theme) {
+	const themes = getThemeConfig(colors.theme);
+
+	if (themes) {
 		rootOutput.push(`/* Themes */`);
 		const moduleKey = "theme";
 		const palette = {
@@ -370,7 +421,7 @@ export function processColors(colors: ColorConfig): Output {
 			resolveMap,
 		};
 
-		for (const [themeName, themeConfig] of Object.entries(colors.theme)) {
+		for (const [themeName, themeConfig] of Object.entries(themes)) {
 			validateName(themeName);
 			const handler = conditionalBuilder(
 				themeConfig.settings,
@@ -395,6 +446,10 @@ export function processColors(colors: ColorConfig): Output {
 							map: resolvedMap,
 							value: variantValue,
 						});
+						const referencePaths = getReferencePaths({
+							value: variantValue,
+							variables: colorInTheme.variables,
+						});
 
 						const key = variantNameOnly
 							? `--${variantName}`
@@ -408,6 +463,10 @@ export function processColors(colors: ColorConfig): Output {
 							key,
 							value: resolvedValue,
 							variable,
+							sourcePath: `${moduleKey}.${themeName}.${colorName}.${variantName}`,
+							...(referencePaths ? { referencePaths } : {}),
+							type: "color",
+							tier: referencePaths ? "semantic" : "primitive",
 						});
 					}
 				}
