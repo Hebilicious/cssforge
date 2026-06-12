@@ -95,6 +95,56 @@ Deno.test("processColors - handles string values", async (t) => {
 	await assertSnapshot(t, Array.from(resolveMap.entries()));
 });
 
+Deno.test("processColors - handles direct palette groups", async (t) => {
+	const config = defineConfig({
+		colors: {
+			palette: {
+				value: {
+					basic: {
+						white: { oklch: "oklch(100% 0 0)" },
+						black: { oklch: "oklch(0% 0 0)" },
+					},
+					gray: {
+						950: "oklch(14.479% 0 0)",
+					},
+				},
+			},
+			theme: {
+				value: {
+					light: {
+						content: {
+							value: {
+								primary: "var(--1)",
+							},
+							variables: {
+								1: "palette.value.gray.950",
+							},
+						},
+					},
+				},
+			},
+		},
+	});
+
+	const { css, resolveMap } = processColors(config.colors);
+	const combined = combine(css);
+
+	assertEquals(combined.includes("--palette-basic-white: oklch(100% 0 0);"), true);
+	assertEquals(combined.includes("--palette-gray-950: oklch(14.479% 0 0);"), true);
+	assertEquals(
+		combined.includes("--theme-light-content-primary: var(--palette-gray-950);"),
+		true,
+	);
+	assertEquals(Array.from(resolveMap.keys()), [
+		"palette.basic.white",
+		"palette.basic.black",
+		"palette.gray.950",
+		"theme.light.content.primary",
+	]);
+	await assertSnapshot(t, combined);
+	await assertSnapshot(t, Array.from(resolveMap.entries()));
+});
+
 Deno.test("processColors - handles themes", async (t) => {
 	const config = defineConfig({
 		colors: {

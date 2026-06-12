@@ -16,6 +16,9 @@ exports[`processSpacing - combines fluid and custom spacing 2`] = `
     "spacing_fluid.base@xs",
     {
       "key": "--spacing_fluid-base-flux-xs",
+      "sourcePath": "spacing_fluid.base@xs",
+      "tier": "primitive",
+      "type": "spacing",
       "value": "clamp(0rem, 0rem + 0vw, 0rem)",
       "variable": "--spacing_fluid-base-flux-xs: clamp(0rem, 0rem + 0vw, 0rem);",
     },
@@ -24,6 +27,9 @@ exports[`processSpacing - combines fluid and custom spacing 2`] = `
     "spacing_fluid.base@s",
     {
       "key": "--spacing_fluid-base-flux-s",
+      "sourcePath": "spacing_fluid.base@s",
+      "tier": "primitive",
+      "type": "spacing",
       "value": "clamp(0.25rem, -0.1667rem + 2.0833vw, 1.5rem)",
       "variable": "--spacing_fluid-base-flux-s: clamp(0.25rem, -0.1667rem + 2.0833vw, 1.5rem);",
     },
@@ -32,6 +38,9 @@ exports[`processSpacing - combines fluid and custom spacing 2`] = `
     "spacing_fluid.base@m",
     {
       "key": "--spacing_fluid-base-flux-m",
+      "sourcePath": "spacing_fluid.base@m",
+      "tier": "primitive",
+      "type": "spacing",
       "value": "clamp(0.25rem, -0.1667rem + 2.0833vw, 1.5rem)",
       "variable": "--spacing_fluid-base-flux-m: clamp(0.25rem, -0.1667rem + 2.0833vw, 1.5rem);",
     },
@@ -40,6 +49,9 @@ exports[`processSpacing - combines fluid and custom spacing 2`] = `
     "spacing_fluid.base@xs-s",
     {
       "key": "--spacing_fluid-base-flux-xs-s",
+      "sourcePath": "spacing_fluid.base@xs-s",
+      "tier": "primitive",
+      "type": "spacing",
       "value": "clamp(0rem, -0.5rem + 2.5vw, 1.5rem)",
       "variable": "--spacing_fluid-base-flux-xs-s: clamp(0rem, -0.5rem + 2.5vw, 1.5rem);",
     },
@@ -48,6 +60,9 @@ exports[`processSpacing - combines fluid and custom spacing 2`] = `
     "spacing_fluid.base@s-m",
     {
       "key": "--spacing_fluid-base-flux-s-m",
+      "sourcePath": "spacing_fluid.base@s-m",
+      "tier": "primitive",
+      "type": "spacing",
       "value": "clamp(0.25rem, -0.1667rem + 2.0833vw, 1.5rem)",
       "variable": "--spacing_fluid-base-flux-s-m: clamp(0.25rem, -0.1667rem + 2.0833vw, 1.5rem);",
     },
@@ -56,6 +71,9 @@ exports[`processSpacing - combines fluid and custom spacing 2`] = `
     "spacing.custom.gap.1",
     {
       "key": "--spacing-gap-1",
+      "sourcePath": "spacing.custom.gap.1",
+      "tier": "primitive",
+      "type": "spacing",
       "value": "4px",
       "variable": "--spacing-gap-1: 4px;",
     },
@@ -64,6 +82,9 @@ exports[`processSpacing - combines fluid and custom spacing 2`] = `
     "spacing.custom.gap.2",
     {
       "key": "--spacing-gap-2",
+      "sourcePath": "spacing.custom.gap.2",
+      "tier": "primitive",
+      "type": "spacing",
       "value": "8px",
       "variable": "--spacing-gap-2: 8px;",
     },
@@ -85,6 +106,9 @@ exports[`processSpacing - fluid without prefix falls back to scale name 2`] = `
     "spacing_fluid.rhythm@xs",
     {
       "key": "--spacing_fluid-rhythm-xs",
+      "sourcePath": "spacing_fluid.rhythm@xs",
+      "tier": "primitive",
+      "type": "spacing",
       "value": "clamp(0rem, 0rem + 0vw, 0rem)",
       "variable": "--spacing_fluid-rhythm-xs: clamp(0rem, 0rem + 0vw, 0rem);",
     },
@@ -93,6 +117,9 @@ exports[`processSpacing - fluid without prefix falls back to scale name 2`] = `
     "spacing_fluid.rhythm@s",
     {
       "key": "--spacing_fluid-rhythm-s",
+      "sourcePath": "spacing_fluid.rhythm@s",
+      "tier": "primitive",
+      "type": "spacing",
       "value": "clamp(0.125rem, -0.25rem + 1.875vw, 1.25rem)",
       "variable": "--spacing_fluid-rhythm-s: clamp(0.125rem, -0.25rem + 1.875vw, 1.25rem);",
     },
@@ -101,6 +128,9 @@ exports[`processSpacing - fluid without prefix falls back to scale name 2`] = `
     "spacing_fluid.rhythm@m",
     {
       "key": "--spacing_fluid-rhythm-m",
+      "sourcePath": "spacing_fluid.rhythm@m",
+      "tier": "primitive",
+      "type": "spacing",
       "value": "clamp(0.125rem, -0.25rem + 1.875vw, 1.25rem)",
       "variable": "--spacing_fluid-rhythm-m: clamp(0.125rem, -0.25rem + 1.875vw, 1.25rem);",
     },
@@ -109,6 +139,9 @@ exports[`processSpacing - fluid without prefix falls back to scale name 2`] = `
     "spacing_fluid.rhythm@xs-s",
     {
       "key": "--spacing_fluid-rhythm-xs-s",
+      "sourcePath": "spacing_fluid.rhythm@xs-s",
+      "tier": "primitive",
+      "type": "spacing",
       "value": "clamp(0rem, -0.4167rem + 2.0833vw, 1.25rem)",
       "variable": "--spacing_fluid-rhythm-xs-s: clamp(0rem, -0.4167rem + 2.0833vw, 1.25rem);",
     },
@@ -117,6 +150,9 @@ exports[`processSpacing - fluid without prefix falls back to scale name 2`] = `
     "spacing_fluid.rhythm@s-m",
     {
       "key": "--spacing_fluid-rhythm-s-m",
+      "sourcePath": "spacing_fluid.rhythm@s-m",
+      "tier": "primitive",
+      "type": "spacing",
       "value": "clamp(0.125rem, -0.25rem + 1.875vw, 1.25rem)",
       "variable": "--spacing_fluid-rhythm-s-m: clamp(0.125rem, -0.25rem + 1.875vw, 1.25rem);",
     },
@@ -137,6 +173,9 @@ exports[`processSpacing - generates correct spacing scale 2`] = `
     "spacing.custom.size.1",
     {
       "key": "--spacing-size-1",
+      "sourcePath": "spacing.custom.size.1",
+      "tier": "primitive",
+      "type": "spacing",
       "value": "0.25rem",
       "variable": "--spacing-size-1: 0.25rem;",
     },
@@ -145,6 +184,9 @@ exports[`processSpacing - generates correct spacing scale 2`] = `
     "spacing.custom.size.2",
     {
       "key": "--spacing-size-2",
+      "sourcePath": "spacing.custom.size.2",
+      "tier": "primitive",
+      "type": "spacing",
       "value": "0.5rem",
       "variable": "--spacing-size-2: 0.5rem;",
     },
@@ -153,6 +195,9 @@ exports[`processSpacing - generates correct spacing scale 2`] = `
     "spacing.custom.size.3",
     {
       "key": "--spacing-size-3",
+      "sourcePath": "spacing.custom.size.3",
+      "tier": "primitive",
+      "type": "spacing",
       "value": "0.75rem",
       "variable": "--spacing-size-3: 0.75rem;",
     },
@@ -161,6 +206,9 @@ exports[`processSpacing - generates correct spacing scale 2`] = `
     "spacing.custom.size.s",
     {
       "key": "--spacing-size-s",
+      "sourcePath": "spacing.custom.size.s",
+      "tier": "primitive",
+      "type": "spacing",
       "value": "1rem",
       "variable": "--spacing-size-s: 1rem;",
     },
@@ -185,6 +233,9 @@ exports[`processSpacing - generates fluid spacing (prefix) 2`] = `
     "spacing_fluid.base@xs",
     {
       "key": "--spacing_fluid-base-foo-xs",
+      "sourcePath": "spacing_fluid.base@xs",
+      "tier": "primitive",
+      "type": "spacing",
       "value": "clamp(0rem, 0rem + 0vw, 0rem)",
       "variable": "--spacing_fluid-base-foo-xs: clamp(0rem, 0rem + 0vw, 0rem);",
     },
@@ -193,6 +244,9 @@ exports[`processSpacing - generates fluid spacing (prefix) 2`] = `
     "spacing_fluid.base@s",
     {
       "key": "--spacing_fluid-base-foo-s",
+      "sourcePath": "spacing_fluid.base@s",
+      "tier": "primitive",
+      "type": "spacing",
       "value": "clamp(0.25rem, -0.1667rem + 2.0833vw, 1.5rem)",
       "variable": "--spacing_fluid-base-foo-s: clamp(0.25rem, -0.1667rem + 2.0833vw, 1.5rem);",
     },
@@ -201,6 +255,9 @@ exports[`processSpacing - generates fluid spacing (prefix) 2`] = `
     "spacing_fluid.base@m",
     {
       "key": "--spacing_fluid-base-foo-m",
+      "sourcePath": "spacing_fluid.base@m",
+      "tier": "primitive",
+      "type": "spacing",
       "value": "clamp(0.25rem, -0.1667rem + 2.0833vw, 1.5rem)",
       "variable": "--spacing_fluid-base-foo-m: clamp(0.25rem, -0.1667rem + 2.0833vw, 1.5rem);",
     },
@@ -209,6 +266,9 @@ exports[`processSpacing - generates fluid spacing (prefix) 2`] = `
     "spacing_fluid.base@l",
     {
       "key": "--spacing_fluid-base-foo-l",
+      "sourcePath": "spacing_fluid.base@l",
+      "tier": "primitive",
+      "type": "spacing",
       "value": "clamp(0.5rem, -0.3333rem + 4.1667vw, 3rem)",
       "variable": "--spacing_fluid-base-foo-l: clamp(0.5rem, -0.3333rem + 4.1667vw, 3rem);",
     },
@@ -217,6 +277,9 @@ exports[`processSpacing - generates fluid spacing (prefix) 2`] = `
     "spacing_fluid.base@xs-l",
     {
       "key": "--spacing_fluid-base-foo-xs-l",
+      "sourcePath": "spacing_fluid.base@xs-l",
+      "tier": "primitive",
+      "type": "spacing",
       "value": "clamp(0rem, -1rem + 5vw, 3rem)",
       "variable": "--spacing_fluid-base-foo-xs-l: clamp(0rem, -1rem + 5vw, 3rem);",
     },
@@ -225,6 +288,9 @@ exports[`processSpacing - generates fluid spacing (prefix) 2`] = `
     "spacing_fluid.base@xs-s",
     {
       "key": "--spacing_fluid-base-foo-xs-s",
+      "sourcePath": "spacing_fluid.base@xs-s",
+      "tier": "primitive",
+      "type": "spacing",
       "value": "clamp(0rem, -0.5rem + 2.5vw, 1.5rem)",
       "variable": "--spacing_fluid-base-foo-xs-s: clamp(0rem, -0.5rem + 2.5vw, 1.5rem);",
     },
@@ -233,6 +299,9 @@ exports[`processSpacing - generates fluid spacing (prefix) 2`] = `
     "spacing_fluid.base@s-m",
     {
       "key": "--spacing_fluid-base-foo-s-m",
+      "sourcePath": "spacing_fluid.base@s-m",
+      "tier": "primitive",
+      "type": "spacing",
       "value": "clamp(0.25rem, -0.1667rem + 2.0833vw, 1.5rem)",
       "variable": "--spacing_fluid-base-foo-s-m: clamp(0.25rem, -0.1667rem + 2.0833vw, 1.5rem);",
     },
@@ -241,6 +310,9 @@ exports[`processSpacing - generates fluid spacing (prefix) 2`] = `
     "spacing_fluid.base@m-l",
     {
       "key": "--spacing_fluid-base-foo-m-l",
+      "sourcePath": "spacing_fluid.base@m-l",
+      "tier": "primitive",
+      "type": "spacing",
       "value": "clamp(0.25rem, -0.6667rem + 4.5833vw, 3rem)",
       "variable": "--spacing_fluid-base-foo-m-l: clamp(0.25rem, -0.6667rem + 4.5833vw, 3rem);",
     },
@@ -261,6 +333,9 @@ exports[`processSpacing - handles settings 2`] = `
     "spacing.custom.size.1",
     {
       "key": "--spacing-size-1",
+      "sourcePath": "spacing.custom.size.1",
+      "tier": "primitive",
+      "type": "spacing",
       "value": "1rem",
       "variable": "--spacing-size-1: 1rem;",
     },
@@ -269,6 +344,9 @@ exports[`processSpacing - handles settings 2`] = `
     "spacing.custom.size.2",
     {
       "key": "--spacing-size-2",
+      "sourcePath": "spacing.custom.size.2",
+      "tier": "primitive",
+      "type": "spacing",
       "value": "0.5rem",
       "variable": "--spacing-size-2: 0.5rem;",
     },
@@ -277,6 +355,9 @@ exports[`processSpacing - handles settings 2`] = `
     "spacing.custom.scale.md",
     {
       "key": "--spacing-scale-md",
+      "sourcePath": "spacing.custom.scale.md",
+      "tier": "primitive",
+      "type": "spacing",
       "value": "8px",
       "variable": "--spacing-scale-md: 8px;",
     },
@@ -285,6 +366,9 @@ exports[`processSpacing - handles settings 2`] = `
     "spacing.custom.scale.lg",
     {
       "key": "--spacing-scale-lg",
+      "sourcePath": "spacing.custom.scale.lg",
+      "tier": "primitive",
+      "type": "spacing",
       "value": "0.75rem",
       "variable": "--spacing-scale-lg: 0.75rem;",
     },

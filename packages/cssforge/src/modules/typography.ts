@@ -95,6 +95,9 @@ export function processTypography(config: TypographyConfig): Output {
 					variable,
 					key,
 					value: clamp,
+					sourcePath: `${moduleKey}.${scaleName}@${resolvedLabel}`,
+					type: "typography",
+					tier: "primitive",
 				});
 			}
 		}
@@ -114,6 +117,9 @@ export function processTypography(config: TypographyConfig): Output {
 					variable,
 					key,
 					value: weightValue,
+					sourcePath: `${moduleKey}.weight.${weightName}.${token}`,
+					type: "typography",
+					tier: "primitive",
 				});
 			}
 		}

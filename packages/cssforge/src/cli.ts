@@ -14,7 +14,12 @@ import type { CommandDef } from "citty";
  */
 import { defineCommand, runMain } from "citty";
 import type { CSSForgeConfig } from "./config.ts";
-import { generateCSS, generateJSON, generateTS } from "./generator.ts";
+import {
+	generateCSS,
+	generateJSON,
+	generateStyleDictionaryJSON,
+	generateTS,
+} from "./generator.ts";
 
 const writeFileRecursive = (path: string, data: string) =>
 	fs
@@ -28,11 +33,13 @@ export interface BuildOptions {
 	/** Path to the configuration file. */
 	config: string;
 	/** The output mode. */
-	mode: "css" | "json" | "ts" | "all";
+	mode: "css" | "json" | "ts" | "style-dictionary" | "all";
 	/** Path for the CSS output file. */
 	cssOutput: string;
 	/** Path for the JSON output file. */
 	jsonOutput: string;
+	/** Path for the Style Dictionary-compatible JSON output file. */
+	styleDictionaryOutput: string;
 	/** Path for the TypeScript output file. */
 	tsOutput: string;
 }
@@ -47,12 +54,14 @@ export async function build({
 	tsOutput,
 	cssOutput,
 	jsonOutput,
+	styleDictionaryOutput,
 	mode,
 }: BuildOptions): Promise<{ success: boolean; error?: unknown }> {
 	try {
 		const absoluteconfig = resolve(process.cwd(), config);
 		const absoluteCssOutput = resolve(process.cwd(), cssOutput);
 		const absoluteJsonOutput = resolve(process.cwd(), jsonOutput);
+		const absoluteStyleDictionaryOutput = resolve(process.cwd(), styleDictionaryOutput);
 		const absoluteTsOutput = resolve(process.cwd(), tsOutput);
 
 		// Import config with cache busting
@@ -73,6 +82,16 @@ export async function build({
 				generateJSON(userConfig.default as CSSForgeConfig),
 			);
 			console.log(`✔ Generated JSON written to ${jsonOutput}`);
+		}
+
+		if (mode === "style-dictionary" || mode === "all") {
+			await writeFileRecursive(
+				absoluteStyleDictionaryOutput,
+				generateStyleDictionaryJSON(userConfig.default as CSSForgeConfig),
+			);
+			console.log(
+				`✔ Generated Style Dictionary JSON written to ${styleDictionaryOutput}`,
+			);
 		}
 
 		if (mode === "ts" || mode === "all") {
@@ -147,7 +166,7 @@ const mainCommand = defineCommand({
 		},
 		mode: {
 			type: "string",
-			description: "Output mode (css, json, ts, all)",
+			description: "Output mode (css, json, ts, style-dictionary, all)",
 			alias: "m",
 			default: "all",
 		},
@@ -160,6 +179,11 @@ const mainCommand = defineCommand({
 			type: "string",
 			description: "Optional path for an output JSON file",
 			default: "./.cssforge/output.json",
+		},
+		"style-dictionary": {
+			type: "string",
+			description: "Path for the Style Dictionary-compatible JSON output file",
+			default: "./.cssforge/tokens.sd.json",
 		},
 		css: {
 			type: "string",
@@ -174,6 +198,7 @@ const mainCommand = defineCommand({
 	},
 	async run({ args }) {
 		const { watch: shouldWatch, config, css, json, ts, mode, prefix } = args;
+		const styleDictionary = args["style-dictionary"];
 		const realPath = (p: string) => resolve(prefix, p);
 		const settings = {
 			mode,
@@ -181,6 +206,7 @@ const mainCommand = defineCommand({
 			cssOutput: realPath(css),
 			tsOutput: realPath(ts),
 			jsonOutput: realPath(json),
+			styleDictionaryOutput: realPath(styleDictionary),
 		} as BuildOptions;
 		if (shouldWatch) {
 			const cleanup = await watch(settings);
