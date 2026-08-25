@@ -1,4 +1,5 @@
 import { defineConfig } from "vitepress";
+import llmstxt from "vitepress-plugin-llms";
 
 export default defineConfig({
   title: "CSS Forge",
@@ -8,6 +9,9 @@ export default defineConfig({
   appearance: "dark",
   markdown: {
     theme: "github-dark",
+  },
+  vite: {
+    plugins: [llmstxt()],
   },
   themeConfig: {
     nav: [
