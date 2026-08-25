@@ -40,7 +40,8 @@ export interface StyleDictionaryJSONOptions {
 	 * Controls the top-level token `value`.
 	 *
 	 * `css-reference` is useful for tools that scan authored CSS using
-	 * `var(--token)` values. `resolved` puts the fully resolved value in `value`.
+	 * `var(--token)` values. `resolved` recursively resolves references to generated
+	 * tokens; cycles and unknown external custom properties remain as `var(...)`.
 	 *
 	 * @default "css-reference"
 	 */
@@ -50,36 +51,17 @@ export interface StyleDictionaryJSONOptions {
 const isRecord = (value: unknown): value is Record<string, unknown> =>
 	typeof value === "object" && value !== null && !Array.isArray(value);
 
-const deepMerge = (target: ForgeValue, source: ForgeValue): ForgeValue => {
+const deepMerge = <T extends Record<string, unknown>>(target: T, source: T): T => {
 	const result: Record<string, unknown> = { ...target };
 	for (const [key, sourceValue] of Object.entries(source)) {
 		const targetValue = result[key];
 		if (isRecord(targetValue) && isRecord(sourceValue)) {
-			result[key] = deepMerge(targetValue as ForgeValue, sourceValue as ForgeValue);
+			result[key] = deepMerge(targetValue, sourceValue);
 			continue;
 		}
 		result[key] = sourceValue;
 	}
-	return result as ForgeValue;
-};
-
-const deepMergeStyleDictionary = (
-	target: StyleDictionaryValue,
-	source: StyleDictionaryValue,
-): StyleDictionaryValue => {
-	const result: Record<string, unknown> = { ...target };
-	for (const [key, sourceValue] of Object.entries(source)) {
-		const targetValue = result[key];
-		if (isRecord(targetValue) && isRecord(sourceValue)) {
-			result[key] = deepMergeStyleDictionary(
-				targetValue as StyleDictionaryValue,
-				sourceValue as StyleDictionaryValue,
-			);
-			continue;
-		}
-		result[key] = sourceValue;
-	}
-	return result as StyleDictionaryValue;
+	return result as T;
 };
 
 const collectResolveMap = (config: Partial<CSSForgeConfig>): ResolveMap => {
@@ -211,11 +193,12 @@ const resolveTokenValue = (
 	});
 
 /**
- * Generates a Style Dictionary-compatible JSON string from the CSSForge configuration.
+ * Generates a Style Dictionary-readable JSON string from the CSSForge configuration.
  *
  * The default output is optimized for CSS variable usage scanners: token leaves use
- * `value: "var(--token)"` while the fully resolved value is preserved in
- * `$resolvedValue` and `attributes.resolvedValue`.
+ * `value: "var(--token)"`. These values are CSS literals, not Style Dictionary aliases.
+ * Known CSSForge references are recursively resolved in `$resolvedValue` and
+ * `attributes.resolvedValue`; cycles and unknown custom properties remain as `var(...)`.
  */
 export function generateStyleDictionaryJSON(
 	config: Partial<CSSForgeConfig>,
@@ -240,7 +223,7 @@ export function generateStyleDictionaryJSON(
 					cssVariable: token.key,
 					cssVariableReference,
 					resolvedValue,
-					sourcePath: token.sourcePath,
+					sourcePath: toStyleDictionaryPath(token.sourcePath),
 					...(referencePaths ? { referencePaths } : {}),
 				},
 				$tier: tier,
@@ -251,7 +234,7 @@ export function generateStyleDictionaryJSON(
 				toStyleDictionaryPath(sourcePath).split("."),
 				styleDictionaryToken,
 			);
-			return deepMergeStyleDictionary(acc, nestedObject);
+			return deepMerge(acc, nestedObject);
 		},
 		{} as StyleDictionaryValue,
 	);

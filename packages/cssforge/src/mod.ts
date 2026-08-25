@@ -34,9 +34,9 @@ export {
 	 */
 	generateCSS,
 	/**
-	 * Generates a Style Dictionary-compatible JSON string from a CSSForge configuration.
+	 * Generates a Style Dictionary-readable JSON string from a CSSForge configuration.
 	 * @param config The CSSForge configuration.
-	 * @returns The generated Style Dictionary-compatible JSON string.
+	 * @returns The generated Style Dictionary-readable JSON string.
 	 */
 	generateStyleDictionaryJSON,
 	/**

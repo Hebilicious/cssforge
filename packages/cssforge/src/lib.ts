@@ -227,6 +227,6 @@ export const resolveValue = ({
 	value: string;
 }) =>
 	value.replace(
-		/var\(--(\w+)\)/g,
+		/var\(\s*--([\w-]+)\s*\)/g,
 		(_, key: string) => `var(${map.get(`--${key}`) ?? `--${key}`})`,
 	);
