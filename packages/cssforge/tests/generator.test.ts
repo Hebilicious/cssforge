@@ -63,7 +63,9 @@ Deno.test("generateStyleDictionaryJSON - preserves references and resolved value
 		},
 	});
 
-	const result = JSON.parse(generateStyleDictionaryJSON(config));
+	const result = JSON.parse(
+		generateStyleDictionaryJSON(config, { valueMode: "css-reference" }),
+	);
 
 	assertEquals(result.palette.neutral["900"].value, "var(--palette-neutral-900)");
 	assertEquals(result.palette.neutral["900"].type, "color");
@@ -94,7 +96,7 @@ Deno.test("generateStyleDictionaryJSON - preserves references and resolved value
 	await assertSnapshot(t, result);
 });
 
-Deno.test("generateStyleDictionaryJSON - can use resolved values as token values", () => {
+Deno.test("generateStyleDictionaryJSON - uses resolved values by default", () => {
 	const config = defineConfig({
 		spacing: {
 			custom: {
@@ -107,9 +109,7 @@ Deno.test("generateStyleDictionaryJSON - can use resolved values as token values
 		},
 	});
 
-	const result = JSON.parse(
-		generateStyleDictionaryJSON(config, { valueMode: "resolved" }),
-	);
+	const result = JSON.parse(generateStyleDictionaryJSON(config));
 
 	assertEquals(result.spacing.custom.size["2"].value, "0.5rem");
 	assertEquals(
@@ -418,7 +418,7 @@ Deno.test("cli - style-dictionary and all modes write their declared outputs", a
 		assertEquals(result.status, 0);
 		assertEquals(result.stderr, "");
 		assertEquals(result.stdout.includes("Generated Style Dictionary JSON written"), true);
-		assertEquals(output.spacing.custom.size["2"].value, "var(--spacing-size-2)");
+		assertEquals(output.spacing.custom.size["2"].value, "0.5rem");
 		assertEquals(existsSync(cssOutput), false);
 		assertEquals(existsSync(jsonOutput), false);
 		assertEquals(existsSync(tsOutput), false);
@@ -460,8 +460,10 @@ Deno.test("cli - style-dictionary and all modes write their declared outputs", a
 	}
 });
 
-Deno.test("cli - style-dictionary mode can emit resolved consumer values", async () => {
-	const tempDir = await mkdtemp(join(tmpdir(), "cssforge-style-dictionary-resolved-"));
+Deno.test("cli - style-dictionary mode can emit CSS variables for usage matching", async () => {
+	const tempDir = await mkdtemp(
+		join(tmpdir(), "cssforge-style-dictionary-css-reference-"),
+	);
 
 	try {
 		const configPath = join(tempDir, "cssforge.config.ts");
@@ -488,7 +490,7 @@ Deno.test("cli - style-dictionary mode can emit resolved consumer values", async
 				"--style-dictionary",
 				styleDictionaryOutput,
 				"--style-dictionary-value-mode",
-				"resolved",
+				"css-reference",
 			],
 			{ cwd: tempDir, encoding: "utf8" },
 		);
@@ -497,7 +499,7 @@ Deno.test("cli - style-dictionary mode can emit resolved consumer values", async
 
 		assertEquals(result.status, 0);
 		assertEquals(result.stderr, "");
-		assertEquals(output.spacing.custom.size["2"].value, "0.5rem");
+		assertEquals(output.spacing.custom.size["2"].value, "var(--spacing-size-2)");
 	} finally {
 		await rm(tempDir, { recursive: true, force: true });
 	}
