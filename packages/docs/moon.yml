@@ -68,6 +68,26 @@ tasks:
     options:
       runInCI: "affected"
 
+  cloudflare-deploy:
+    command: "wrangler"
+    args: ["deploy"]
+    deps:
+      - "~:build"
+    options:
+      runInCI: false
+      cache: false
+      outputStyle: "stream"
+
+  cloudflare-preview:
+    command: "wrangler"
+    args: ["versions", "upload"]
+    deps:
+      - "~:build"
+    options:
+      runInCI: false
+      cache: false
+      outputStyle: "stream"
+
   preview:
     command: "vitepress"
     args: ["preview"]

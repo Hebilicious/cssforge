@@ -2,10 +2,16 @@
   "name": "cssforge-docs",
   "private": true,
   "type": "module",
+  "scripts": {
+    "cloudflare:build": "bash ./scripts/cloudflare-build.sh",
+    "cloudflare:deploy": "moon run docs:cloudflare-deploy",
+    "cloudflare:preview": "moon run docs:cloudflare-preview"
+  },
   "devDependencies": {
     "@hebilicious/cssforge": "workspace:*",
     "tsx": "4.20.6",
     "vitepress": "1.6.3",
-    "vitepress-plugin-llms": "1.13.5"
+    "vitepress-plugin-llms": "1.13.5",
+    "wrangler": "4.125.0"
   }
 }
