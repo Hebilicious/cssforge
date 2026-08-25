@@ -1,5 +1,11 @@
 import type { CSSForgeConfig } from "./config.ts";
-import type { ResolvedToken, ResolveMap, TokenTier, TokenType } from "./lib.ts";
+import {
+	type ResolvedToken,
+	type ResolveMap,
+	replaceCssVariableReferences,
+	type TokenTier,
+	type TokenType,
+} from "./lib.ts";
 import { processColors } from "./modules/colors.ts";
 import { processPrimitives } from "./modules/primitive.ts";
 import { processSpacing } from "./modules/spacing.ts";
@@ -179,7 +185,7 @@ const resolveTokenValue = (
 	tokensByCssVariable: Map<string, ResolvedToken>,
 	seen: Set<string> = new Set(),
 ): string =>
-	token.value.replace(/var\(\s*(--[\w-]+)\s*\)/g, (match, cssVariable: string) => {
+	replaceCssVariableReferences(token.value, (cssVariable, match) => {
 		if (seen.has(cssVariable)) return match;
 
 		const referencedToken = tokensByCssVariable.get(cssVariable);

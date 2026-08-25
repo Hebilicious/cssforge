@@ -134,7 +134,7 @@ Deno.test("generateStyleDictionaryJSON - resolves hyphenated CSSForge aliases", 
 				value: {
 					default: {
 						value: {
-							color: "var(--theme-color)",
+							color: "var( --theme-color )",
 						},
 						variables: {
 							"theme-color": "palette.neutral.900",

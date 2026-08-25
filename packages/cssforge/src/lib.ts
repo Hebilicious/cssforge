@@ -53,6 +53,28 @@ export interface Variables {
 	[key: string]: string;
 }
 
+const cssVariableReferencePattern = /var\(\s*(--[\w-]+)\s*\)/g;
+
+/**
+ * Rewrites CSS custom-property references using the canonical CSSForge parser.
+ */
+export const replaceCssVariableReferences = (
+	value: string,
+	replacer: (cssVariable: string, match: string) => string,
+): string =>
+	value.replace(cssVariableReferencePattern, (match, cssVariable: string) =>
+		replacer(cssVariable, match),
+	);
+
+const getCssVariableReferences = (value: string): string[] => {
+	const references: string[] = [];
+	replaceCssVariableReferences(value, (cssVariable, match) => {
+		references.push(cssVariable);
+		return match;
+	});
+	return references;
+};
+
 interface Modules {
 	colors?: Output | null;
 	typography?: Output | null;
@@ -204,9 +226,9 @@ export const getReferencePaths = ({
 }): string[] | undefined => {
 	if (!variables) return undefined;
 
-	const referencePaths = Array.from(value.matchAll(/var\(--([\w-]+)\)/g))
-		.map(([, key]) => {
-			const path = variables[key];
+	const referencePaths = getCssVariableReferences(value)
+		.map((cssVariable) => {
+			const path = variables[cssVariable.slice(2)];
 			return path ? normalizeTokenPath(path) : undefined;
 		})
 		.filter((path): path is string => Boolean(path));
@@ -226,7 +248,7 @@ export const resolveValue = ({
 	map: Map<string, string>;
 	value: string;
 }) =>
-	value.replace(
-		/var\(\s*--([\w-]+)\s*\)/g,
-		(_, key: string) => `var(${map.get(`--${key}`) ?? `--${key}`})`,
+	replaceCssVariableReferences(
+		value,
+		(cssVariable) => `var(${map.get(cssVariable) ?? cssVariable})`,
 	);
