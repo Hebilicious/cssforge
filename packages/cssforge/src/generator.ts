@@ -45,9 +45,9 @@ export interface StyleDictionaryJSONOptions {
 	/**
 	 * Controls the top-level token `value`.
 	 *
-	 * `css-reference` is useful for tools that scan authored CSS using
-	 * `var(--token)` values. `resolved` recursively resolves references to generated
-	 * tokens; cycles and unknown external custom properties remain as `var(...)`.
+	 * Use `css-reference` to match authored `var(--token)` calls. Use `resolved`
+	 * for token previews and build tools that need final values. Cycles and unknown
+	 * CSS variables remain as `var(...)`.
 	 *
 	 * @default "css-reference"
 	 */
@@ -163,7 +163,20 @@ export function createForgeValues(config: Partial<CSSForgeConfig>) {
 	return forgeValues;
 }
 
-const toStyleDictionaryPath = (sourcePath: string) => sourcePath.replaceAll("@", ".");
+const toKebabCase = (value: string) =>
+	value
+		.replace(/([a-z0-9])([A-Z])/g, "$1-$2")
+		.replace(/[_\s]+/g, "-")
+		.toLowerCase();
+
+const toStyleDictionaryPath = (sourcePath: string) => {
+	const segments = sourcePath.replaceAll("@", ".").split(".");
+	return segments
+		.map((segment, index) =>
+			index === segments.length - 1 ? segment : toKebabCase(segment),
+		)
+		.join(".");
+};
 
 const createNestedStyleDictionaryObject = (
 	path: string[],
@@ -199,12 +212,11 @@ const resolveTokenValue = (
 	});
 
 /**
- * Generates a Style Dictionary-readable JSON string from the CSSForge configuration.
+ * Generates token JSON for tools such as Musea and Style Dictionary.
  *
- * The default output is optimized for CSS variable usage scanners: token leaves use
- * `value: "var(--token)"`. These values are CSS literals, not Style Dictionary aliases.
- * Known CSSForge references are recursively resolved in `$resolvedValue` and
- * `attributes.resolvedValue`; cycles and unknown custom properties remain as `var(...)`.
+ * The default keeps each token's `var(--token)` call as `value` for usage matching.
+ * Select `resolved` when the consumer needs final values for previews or transforms.
+ * Both modes include resolved values and CSS variable metadata.
  */
 export function generateStyleDictionaryJSON(
 	config: Partial<CSSForgeConfig>,
@@ -215,35 +227,44 @@ export function generateStyleDictionaryJSON(
 	const tokensByCssVariable = new Map(
 		[...resolveMap.values()].map((token) => [token.key, token]),
 	);
-
-	const styleDictionaryValues = [...resolveMap.entries()].reduce(
-		(acc, [sourcePath, token]) => {
-			const resolvedValue = resolveTokenValue(token, tokensByCssVariable);
-			const cssVariableReference = `var(${token.key})`;
-			const referencePaths = token.referencePaths?.map(toStyleDictionaryPath);
-			const tier = token.tier ?? (referencePaths?.length ? "semantic" : "primitive");
-			const styleDictionaryToken: StyleDictionaryToken = {
-				value: valueMode === "resolved" ? resolvedValue : cssVariableReference,
-				type: token.type,
-				attributes: {
-					cssVariable: token.key,
-					cssVariableReference,
-					resolvedValue,
-					sourcePath: toStyleDictionaryPath(token.sourcePath),
-					...(referencePaths ? { referencePaths } : {}),
-				},
-				$tier: tier,
-				...(referencePaths?.[0] ? { $reference: referencePaths[0] } : {}),
-				$resolvedValue: resolvedValue,
-			};
-			const nestedObject = createNestedStyleDictionaryObject(
-				toStyleDictionaryPath(sourcePath).split("."),
-				styleDictionaryToken,
+	const outputPathSources = new Map<string, string>();
+	const outputTokens = [...resolveMap.entries()].map(([sourcePath, token]) => {
+		const outputPath = toStyleDictionaryPath(sourcePath);
+		const existingSourcePath = outputPathSources.get(outputPath);
+		if (existingSourcePath) {
+			throw new Error(
+				`Token path collision after normalization: "${existingSourcePath}" and "${sourcePath}" both become "${outputPath}"`,
 			);
-			return deepMerge(acc, nestedObject);
-		},
-		{} as StyleDictionaryValue,
-	);
+		}
+		outputPathSources.set(outputPath, sourcePath);
+		return { outputPath, token };
+	});
+
+	const styleDictionaryValues = outputTokens.reduce((acc, { outputPath, token }) => {
+		const resolvedValue = resolveTokenValue(token, tokensByCssVariable);
+		const cssVariableReference = `var(${token.key})`;
+		const referencePaths = token.referencePaths?.map(toStyleDictionaryPath);
+		const tier = token.tier ?? (referencePaths?.length ? "semantic" : "primitive");
+		const styleDictionaryToken: StyleDictionaryToken = {
+			value: valueMode === "resolved" ? resolvedValue : cssVariableReference,
+			type: token.type,
+			attributes: {
+				cssVariable: token.key,
+				cssVariableReference,
+				resolvedValue,
+				sourcePath: toStyleDictionaryPath(token.sourcePath),
+				...(referencePaths ? { referencePaths } : {}),
+			},
+			$tier: tier,
+			...(referencePaths?.[0] ? { $reference: referencePaths[0] } : {}),
+			$resolvedValue: resolvedValue,
+		};
+		const nestedObject = createNestedStyleDictionaryObject(
+			outputPath.split("."),
+			styleDictionaryToken,
+		);
+		return deepMerge(acc, nestedObject);
+	}, {} as StyleDictionaryValue);
 
 	return JSON.stringify(styleDictionaryValues, null, 2);
 }

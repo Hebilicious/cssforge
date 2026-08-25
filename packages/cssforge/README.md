@@ -179,24 +179,44 @@ import { cssForge } from "./.cssforge/output.ts";
 export { cssForge };
 ```
 
-5. Use scanner-oriented token JSON in token-aware tools:
+5. Use CSS Forge tokens in Musea or Style Dictionary:
 
-CSS Forge can also generate Style Dictionary-readable token JSON. The default
-`css-reference` value mode is designed for tools such as Musea that scan component styles:
-each leaf keeps its own `var(--token)` reference as `value`, the recursively resolved known
-value as `$resolvedValue`, and provenance metadata under `attributes`.
+CSS Forge can write a token JSON file for tools that need more than the generated CSS.
+The file includes each token's value, type, tier, CSS variable, resolved value, and references.
+It is an extra output; it does not change the CSS or TypeScript files you already generate.
 
-These `var(--token)` values are literal CSS custom-property references, not Style
-Dictionary aliases. Official Style Dictionary aliases use `{path.to.token}`. When Style
-Dictionary itself will transform the file, select `resolved` mode so its consumer receives
-literal resolved values. Cycles and unknown external custom properties remain as `var(...)`.
+Choose the value mode based on what the next tool needs:
+
+| Mode | `value` contains | Use it for |
+| --- | --- | --- |
+| `css-reference` (default) | `var(--palette-neutral-900)` | Finding CSS variable usage in source files |
+| `resolved` | The final value, such as `oklch(...)`, `1rem`, or `clamp(...)` | Musea token previews and Style Dictionary builds |
+
+For most Musea token galleries, start with `resolved`. Use `css-reference` when usage
+matching is more important and Musea scans the files that contain your `var(--token)` calls.
 
 ```bash
-pnpm run cssforge -- --mode style-dictionary --style-dictionary ./.cssforge/tokens.sd.json
+# Recommended for a Musea token gallery
+pnpm run cssforge -- --mode style-dictionary --style-dictionary ./.cssforge/tokens.json --style-dictionary-value-mode resolved
 
-# Emit values intended for a Style Dictionary build consumer
-pnpm run cssforge -- --mode style-dictionary --style-dictionary-value-mode resolved
+# Keep CSS variables as values for usage matching
+pnpm run cssforge -- --mode style-dictionary --style-dictionary ./.cssforge/tokens.json
 ```
+
+Point Musea at the generated file:
+
+```typescript
+musea({
+  tokensPath: ".cssforge/tokens.json",
+});
+```
+
+CSS Forge resolves nested references recursively. Token keys and `$reference` use the same
+path, so Musea can connect semantic tokens to their source. Cycles and unknown CSS variables
+stay as `var(...)` instead of causing generation to fail.
+
+CSS Forge writes literal values, not Style Dictionary aliases such as `{palette.neutral.900}`.
+Use `resolved` when Style Dictionary will transform the file.
 
 ## Configuration
 
@@ -1049,10 +1069,10 @@ pnpm run cssforge -- --watch
 # Custom paths and output
 pnpm run cssforge -- --config ./foo/bar/custom-path.ts --css ./dist/design-tokens.css --ts ./dist/design-tokens.ts --json ./dist/design-tokens.json --style-dictionary ./dist/design-tokens.sd.json --mode all
 
-# Scanner-oriented JSON only (the default value mode)
+# Token JSON for CSS variable usage matching (default)
 pnpm run cssforge -- --mode style-dictionary --style-dictionary ./dist/design-tokens.sd.json
 
-# Style Dictionary consumer input with recursively resolved known values
+# Token JSON with final values for Musea previews or Style Dictionary
 pnpm run cssforge -- --mode style-dictionary --style-dictionary ./dist/design-tokens.sd.json --style-dictionary-value-mode resolved
 ```
 
@@ -1066,10 +1086,10 @@ import { generateCSS, generateStyleDictionaryJSON } from "jsr:@hebilicious/cssfo
 // Generate CSS string
 const css = generateCSS(config);
 
-// Scanner-oriented values: value is the token's own var(--token) reference
-const scannerTokens = generateStyleDictionaryJSON(config);
+// Keep var(--token) as each token's value for usage matching
+const usageTokens = generateStyleDictionaryJSON(config);
 
-// Style Dictionary consumer values: known CSSForge references are resolved
+// Write final values for Musea previews or Style Dictionary
 const resolvedTokens = generateStyleDictionaryJSON(config, { valueMode: "resolved" });
 ```
 

@@ -185,28 +185,33 @@ Deno.test("generateStyleDictionaryJSON - preserves cycles and unresolved custom 
 	assertEquals(result.theme.light.content.external.value, "var(--external-property)");
 });
 
-Deno.test("generateStyleDictionaryJSON - uses emitted paths for fluid source metadata", () => {
+Deno.test("generateStyleDictionaryJSON - uses Musea paths for token groups and references", () => {
 	const config = defineConfig({
-		spacing: {
+		typography: {
 			fluid: {
-				base: {
+				app: {
 					value: {
-						minSize: 4,
-						maxSize: 24,
 						minWidth: 320,
-						maxWidth: 1280,
-						negativeSteps: [0],
-						positiveSteps: [1],
+						minFontSize: 13,
+						minTypeScale: 1.12,
+						maxWidth: 1440,
+						maxFontSize: 14,
+						maxTypeScale: 1.12,
+						positiveSteps: 0,
+						negativeSteps: 0,
+					},
+					settings: {
+						customLabel: { "0": "detail" },
 					},
 				},
 			},
 		},
 		primitives: {
-			card: {
+			textRole: {
 				value: {
-					default: {
-						value: { gap: "var(--space)" },
-						variables: { space: "spacing_fluid.base@s" },
+					detail: {
+						value: { fontSize: "var(--size)" },
+						variables: { size: "typography_fluid.app@detail" },
 					},
 				},
 			},
@@ -215,10 +220,46 @@ Deno.test("generateStyleDictionaryJSON - uses emitted paths for fluid source met
 
 	const result = JSON.parse(generateStyleDictionaryJSON(config));
 
-	assertEquals(result.spacing_fluid.base.s.attributes.sourcePath, "spacing_fluid.base.s");
-	assertEquals(result.primitives.card.default.gap.attributes.referencePaths, [
-		"spacing_fluid.base.s",
+	assertEquals(
+		result["typography-fluid"].app.detail.attributes.sourcePath,
+		"typography-fluid.app.detail",
+	);
+	assertEquals(
+		result.primitives["text-role"].detail.fontSize.attributes.sourcePath,
+		"primitives.text-role.detail.fontSize",
+	);
+	assertEquals(result.primitives["text-role"].detail.fontSize.attributes.referencePaths, [
+		"typography-fluid.app.detail",
 	]);
+	assertEquals(
+		result.primitives["text-role"].detail.fontSize.$reference,
+		"typography-fluid.app.detail",
+	);
+});
+
+Deno.test("generateStyleDictionaryJSON - rejects token paths that collide after normalization", () => {
+	const config = defineConfig({
+		colors: {
+			palette: {
+				value: {
+					cosmicGold: { 50: "#fff" },
+					"cosmic-gold": { 50: "#000" },
+				},
+			},
+		},
+	});
+
+	let error: unknown;
+	try {
+		generateStyleDictionaryJSON(config);
+	} catch (caught) {
+		error = caught;
+	}
+
+	assertEquals(
+		error instanceof Error ? error.message : "",
+		'Token path collision after normalization: "palette.cosmicGold.50" and "palette.cosmic-gold.50" both become "palette.cosmic-gold.50"',
+	);
 });
 
 Deno.test("generateStyleDictionaryJSON - supports legacy value-wrapper reference paths", () => {
@@ -307,10 +348,13 @@ Deno.test("generateStyleDictionaryJSON - supports legacy value-wrapper reference
 
 	const result = JSON.parse(generateStyleDictionaryJSON(config));
 
-	assertEquals(result.gradients.goldGradient.primary.$reference, "palette.cosmicGold.50");
-	assertEquals(result.gradients.goldGradient.primary.attributes.referencePaths, [
-		"palette.cosmicGold.50",
-		"palette.cosmicGold.90",
+	assertEquals(
+		result.gradients["gold-gradient"].primary.$reference,
+		"palette.cosmic-gold.50",
+	);
+	assertEquals(result.gradients["gold-gradient"].primary.attributes.referencePaths, [
+		"palette.cosmic-gold.50",
+		"palette.cosmic-gold.90",
 	]);
 	assertEquals(result.theme.light.content.primary.$reference, "palette.gray.950");
 	assertEquals(
