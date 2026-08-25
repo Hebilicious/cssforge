@@ -16,7 +16,7 @@ tasks:
     outputs:
       - "docs.md"
     options:
-      runInCI: false
+      runInCI: "affected"
 
   generate:
     command: "tsx"
@@ -37,7 +37,7 @@ tasks:
     outputs:
       - ".cssforge/output.css"
     options:
-      runInCI: false
+      runInCI: "affected"
 
   dev:
     command: "vitepress"
@@ -58,7 +58,7 @@ tasks:
     outputs:
       - ".vitepress/dist"
     options:
-      runInCI: false
+      runInCI: "affected"
 
   preview:
     command: "vitepress"

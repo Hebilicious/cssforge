@@ -23,8 +23,13 @@ export default defineConfig({
     ],
     search: { provider: "local" },
     editLink: {
-      pattern:
-        "https://github.com/Hebilicious/cssforge/edit/main/packages/cssforge-docs/:path",
+      pattern: ({ filePath }) => {
+        const sourcePath = filePath === "docs.md"
+          ? "packages/cssforge/README.md"
+          : `packages/docs/${filePath}`;
+
+        return `https://github.com/Hebilicious/cssforge/edit/main/${sourcePath}`;
+      },
     },
     footer: {
       message: "Released under the MIT License.",

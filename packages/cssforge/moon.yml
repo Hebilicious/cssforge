@@ -110,7 +110,7 @@ tasks:
     outputs:
       - "dist"
     options:
-      runInCI: false
+      runInCI: "affected"
   jsr-dry-run:
     command: "npx"
     args: ["jsr", "publish", "--dry-run", "--allow-dirty"]
