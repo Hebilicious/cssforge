@@ -212,7 +212,7 @@ const resolveTokenValue = (
 	});
 
 /**
- * Generates token JSON for tools such as Musea and Style Dictionary.
+ * Generates a Style Dictionary-readable token JSON string.
  *
  * The default writes final values for previews and transforms. Select `css-reference`
  * to keep each token's `var(--token)` call as `value` for usage matching.
