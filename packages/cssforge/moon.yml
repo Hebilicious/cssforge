@@ -138,5 +138,29 @@ tasks:
   readme-update:
     command: "tsx"
     args: ["./scripts/update-readme.ts"]
+    inputs:
+      - "src/**/*"
+      - "scripts/update-readme.ts"
+      - "package.json"
+      - "tsconfig.json"
+      - "/README.md"
+      - "/pnpm-lock.yaml"
+      - "/tsconfig.base.json"
+      - "README.md"
     options:
       runInCI: false
+      cache: false
+  readme-check:
+    command: "tsx"
+    args: ["./scripts/update-readme.ts", "--check"]
+    inputs:
+      - "src/**/*"
+      - "scripts/update-readme.ts"
+      - "package.json"
+      - "tsconfig.json"
+      - "/README.md"
+      - "/pnpm-lock.yaml"
+      - "/tsconfig.base.json"
+      - "README.md"
+    options:
+      runInCI: "affected"

@@ -12,7 +12,7 @@ tasks:
     args: ["./scripts/sync-readme.ts"]
     inputs:
       - "scripts/sync-readme.ts"
-      - "/packages/cssforge/README.md"
+      - "/README.md"
     outputs:
       - "contributing.md"
       - "guide/getting-started.md"
@@ -63,6 +63,11 @@ tasks:
     deps:
       - "~:generate"
       - "~:sync-docs"
+      - "cssforge:readme-check"
+    inputs:
+      - "**/*"
+      - "/README.md"
+      - "/packages/cssforge/README.md"
     outputs:
       - ".vitepress/dist"
     options:
