@@ -185,7 +185,7 @@ Deno.test("generateStyleDictionaryJSON - preserves cycles and unresolved custom 
 	assertEquals(result.theme.light.content.external.value, "var(--external-property)");
 });
 
-Deno.test("generateStyleDictionaryJSON - uses Musea paths for token groups and references", () => {
+Deno.test("generateStyleDictionaryJSON - uses consistent Style Dictionary paths", () => {
 	const config = defineConfig({
 		typography: {
 			fluid: {

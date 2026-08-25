@@ -205,7 +205,7 @@ const mainCommand = defineCommand({
 		},
 		"style-dictionary": {
 			type: "string",
-			description: "Path for token JSON used by Musea or Style Dictionary",
+			description: "Path for the Style Dictionary token JSON file",
 			default: "./.cssforge/tokens.sd.json",
 		},
 		"style-dictionary-value-mode": {
