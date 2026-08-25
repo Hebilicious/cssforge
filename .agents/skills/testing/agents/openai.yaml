@@ -1,0 +1,4 @@
+interface:
+  display_name: "Testing"
+  short_description: "Design intentional CSS Forge test evidence"
+  default_prompt: "Use $testing to design or revise this repository's test work."
