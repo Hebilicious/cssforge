@@ -179,45 +179,6 @@ import { cssForge } from "./.cssforge/output.ts";
 export { cssForge };
 ```
 
-5. Generate Style Dictionary token JSON:
-
-CSS Forge can write a Style Dictionary-readable JSON file for tools that need more than CSS.
-The file includes each token's value, type, tier, CSS variable, resolved value, and references.
-It is an extra output; it does not change the CSS or TypeScript files you already generate.
-
-Choose the value mode based on what the next tool needs:
-
-| Mode | `value` contains | Use it for |
-| --- | --- | --- |
-| `resolved` (default) | The final value, such as `oklch(...)`, `1rem`, or `clamp(...)` | Token previews and Style Dictionary builds |
-| `css-reference` | `var(--palette-neutral-900)` | Finding CSS variable usage in source files |
-
-Use the default for Style Dictionary builds and token previews. Choose `css-reference` only
-when another tool needs to match the `var(--token)` calls in your source files.
-
-```bash
-# Generate resolved Style Dictionary token JSON
-pnpm run cssforge -- --mode style-dictionary --style-dictionary ./.cssforge/tokens.json
-
-# Keep CSS variables as values for usage matching
-pnpm run cssforge -- --mode style-dictionary --style-dictionary ./.cssforge/tokens.json --style-dictionary-value-mode css-reference
-```
-
-For example, Musea can use the generated file as its token source:
-
-```typescript
-musea({
-  tokensPath: ".cssforge/tokens.json",
-});
-```
-
-CSS Forge resolves nested references recursively. Token keys and `$reference` use the same
-path, so consumers can connect semantic tokens to their source. Cycles and unknown CSS
-variables stay as `var(...)` instead of causing generation to fail.
-
-CSS Forge writes literal values, not Style Dictionary aliases such as `{palette.neutral.900}`.
-Use `resolved` when Style Dictionary will transform the file.
-
 ## Configuration
 
 ### Colors
@@ -1092,6 +1053,118 @@ const resolvedTokens = generateStyleDictionaryJSON(config);
 // Keep var(--token) as each token's value for usage matching
 const usageTokens = generateStyleDictionaryJSON(config, { valueMode: "css-reference" });
 ```
+
+## Style Dictionary JSON
+
+CSS Forge can generate a separate token file for Style Dictionary and other tools that read
+the same JSON shape. This output does not change the CSS, TypeScript, or regular JSON files
+you already generate.
+
+### Generate the file
+
+Use `style-dictionary` mode to generate only the token file:
+
+```bash
+pnpm run cssforge -- --mode style-dictionary --style-dictionary ./.cssforge/tokens.json
+```
+
+Use `--mode all` to generate it together with the CSS, TypeScript, and regular JSON outputs.
+The `--style-dictionary` option controls where the token file is written.
+
+A generated token looks like this:
+
+```json
+{
+  "palette": {
+    "neutral": {
+      "900": {
+        "value": "oklch(17.764% 0 0)",
+        "type": "color",
+        "$tier": "primitive",
+        "$resolvedValue": "oklch(17.764% 0 0)",
+        "attributes": {
+          "cssVariable": "--palette-neutral-900",
+          "cssVariableReference": "var(--palette-neutral-900)",
+          "tailwindVariable": "--palette-neutral-900",
+          "resolvedValue": "oklch(17.764% 0 0)",
+          "sourcePath": "palette.neutral.900"
+        }
+      }
+    }
+  }
+}
+```
+
+Semantic tokens also include `$reference` and `attributes.referencePaths`. These paths match
+the keys in the generated file, so consumers can connect a semantic token to its source.
+
+### Token fields
+
+| Field | Contains | Use it for |
+| --- | --- | --- |
+| `value` | The token value in the selected value mode | Rendering and Style Dictionary transforms |
+| `type` | The value kind, falling back to the CSS Forge module when the value kind is not narrower | Grouping and previews that depend on what the token holds |
+| `$tier` | `primitive` or `semantic` | Separating base scales from intent tokens |
+| `$reference` | The token path this token was built from, when it has one | Following a semantic token back to its source |
+| `attributes.cssVariable` | The token's CSS custom property, such as `--palette-neutral-900` | Declaring or overriding the token in CSS |
+| `attributes.tailwindVariable` | The same custom property name, without the `var()` wrapper | Tools that match authored `var(--token)` usage to tokens |
+| `attributes.resolvedValue` | The final value, even in `css-reference` mode | Showing a value without following references |
+| `$resolvedValue` | The same final value as a top-level DTCG-style field | Tools that read `$resolvedValue` before falling back to `value` |
+
+`type` narrows `fontSize`, `lineHeight`, `fontWeight`, `fontFamily`, `borderRadius`,
+`letterSpacing`, `shadow`, `opacity`, `zIndex`, and `number` when the token's name and value
+agree, and stays `color`, `spacing`, `gradient`, `typography`, `primitive`, or `component`
+otherwise.
+
+A narrowed kind is also matched by the leaf name aliases `font-size`, `text-size`,
+`line-height`, `leading`, `font-weight`, `font-family`, `radius`, `rounded`, `tracking`,
+`box-shadow`, `text-shadow`, `shadow`, `alpha`, `z-index`, `gap`, `duration`, and `delay`.
+
+### Choose the value mode
+
+| Mode | `value` contains | Use it for |
+| --- | --- | --- |
+| `resolved` (default) | The final value, such as `oklch(...)`, `1rem`, or `clamp(...)` | Style Dictionary transforms and token previews |
+| `css-reference` | The token's own CSS variable, such as `var(--palette-neutral-900)` | Tools that match CSS variable usage in source files |
+
+The default `resolved` mode recursively resolves references to other CSS Forge tokens. Cycles
+and unknown CSS variables remain as `var(...)` instead of causing generation to fail.
+
+`css-reference` values are CSS custom-property references, not Style Dictionary aliases.
+Style Dictionary aliases use `{path.to.token}`. Use the default `resolved` mode when Style
+Dictionary will transform the file.
+
+```bash
+# Keep CSS variables as values for usage matching
+pnpm run cssforge -- --mode style-dictionary --style-dictionary ./.cssforge/tokens.json --style-dictionary-value-mode css-reference
+```
+
+### Programmatic API
+
+```typescript
+import { generateStyleDictionaryJSON } from "jsr:@hebilicious/cssforge";
+
+const resolvedTokens = generateStyleDictionaryJSON(config);
+const usageTokens = generateStyleDictionaryJSON(config, {
+  valueMode: "css-reference",
+});
+```
+
+### Example: Musea
+
+Musea can use the generated file as its token source:
+
+```typescript
+import { musea } from "@vizejs/vite-plugin-musea";
+
+musea({
+  tokensPath: ".cssforge/tokens.json",
+});
+```
+
+Musea reads `value`, `type`, and `$reference` from this file. Keep the default `resolved` value
+mode: previews and token swatches render from `value`, and `attributes.tailwindVariable` is what
+lets Musea attribute a `var(--token)` written in an art file back to its token.
 
 ## Agentic usage
 

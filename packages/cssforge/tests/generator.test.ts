@@ -237,6 +237,229 @@ Deno.test("generateStyleDictionaryJSON - uses consistent Style Dictionary paths"
 	);
 });
 
+Deno.test("generateStyleDictionaryJSON - anchors tokens for var() usage matching", () => {
+	const config = defineConfig({
+		colors: {
+			theme: {
+				light: {
+					value: {
+						content: {
+							value: { primary: "var(--neutral)" },
+							variables: { neutral: "palette.neutral.900" },
+						},
+					},
+				},
+			},
+			palette: {
+				value: {
+					neutral: { 900: "#111" },
+				},
+			},
+		},
+	});
+
+	const result = JSON.parse(generateStyleDictionaryJSON(config));
+	const token = result.theme.light.content.primary;
+
+	assertEquals(token.attributes.cssVariable, "--theme-light-content-primary");
+	assertEquals(token.attributes.tailwindVariable, token.attributes.cssVariable);
+	assertEquals(token.value, "oklch(17.764% 0 0)");
+});
+
+Deno.test("generateStyleDictionaryJSON - types tokens by value kind when the module type is coarse", () => {
+	const config = defineConfig({
+		typography: {
+			fluid: {
+				app: {
+					value: {
+						minWidth: 320,
+						minFontSize: 13,
+						minTypeScale: 1.12,
+						maxWidth: 1440,
+						maxFontSize: 14,
+						maxTypeScale: 1.12,
+						positiveSteps: 0,
+						negativeSteps: 0,
+					},
+					settings: { customLabel: { "0": "detail" } },
+				},
+			},
+		},
+		colors: {
+			palette: { value: { neutral: { 900: "#111" } } },
+			theme: {
+				light: {
+					value: {
+						content: {
+							value: { primary: "var(--neutral)", muted: "var(--neutral)" },
+							variables: { neutral: "palette.neutral.900" },
+						},
+					},
+				},
+			},
+		},
+		spacing: {
+			custom: { size: { value: { 4: "1rem" } } },
+		},
+		primitives: {
+			textRole: {
+				value: {
+					detail: {
+						value: {
+							fontSize: "var(--size)",
+							lineHeight: "1.4",
+							"border-radius": "6px",
+							"box-shadow": "0 1px 2px rgb(0 0 0 / 20%)",
+						},
+						variables: { size: "typography_fluid.app@detail" },
+					},
+				},
+			},
+		},
+	});
+
+	const result = JSON.parse(generateStyleDictionaryJSON(config));
+
+	assertEquals(result.primitives["text-role"].detail.fontSize.type, "fontSize");
+	assertEquals(result.primitives["text-role"].detail.lineHeight.type, "lineHeight");
+	assertEquals(
+		result.primitives["text-role"].detail["border-radius"].type,
+		"borderRadius",
+	);
+	assertEquals(result.primitives["text-role"].detail["box-shadow"].type, "shadow");
+	assertEquals(result.primitives["text-role"].detail.fontSize.attributes.referencePaths, [
+		"typography-fluid.app.detail",
+	]);
+	assertEquals(result["typography-fluid"].app.detail.type, "typography");
+	assertEquals(result.theme.light.content.primary.type, "color");
+	assertEquals(result.spacing.custom.size["4"].type, "spacing");
+});
+
+Deno.test("generateStyleDictionaryJSON - keeps the module type when the value contradicts the name", () => {
+	const config = defineConfig({
+		colors: {
+			palette: { value: { neutral: { 900: "#111" } } },
+		},
+		primitives: {
+			control: {
+				value: {
+					rounded: {
+						value: {
+							radius: "var(--tone)",
+							"font-family": "var(--tone)",
+							opacity: "50%",
+							"z-index": "auto",
+							gap: "var(--tone)",
+							"letter-spacing": "var(--tone)",
+						},
+						variables: { tone: "palette.neutral.900" },
+					},
+				},
+			},
+		},
+	});
+
+	const result = JSON.parse(generateStyleDictionaryJSON(config));
+	const control = result.primitives.control.rounded;
+
+	// Every leaf name matches a rule, but no value has the expected shape.
+	assertEquals(control.radius.value, "oklch(17.764% 0 0)");
+	assertEquals(control.radius.type, "component");
+	assertEquals(control["font-family"].type, "component");
+	assertEquals(control.opacity.type, "component");
+	assertEquals(control["z-index"].type, "component");
+	assertEquals(control.gap.type, "component");
+	assertEquals(control["letter-spacing"].type, "component");
+});
+
+Deno.test("generateStyleDictionaryJSON - narrows every value kind the file documents", () => {
+	const config = defineConfig({
+		primitives: {
+			type: {
+				value: {
+					display: {
+						value: {
+							"font-family": "Inter, sans-serif",
+							"font-weight": "600",
+							opacity: "0.64",
+							"z-index": "30",
+							"letter-spacing": "0.02em",
+							"border-radius": "0",
+							duration: "150",
+							delay: "0",
+						},
+					},
+				},
+			},
+		},
+	});
+
+	const result = JSON.parse(generateStyleDictionaryJSON(config));
+	const display = result.primitives.type.display;
+
+	assertEquals(display["font-family"].type, "fontFamily");
+	assertEquals(display["font-weight"].type, "fontWeight");
+	assertEquals(display.opacity.type, "opacity");
+	assertEquals(display["z-index"].type, "zIndex");
+	assertEquals(display["letter-spacing"].type, "letterSpacing");
+	assertEquals(display["border-radius"].type, "borderRadius");
+	assertEquals(display.duration.type, "number");
+	assertEquals(display.delay.type, "number");
+});
+
+Deno.test("generateStyleDictionaryJSON - every token carries the fields consumers rely on", () => {
+	const config = defineConfig({
+		colors: {
+			palette: { value: { neutral: { 900: "#111" } } },
+			theme: {
+				light: {
+					value: {
+						content: {
+							value: { primary: "var(--neutral)" },
+							variables: { neutral: "palette.neutral.900" },
+						},
+					},
+				},
+			},
+		},
+		spacing: { custom: { size: { value: { 4: "1rem" } } } },
+	});
+
+	const result = JSON.parse(generateStyleDictionaryJSON(config));
+	const tokens: Array<[string, Record<string, any>]> = [];
+	const collect = (value: Record<string, any>, path: string[] = []) => {
+		for (const [key, child] of Object.entries(value)) {
+			if (child && typeof child === "object" && "value" in child) {
+				tokens.push([[...path, key].join("."), child as Record<string, any>]);
+			} else if (child && typeof child === "object") {
+				collect(child as Record<string, any>, [...path, key]);
+			}
+		}
+	};
+	collect(result);
+
+	assertEquals(tokens.length, 3);
+	for (const [tokenPath, token] of tokens) {
+		assertEquals(typeof token.type, "string", `${tokenPath} has a type`);
+		assertEquals(
+			token.attributes.tailwindVariable,
+			token.attributes.cssVariable,
+			`${tokenPath} anchors its CSS variable`,
+		);
+		if (token.$reference) {
+			const referenced = tokens.find(([candidate]) => candidate === token.$reference);
+			assertEquals(referenced !== undefined, true, `${tokenPath} reference resolves`);
+		}
+		for (const referencePath of token.attributes.referencePaths ?? []) {
+			assertEquals(
+				tokens.some(([candidate]) => candidate === referencePath),
+				true,
+				`${tokenPath} reference path ${referencePath} resolves`,
+			);
+		}
+	}
+});
+
 Deno.test("generateStyleDictionaryJSON - rejects token paths that collide after normalization", () => {
 	const config = defineConfig({
 		colors: {

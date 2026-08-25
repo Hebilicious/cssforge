@@ -21,13 +21,38 @@ type ForgeValue = {
 	[key: string]: ForgeValue | CssValue;
 };
 
+/**
+ * The kind of value a token holds.
+ *
+ * `TokenType` describes the cssforge module that produced the token. Consumers
+ * that render or preview tokens need the value kind instead, so the generated
+ * `type` uses this wider vocabulary and falls back to `TokenType`.
+ */
+type StyleDictionaryTokenType =
+	| TokenType
+	| "fontSize"
+	| "lineHeight"
+	| "fontWeight"
+	| "fontFamily"
+	| "borderRadius"
+	| "letterSpacing"
+	| "shadow"
+	| "opacity"
+	| "zIndex"
+	| "number";
+
 type StyleDictionaryToken = {
 	value: string;
-	type: TokenType;
+	type: StyleDictionaryTokenType;
 	description?: string;
 	attributes: {
 		cssVariable: string;
 		cssVariableReference: string;
+		/**
+		 * Anchor for value-based token usage matching. Tools that attribute
+		 * authored `var(--token)` calls to tokens read this field.
+		 */
+		tailwindVariable: string;
 		resolvedValue: string;
 		sourcePath: string;
 		referencePaths?: string[];
@@ -211,6 +236,106 @@ const resolveTokenValue = (
 		);
 	});
 
+const tokenLeafName = (sourcePath: string) =>
+	sourcePath.replaceAll("@", ".").split(".").at(-1)?.toLowerCase() ?? "";
+
+const CSS_LENGTH_PATTERN =
+	/^-?\d*\.?\d+(?:px|rem|em|%|vw|vh|vmin|vmax|ch|ex|pt|pc|cm|mm|in|q)$/i;
+const UNITLESS_NUMBER_PATTERN = /^-?\d*\.?\d+$/;
+const CSS_COLOR_PATTERN =
+	/^(?:#|rgba?\(|hsla?\(|oklch\(|oklab\(|lab\(|lch\(|color\(|color-mix\(|light-dark\(|transparent$|currentcolor$)/i;
+const CSS_FUNCTION_PATTERN = /^[a-z-]+\(/i;
+
+const isCssLength = (value: string) => {
+	const trimmed = value.trim();
+	return trimmed === "0" || CSS_LENGTH_PATTERN.test(trimmed);
+};
+const isUnitlessNumber = (value: string) => UNITLESS_NUMBER_PATTERN.test(value.trim());
+
+/**
+ * Narrow rules for leaf names whose token type differs from their cssforge module.
+ *
+ * The value check keeps a token from claiming a kind its value does not hold, for
+ * example a `fontSize` token that resolved to a color alias.
+ */
+const VALUE_KIND_RULES: ReadonlyArray<{
+	leaves: readonly string[];
+	type: StyleDictionaryTokenType;
+	matches: (value: string) => boolean;
+}> = [
+	{
+		leaves: ["fontsize", "font-size", "text-size"],
+		type: "fontSize",
+		matches: (value) =>
+			isCssLength(value) ||
+			isUnitlessNumber(value) ||
+			/^(?:clamp|calc|min|max)\(/i.test(value.trim()),
+	},
+	{
+		leaves: ["lineheight", "line-height", "leading"],
+		type: "lineHeight",
+		matches: isUnitlessNumber,
+	},
+	{
+		leaves: ["fontweight", "font-weight"],
+		type: "fontWeight",
+		matches: isUnitlessNumber,
+	},
+	{
+		leaves: ["fontfamily", "font-family"],
+		type: "fontFamily",
+		matches: (value) =>
+			value.trim().length > 0 &&
+			!CSS_COLOR_PATTERN.test(value.trim()) &&
+			!CSS_FUNCTION_PATTERN.test(value.trim()) &&
+			!isCssLength(value) &&
+			!isUnitlessNumber(value),
+	},
+	{
+		leaves: ["borderradius", "border-radius", "radius", "rounded"],
+		type: "borderRadius",
+		matches: (value) =>
+			isCssLength(value) || /^(?:clamp|calc|min|max)\(/i.test(value.trim()),
+	},
+	{
+		leaves: ["boxshadow", "box-shadow", "shadow", "textshadow", "text-shadow"],
+		type: "shadow",
+		matches: (value) => value.trim().length > 0 && !CSS_COLOR_PATTERN.test(value.trim()),
+	},
+	{
+		leaves: ["opacity", "alpha"],
+		type: "opacity",
+		matches: isUnitlessNumber,
+	},
+	{
+		leaves: ["zindex", "z-index"],
+		type: "zIndex",
+		matches: isUnitlessNumber,
+	},
+	{
+		leaves: ["letterspacing", "letter-spacing", "tracking"],
+		type: "letterSpacing",
+		matches: isCssLength,
+	},
+	{
+		leaves: ["gap", "duration", "delay"],
+		type: "number",
+		matches: isUnitlessNumber,
+	},
+];
+
+const inferValueKind = (
+	sourcePath: string,
+	resolvedValue: string,
+	fallback: TokenType,
+): StyleDictionaryTokenType => {
+	const leaf = tokenLeafName(sourcePath);
+	for (const rule of VALUE_KIND_RULES) {
+		if (rule.leaves.includes(leaf) && rule.matches(resolvedValue)) return rule.type;
+	}
+	return fallback;
+};
+
 /**
  * Generates a Style Dictionary-readable token JSON string.
  *
@@ -247,10 +372,11 @@ export function generateStyleDictionaryJSON(
 		const tier = token.tier ?? (referencePaths?.length ? "semantic" : "primitive");
 		const styleDictionaryToken: StyleDictionaryToken = {
 			value: valueMode === "resolved" ? resolvedValue : cssVariableReference,
-			type: token.type,
+			type: inferValueKind(token.sourcePath, resolvedValue, token.type),
 			attributes: {
 				cssVariable: token.key,
 				cssVariableReference,
+				tailwindVariable: token.key,
 				resolvedValue,
 				sourcePath: toStyleDictionaryPath(token.sourcePath),
 				...(referencePaths ? { referencePaths } : {}),

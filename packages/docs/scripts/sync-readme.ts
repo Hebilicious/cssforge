@@ -72,6 +72,10 @@ function renderTokenPage(section: MarkdownSection): string {
   return section.body.replace(/^#### /gm, "## ");
 }
 
+function renderTopLevelPage(section: MarkdownSection): string {
+  return section.body.replace(/^### /gm, "## ");
+}
+
 function transformMarkdown(markdown: string): string {
   let content = markdown;
 
@@ -153,6 +157,15 @@ const pages: GeneratedPage[] = [
       ),
       renderSection(requireSection(readmeSections.sections, "Best Practices")),
     ].join("\n\n"),
+  },
+  {
+    path: "guide/style-dictionary.md",
+    title: "Style Dictionary JSON",
+    description:
+      "Generate token JSON for Style Dictionary and compatible tools.",
+    content: renderTopLevelPage(
+      requireSection(readmeSections.sections, "Style Dictionary JSON"),
+    ),
   },
   {
     path: "guide/examples.md",
