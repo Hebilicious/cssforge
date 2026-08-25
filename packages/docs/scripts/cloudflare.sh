@@ -31,4 +31,4 @@ if ! command -v proto >/dev/null 2>&1; then
 fi
 
 proto install --yes
-moon run "$cloudflare_task" "$@"
+moon run --force "$cloudflare_task" "$@"
