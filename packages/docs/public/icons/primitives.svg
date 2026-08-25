@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100px" height="100px">
+  <defs>
+    <filter id="glowCyan" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="3" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+    <filter id="glowMagenta" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="3" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </defs>
+  <style>
+    .rotate-y { animation: rotate-y 4s infinite linear; transform-origin: 50% 50%; }
+    .pulse-stroke { animation: pulse-stroke 2s infinite alternate; }
+    @keyframes rotate-y { 
+      0% { transform: scaleX(1); } 
+      50% { transform: scaleX(-1); } 
+      100% { transform: scaleX(1); }
+    }
+    @keyframes pulse-stroke { 0% { stroke-opacity: 0.4; } 100% { stroke-opacity: 1; } }
+  </style>
+
+  <g class="rotate-y">
+    <!-- Isometric Cube / Primitive -->
+    <path d="M 50 20 L 80 35 L 50 50 L 20 35 Z" fill="none" stroke="#00f3ff" stroke-width="2" filter="url(#glowCyan)" />
+    <path d="M 20 35 L 20 65 L 50 80 L 50 50 Z" fill="none" stroke="#ff00a0" stroke-width="2" filter="url(#glowMagenta)" />
+    <path d="M 80 35 L 80 65 L 50 80 L 50 50 Z" fill="none" stroke="#ffffff" stroke-width="2" class="pulse-stroke" filter="url(#glowCyan)" />
+    
+    <!-- Wireframe internals -->
+    <path d="M 50 20 L 50 80" stroke="#00f3ff" stroke-width="1" stroke-dasharray="2 4" opacity="0.5" />
+  </g>
+</svg>

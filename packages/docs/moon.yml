@@ -1,0 +1,98 @@
+$schema: "https://moonrepo.dev/schemas/v2/project.json"
+
+language: "typescript"
+layer: "application"
+
+dependsOn:
+  - "cssforge"
+
+tasks:
+  sync-docs:
+    command: "tsx"
+    args: ["./scripts/sync-readme.ts"]
+    inputs:
+      - "scripts/sync-readme.ts"
+      - "/packages/cssforge/README.md"
+    outputs:
+      - "contributing.md"
+      - "guide/getting-started.md"
+      - "guide/configuration.md"
+      - "guide/usage.md"
+      - "guide/examples.md"
+      - "tokens/colors.md"
+      - "tokens/spacing.md"
+      - "tokens/typography.md"
+      - "tokens/primitives.md"
+    options:
+      runInCI: "affected"
+
+  generate:
+    command: "tsx"
+    args:
+      - "../cssforge/src/cli.ts"
+      - "--prefix"
+      - "."
+      - "--config"
+      - "./cssforge.config.ts"
+      - "--mode"
+      - "css"
+      - "--css"
+      - "./.cssforge/output.css"
+    deps:
+      - "^:build"
+    inputs:
+      - "cssforge.config.ts"
+    outputs:
+      - ".cssforge/output.css"
+    options:
+      runInCI: "affected"
+
+  dev:
+    command: "vitepress"
+    args: ["dev"]
+    deps:
+      - "~:generate"
+      - "~:sync-docs"
+    preset: "server"
+    options:
+      runInCI: false
+
+  build:
+    command: "vitepress"
+    args: ["build"]
+    deps:
+      - "~:generate"
+      - "~:sync-docs"
+    outputs:
+      - ".vitepress/dist"
+    options:
+      runInCI: "affected"
+
+  cloudflare-deploy:
+    command: "wrangler"
+    args: ["deploy"]
+    deps:
+      - "~:build"
+    options:
+      runInCI: false
+      cache: false
+      outputStyle: "stream"
+
+  cloudflare-preview:
+    command: "wrangler"
+    args: ["versions", "upload"]
+    deps:
+      - "~:build"
+    options:
+      runInCI: false
+      cache: false
+      outputStyle: "stream"
+
+  preview:
+    command: "vitepress"
+    args: ["preview"]
+    deps:
+      - "~:build"
+    preset: "server"
+    options:
+      runInCI: false

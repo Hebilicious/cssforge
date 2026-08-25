@@ -1,0 +1,481 @@
+@import "../../.cssforge/output.css" layer(cssforge);
+
+/* ============================================================
+   CSSForge Docs — Full Cyberpunk Theme
+   All colors sourced from the anvil animation palette via
+   cssforge-generated --palette-forge-* tokens.
+   ============================================================ */
+
+/* ----- Typography ----- */
+
+@font-face {
+  font-family: "Geist Mono";
+  src: url("https://cdn.jsdelivr.net/npm/geist@1.4.1/dist/fonts/geist-mono/GeistMono-Regular.woff2")
+    format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Geist Mono";
+  src: url("https://cdn.jsdelivr.net/npm/geist@1.4.1/dist/fonts/geist-mono/GeistMono-Medium.woff2")
+    format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Geist Mono";
+  src: url("https://cdn.jsdelivr.net/npm/geist@1.4.1/dist/fonts/geist-mono/GeistMono-Bold.woff2")
+    format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ----- Root: Force dark everywhere ----- */
+
+:root {
+  /* Font */
+  --vp-font-family-base: "Geist Mono", "Courier New", Courier, monospace;
+  --vp-font-family-mono: "Geist Mono", "Courier New", Courier, monospace;
+
+  /* Core palette — anvil metals */
+  --vp-c-gray-1: var(--palette-forge-metal-8);
+  --vp-c-gray-2: var(--palette-forge-metal-6);
+  --vp-c-gray-3: var(--palette-forge-metal-5);
+  --vp-c-gray-soft: rgba(85, 85, 104, 0.16);
+
+  /* Background — deep void / space */
+  --vp-c-bg: var(--palette-forge-void);
+  --vp-c-bg-alt: var(--palette-forge-metal-1);
+  --vp-c-bg-elv: var(--palette-forge-metal-2);
+  --vp-c-bg-soft: var(--palette-forge-metal-2);
+
+  /* Text — light on dark */
+  --vp-c-text-1: var(--palette-forge-text-1);
+  --vp-c-text-2: var(--palette-forge-text-2);
+  --vp-c-text-3: var(--palette-forge-text-3);
+
+  /* Borders — subtle metal edges */
+  --vp-c-border: var(--palette-forge-metal-5);
+  --vp-c-divider: var(--palette-forge-metal-4);
+  --vp-c-gutter: var(--palette-forge-metal-1);
+
+  /* Neutral */
+  --vp-c-neutral: var(--palette-forge-white);
+  --vp-c-neutral-inverse: var(--palette-forge-void);
+
+  /* Brand — cyan primary */
+  --vp-c-brand-1: var(--palette-forge-cyan);
+  --vp-c-brand-2: var(--palette-forge-cyan);
+  --vp-c-brand-3: var(--palette-forge-cyan);
+  --vp-c-brand-soft: rgba(0, 243, 255, 0.12);
+  --vp-c-brand: var(--palette-forge-cyan);
+
+  /* Tip / Note — cyan */
+  --vp-c-tip-1: var(--palette-forge-cyan);
+  --vp-c-tip-2: var(--palette-forge-cyan);
+  --vp-c-tip-3: var(--palette-forge-cyan);
+  --vp-c-tip-soft: rgba(0, 243, 255, 0.08);
+  --vp-c-note-1: var(--palette-forge-cyan);
+  --vp-c-note-2: var(--palette-forge-cyan);
+  --vp-c-note-3: var(--palette-forge-cyan);
+  --vp-c-note-soft: rgba(0, 243, 255, 0.08);
+
+  /* Important — magenta */
+  --vp-c-important-1: var(--palette-forge-magenta);
+  --vp-c-important-2: var(--palette-forge-magenta);
+  --vp-c-important-3: var(--palette-forge-magenta);
+  --vp-c-important-soft: rgba(255, 0, 160, 0.1);
+
+  /* Warning — keep yellow-ish but tinted */
+  --vp-c-warning-1: #f9b44e;
+  --vp-c-warning-2: #da8b17;
+  --vp-c-warning-3: #a46a0a;
+  --vp-c-warning-soft: rgba(234, 179, 8, 0.1);
+
+  /* Danger / Caution — magenta tint */
+  --vp-c-danger-1: var(--palette-forge-magenta);
+  --vp-c-danger-2: var(--palette-forge-magenta);
+  --vp-c-danger-3: var(--palette-forge-magenta);
+  --vp-c-danger-soft: rgba(255, 0, 160, 0.08);
+  --vp-c-caution-1: var(--palette-forge-magenta);
+  --vp-c-caution-2: var(--palette-forge-magenta);
+  --vp-c-caution-3: var(--palette-forge-magenta);
+  --vp-c-caution-soft: rgba(255, 0, 160, 0.08);
+
+  /* Success — cyan */
+  --vp-c-success-1: var(--palette-forge-cyan);
+  --vp-c-success-2: var(--palette-forge-cyan);
+  --vp-c-success-3: var(--palette-forge-cyan);
+  --vp-c-success-soft: rgba(0, 243, 255, 0.08);
+
+  /* Default (hover states) */
+  --vp-c-default-1: var(--palette-forge-metal-8);
+  --vp-c-default-2: var(--palette-forge-metal-6);
+  --vp-c-default-3: var(--palette-forge-metal-5);
+  --vp-c-default-soft: rgba(85, 85, 104, 0.12);
+
+  /* Sponsor */
+  --vp-c-sponsor: var(--palette-forge-magenta);
+
+  /* Shadows — deeper, tinted */
+  --vp-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.4);
+  --vp-shadow-2: 0 3px 12px rgba(0, 0, 0, 0.4), 0 1px 4px rgba(0, 0, 0, 0.3);
+  --vp-shadow-3: 0 12px 32px rgba(0, 0, 0, 0.5), 0 2px 6px rgba(0, 0, 0, 0.4);
+  --vp-shadow-4: 0 14px 44px rgba(0, 0, 0, 0.6), 0 3px 9px rgba(0, 0, 0, 0.5);
+  --vp-shadow-5: 0 18px 56px rgba(0, 0, 0, 0.7), 0 4px 12px rgba(0, 0, 0, 0.6);
+
+  /* Code */
+  --vp-code-color: var(--palette-forge-cyan);
+  --vp-code-link-color: var(--palette-forge-cyan);
+  --vp-code-link-hover-color: var(--palette-forge-magenta);
+  --vp-code-bg: rgba(0, 243, 255, 0.06);
+  --vp-code-block-color: var(--palette-forge-text-2);
+  --vp-code-block-bg: var(--palette-forge-metal-1);
+  --vp-code-block-divider-color: var(--palette-forge-metal-4);
+  --vp-code-lang-color: var(--palette-forge-text-3);
+  --vp-code-line-highlight-color: rgba(0, 243, 255, 0.06);
+  --vp-code-line-number-color: var(--palette-forge-text-3);
+  --vp-code-copy-code-border-color: var(--palette-forge-metal-5);
+  --vp-code-copy-code-bg: var(--palette-forge-metal-3);
+  --vp-code-copy-code-hover-border-color: var(--palette-forge-cyan);
+  --vp-code-copy-code-hover-bg: var(--palette-forge-metal-4);
+  --vp-code-copy-code-active-text: var(--palette-forge-cyan);
+  --vp-code-tab-divider: var(--palette-forge-metal-4);
+  --vp-code-tab-text-color: var(--palette-forge-text-2);
+  --vp-code-tab-bg: var(--palette-forge-metal-1);
+  --vp-code-tab-hover-text-color: var(--palette-forge-text-1);
+  --vp-code-tab-active-text-color: var(--palette-forge-cyan);
+  --vp-code-tab-active-bar-color: var(--palette-forge-cyan);
+
+  /* Buttons */
+  --vp-button-brand-border: var(--palette-forge-cyan);
+  --vp-button-brand-text: var(--palette-forge-void);
+  --vp-button-brand-bg: var(--palette-forge-cyan);
+  --vp-button-brand-hover-border: var(--palette-forge-magenta);
+  --vp-button-brand-hover-text: var(--palette-forge-white);
+  --vp-button-brand-hover-bg: var(--palette-forge-magenta);
+  --vp-button-brand-active-border: var(--palette-forge-magenta);
+  --vp-button-brand-active-text: var(--palette-forge-white);
+  --vp-button-brand-active-bg: var(--palette-forge-magenta);
+
+  --vp-button-alt-border: var(--palette-forge-metal-7);
+  --vp-button-alt-text: var(--palette-forge-text-1);
+  --vp-button-alt-bg: var(--palette-forge-metal-3);
+  --vp-button-alt-hover-border: var(--palette-forge-cyan);
+  --vp-button-alt-hover-text: var(--palette-forge-cyan);
+  --vp-button-alt-hover-bg: var(--palette-forge-metal-4);
+  --vp-button-alt-active-border: var(--palette-forge-cyan);
+  --vp-button-alt-active-text: var(--palette-forge-cyan);
+  --vp-button-alt-active-bg: var(--palette-forge-metal-5);
+
+  /* Custom blocks */
+  --vp-custom-block-info-border: var(--palette-forge-metal-5);
+  --vp-custom-block-info-text: var(--palette-forge-text-1);
+  --vp-custom-block-info-bg: var(--palette-forge-metal-2);
+  --vp-custom-block-info-code-bg: var(--palette-forge-metal-3);
+  --vp-custom-block-note-border: var(--palette-forge-metal-5);
+  --vp-custom-block-note-text: var(--palette-forge-text-1);
+  --vp-custom-block-note-bg: var(--palette-forge-metal-2);
+  --vp-custom-block-note-code-bg: var(--palette-forge-metal-3);
+  --vp-custom-block-tip-border: rgba(0, 243, 255, 0.3);
+  --vp-custom-block-tip-text: var(--palette-forge-text-1);
+  --vp-custom-block-tip-bg: rgba(0, 243, 255, 0.05);
+  --vp-custom-block-tip-code-bg: rgba(0, 243, 255, 0.08);
+  --vp-custom-block-important-border: rgba(255, 0, 160, 0.3);
+  --vp-custom-block-important-text: var(--palette-forge-text-1);
+  --vp-custom-block-important-bg: rgba(255, 0, 160, 0.06);
+  --vp-custom-block-important-code-bg: rgba(255, 0, 160, 0.08);
+  --vp-custom-block-warning-border: rgba(234, 179, 8, 0.3);
+  --vp-custom-block-warning-text: var(--palette-forge-text-1);
+  --vp-custom-block-warning-bg: rgba(234, 179, 8, 0.06);
+  --vp-custom-block-warning-code-bg: rgba(234, 179, 8, 0.08);
+  --vp-custom-block-danger-border: rgba(255, 0, 160, 0.3);
+  --vp-custom-block-danger-text: var(--palette-forge-text-1);
+  --vp-custom-block-danger-bg: rgba(255, 0, 160, 0.06);
+  --vp-custom-block-danger-code-bg: rgba(255, 0, 160, 0.08);
+  --vp-custom-block-caution-border: rgba(255, 0, 160, 0.3);
+  --vp-custom-block-caution-text: var(--palette-forge-text-1);
+  --vp-custom-block-caution-bg: rgba(255, 0, 160, 0.06);
+  --vp-custom-block-caution-code-bg: rgba(255, 0, 160, 0.08);
+
+  /* Input / search */
+  --vp-input-border-color: var(--palette-forge-metal-5);
+  --vp-input-bg-color: var(--palette-forge-metal-2);
+  --vp-input-switch-bg-color: var(--palette-forge-metal-4);
+
+  /* Nav */
+  --vp-nav-bg-color: rgba(3, 2, 6, 0.85);
+  --vp-nav-screen-bg-color: var(--palette-forge-void);
+  --vp-nav-logo-height: 28px;
+
+  /* Local nav */
+  --vp-local-nav-bg-color: rgba(3, 2, 6, 0.85);
+
+  /* Sidebar */
+  --vp-sidebar-bg-color: var(--palette-forge-metal-1);
+
+  /* Backdrop */
+  --vp-backdrop-bg-color: rgba(3, 2, 6, 0.7);
+
+  /* Home */
+  --vp-home-hero-name-color: transparent;
+  --vp-home-hero-name-background: linear-gradient(
+    135deg,
+    var(--palette-forge-cyan) 0%,
+    var(--palette-forge-magenta) 100%
+  );
+  --vp-home-hero-image-background-image: radial-gradient(
+    circle at 50% 50%,
+    rgba(0, 243, 255, 0.15) 0%,
+    transparent 70%
+  );
+  --vp-home-hero-image-filter: none;
+
+  /* Search */
+  --vp-local-search-bg: var(--palette-forge-metal-1);
+  --vp-local-search-result-bg: var(--palette-forge-metal-2);
+  --vp-local-search-result-border: var(--palette-forge-metal-5);
+  --vp-local-search-result-selected-bg: var(--palette-forge-metal-3);
+  --vp-local-search-result-selected-border: var(--palette-forge-cyan);
+  --vp-local-search-highlight-bg: var(--palette-forge-cyan);
+  --vp-local-search-highlight-text: var(--palette-forge-void);
+
+  /* Badge */
+  --vp-badge-info-border: var(--palette-forge-metal-5);
+  --vp-badge-info-text: var(--palette-forge-text-2);
+  --vp-badge-info-bg: var(--palette-forge-metal-3);
+  --vp-badge-tip-border: rgba(0, 243, 255, 0.3);
+  --vp-badge-tip-text: var(--palette-forge-cyan);
+  --vp-badge-tip-bg: rgba(0, 243, 255, 0.1);
+  --vp-badge-warning-border: rgba(234, 179, 8, 0.3);
+  --vp-badge-warning-text: #f9b44e;
+  --vp-badge-warning-bg: rgba(234, 179, 8, 0.1);
+  --vp-badge-danger-border: rgba(255, 0, 160, 0.3);
+  --vp-badge-danger-text: var(--palette-forge-magenta);
+  --vp-badge-danger-bg: rgba(255, 0, 160, 0.1);
+
+  color-scheme: dark;
+}
+
+/* Force dark mode class — disable light mode entirely */
+.dark {
+  --vp-c-bg: var(--palette-forge-void);
+  --vp-c-bg-alt: var(--palette-forge-metal-1);
+  --vp-c-bg-elv: var(--palette-forge-metal-2);
+  --vp-c-bg-soft: var(--palette-forge-metal-2);
+}
+
+/* ----- Nav bar ----- */
+
+.VPNav > .VPNavBar {
+  background: transparent !important;
+}
+
+.VPNavBar {
+  border-bottom: 1px solid var(--palette-forge-metal-4) !important;
+  backdrop-filter: blur(16px);
+}
+
+.VPNavBar .title {
+  color: var(--palette-forge-cyan) !important;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.VPNavBarMenuLink {
+  color: var(--palette-forge-text-2) !important;
+  transition: color 0.2s;
+}
+
+.VPNavBarMenuLink:hover,
+.VPNavBarMenuLink.active {
+  color: var(--palette-forge-cyan) !important;
+}
+
+/* ----- Sidebar ----- */
+
+.VPSidebar {
+  border-right: 1px solid var(--palette-forge-metal-4) !important;
+}
+
+/* ----- Links ----- */
+
+.vp-doc a {
+  color: var(--palette-forge-cyan);
+  text-decoration-color: rgba(0, 243, 255, 0.3);
+  transition: color 0.2s, text-decoration-color 0.2s;
+}
+
+.vp-doc a:hover {
+  color: var(--palette-forge-magenta);
+  text-decoration-color: var(--palette-forge-magenta);
+}
+
+/* ----- Headings ----- */
+
+.vp-doc h1,
+.vp-doc h2,
+.vp-doc h3 {
+  color: var(--palette-forge-white);
+}
+
+.vp-doc h1 {
+  background: linear-gradient(
+    90deg,
+    var(--palette-forge-cyan),
+    var(--palette-forge-magenta)
+  );
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.vp-doc h2 {
+  border-top: 1px solid var(--palette-forge-metal-4);
+}
+
+/* ----- Code blocks ----- */
+
+div[class*="language-"] {
+  border: 1px solid var(--palette-forge-metal-4);
+}
+
+.vp-doc :not(pre) > code {
+  color: var(--palette-forge-cyan);
+  background: rgba(0, 243, 255, 0.08);
+}
+
+/* ----- Home hero ----- */
+
+.VPHero {
+  position: relative;
+  background-image:
+    linear-gradient(rgba(0, 243, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 243, 255, 0.05) 1px, transparent 1px),
+    radial-gradient(circle at 50% 50%, var(--palette-forge-space) 0%, var(--palette-forge-void) 75%);
+  background-size: 60px 60px, 60px 60px, 100% 100%;
+  background-position: center center;
+  margin-top: calc(var(--vp-nav-height) * -1); /* Pull background under nav */
+  padding-top: var(--vp-nav-height);
+}
+
+.VPHero .name {
+  font-weight: 900 !important;
+  letter-spacing: 0.04em;
+}
+
+.VPHero .text {
+  color: var(--palette-forge-text-1) !important;
+}
+
+.VPHero .tagline {
+  color: var(--palette-forge-text-2) !important;
+}
+
+/* ----- Feature cards ----- */
+
+.VPFeature {
+  background: var(--palette-forge-metal-2) !important;
+  border: 1px solid var(--palette-forge-metal-5) !important;
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.VPFeature:hover {
+  border-color: var(--palette-forge-cyan) !important;
+  box-shadow: 0 0 20px rgba(0, 243, 255, 0.1);
+}
+
+.VPFeature .title {
+  color: var(--palette-forge-white) !important;
+}
+
+.VPFeature .details {
+  color: var(--palette-forge-text-2) !important;
+}
+
+/* ----- Footer ----- */
+
+.VPFooter {
+  border-top: 1px solid var(--palette-forge-metal-4) !important;
+  background: var(--palette-forge-metal-1) !important;
+}
+
+.VPFooter .message,
+.VPFooter .copyright {
+  color: var(--palette-forge-text-3) !important;
+}
+
+/* ----- Outline (right TOC) ----- */
+
+.VPDocAsideOutline .outline-link {
+  color: var(--palette-forge-text-3);
+  transition: color 0.2s;
+}
+
+.VPDocAsideOutline .outline-link:hover,
+.VPDocAsideOutline .outline-link.active {
+  color: var(--palette-forge-cyan);
+}
+
+.VPDocAsideOutline .outline-marker {
+  background-color: var(--palette-forge-cyan) !important;
+}
+
+/* ----- Doc footer (prev/next) ----- */
+
+.VPDocFooter .pager-link {
+  border: 1px solid var(--palette-forge-metal-5);
+  background: var(--palette-forge-metal-2);
+  transition: border-color 0.2s;
+}
+
+.VPDocFooter .pager-link:hover {
+  border-color: var(--palette-forge-cyan);
+}
+
+.VPDocFooter .pager-link .title {
+  color: var(--palette-forge-text-2);
+}
+
+.VPDocFooter .pager-link .desc {
+  color: var(--palette-forge-cyan);
+}
+
+/* ----- Scrollbar ----- */
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--palette-forge-metal-1);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--palette-forge-metal-6);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--palette-forge-cyan);
+}
+
+/* ----- Selection ----- */
+
+::selection {
+  background: rgba(0, 243, 255, 0.25);
+  color: var(--palette-forge-white);
+}
+
+/* ----- Hide appearance toggle (always dark) ----- */
+
+.VPSwitchAppearance {
+  display: none !important;
+}
