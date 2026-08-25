@@ -1,0 +1,13 @@
+{
+  "$schema": "https://raw.githubusercontent.com/cloudflare/workers-sdk/main/packages/wrangler/config-schema.json",
+  "name": "cssforge",
+  "account_id": "ce2d334dddbbc73f7da105e2247703c7",
+  "compatibility_date": "2026-08-25",
+  "workers_dev": true,
+  "preview_urls": true,
+  "assets": {
+    "directory": "./.vitepress/dist",
+    "not_found_handling": "404-page",
+    "html_handling": "auto-trailing-slash"
+  }
+}
