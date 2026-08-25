@@ -18,7 +18,9 @@ import type { CSSForgeConfig } from "../src/config.ts";
 import { generateCSS } from "../src/generator.ts";
 
 const PACKAGE_ROOT = process.cwd();
-const README_PATH = resolve(PACKAGE_ROOT, "../../README.md");
+const WORKSPACE_ROOT = resolve(PACKAGE_ROOT, "../..");
+const README_PATH = resolve(WORKSPACE_ROOT, "README.md");
+const PACKAGE_README_PATH = resolve(PACKAGE_ROOT, "README.md");
 
 const START_DEFINITION = "<!-- md:generate defineConfig";
 const START_CODE = "-->";
@@ -62,7 +64,7 @@ function wrapSource(tsSource: string): string {
 	return `${importLine}${normalized}\n`;
 }
 
-async function processReadme(): Promise<boolean> {
+async function processReadme(check: boolean): Promise<boolean> {
 	const original = await readFile(README_PATH, "utf8");
 	const lines = original.split(/\r?\n/);
 
@@ -91,8 +93,7 @@ async function processReadme(): Promise<boolean> {
 	}
 
 	if (blocks.length === 0) {
-		console.log("No md:generate blocks found.");
-		return false;
+		throw new Error("No md:generate blocks found in README.md.");
 	}
 
 	const resultLines: string[] = [];
@@ -143,14 +144,39 @@ async function processReadme(): Promise<boolean> {
 
 	const updated = resultLines.join("\n");
 
-	if (updated !== original) {
-		await writeFile(README_PATH, updated, "utf8");
-		console.log("README.md updated successfully.");
+	const packageReadme = await readFile(PACKAGE_README_PATH, "utf8");
+	const stalePaths = [
+		...(updated === original ? [] : ["README.md"]),
+		...(updated === packageReadme ? [] : ["packages/cssforge/README.md"]),
+	];
+
+	if (check) {
+		if (stalePaths.length > 0) {
+			console.error(`Generated README content is stale: ${stalePaths.join(", ")}`);
+			console.error("Run `moon run cssforge:readme-update` and commit the result.");
+			process.exitCode = 1;
+			return false;
+		}
+
+		console.log("Generated README content is up to date.");
 		return true;
 	}
 
-	console.log("README.md had no changes.");
+	if (updated !== original) {
+		await writeFile(README_PATH, updated, "utf8");
+	}
+
+	if (updated !== packageReadme) {
+		await writeFile(PACKAGE_README_PATH, updated, "utf8");
+	}
+
+	if (stalePaths.length > 0) {
+		console.log(`Updated generated README content: ${stalePaths.join(", ")}`);
+		return true;
+	}
+
+	console.log("Generated README content had no changes.");
 	return false;
 }
 
-await processReadme();
+await processReadme(process.argv.includes("--check"));

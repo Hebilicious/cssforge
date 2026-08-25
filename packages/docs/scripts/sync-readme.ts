@@ -25,8 +25,8 @@ interface GeneratedPage {
 
 const root = resolve(import.meta.dirname, "../../..");
 const docsRoot = resolve(root, "packages/docs");
-const readmePath = resolve(root, "packages/cssforge/README.md");
-const sourcePath = "packages/cssforge/README.md";
+const readmePath = resolve(root, "README.md");
+const sourcePath = "README.md";
 const githubBase = "https://github.com/Hebilicious/cssforge/tree/main";
 
 function parseSections(markdown: string, level: number): ParsedMarkdown {

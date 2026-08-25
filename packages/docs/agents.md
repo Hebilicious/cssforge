@@ -23,7 +23,7 @@ The compact machine-readable route index is available at [`/llms.txt`](/llms.txt
 - [Public exports](https://github.com/Hebilicious/cssforge/blob/main/packages/cssforge/src/mod.ts)
 - [Configuration types](https://github.com/Hebilicious/cssforge/blob/main/packages/cssforge/src/config.ts)
 - [CLI implementation](https://github.com/Hebilicious/cssforge/blob/main/packages/cssforge/src/cli.ts)
-- [Generated reference source](https://github.com/Hebilicious/cssforge/blob/main/packages/cssforge/README.md)
+- [Generated reference source](https://github.com/Hebilicious/cssforge/blob/main/README.md)
 - [Example projects](https://github.com/Hebilicious/cssforge/tree/main/example)
 
 ## Agent workflow
@@ -39,5 +39,5 @@ The compact machine-readable route index is available at [`/llms.txt`](/llms.txt
 For agents that accept URL context, the complete generated reference remains available from the repository README:
 
 ```text
-@https://raw.githubusercontent.com/Hebilicious/cssforge/refs/heads/main/packages/cssforge/README.md
+@https://raw.githubusercontent.com/Hebilicious/cssforge/refs/heads/main/README.md
 ```
