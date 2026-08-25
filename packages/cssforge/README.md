@@ -189,18 +189,18 @@ Choose the value mode based on what the next tool needs:
 
 | Mode | `value` contains | Use it for |
 | --- | --- | --- |
-| `css-reference` (default) | `var(--palette-neutral-900)` | Finding CSS variable usage in source files |
-| `resolved` | The final value, such as `oklch(...)`, `1rem`, or `clamp(...)` | Musea token previews and Style Dictionary builds |
+| `resolved` (default) | The final value, such as `oklch(...)`, `1rem`, or `clamp(...)` | Musea token previews and Style Dictionary builds |
+| `css-reference` | `var(--palette-neutral-900)` | Finding CSS variable usage in source files |
 
-For most Musea token galleries, start with `resolved`. Use `css-reference` when usage
-matching is more important and Musea scans the files that contain your `var(--token)` calls.
+The default works for most Musea token galleries. Choose `css-reference` when usage matching
+is more important and Musea scans the files that contain your `var(--token)` calls.
 
 ```bash
 # Recommended for a Musea token gallery
-pnpm run cssforge -- --mode style-dictionary --style-dictionary ./.cssforge/tokens.json --style-dictionary-value-mode resolved
+pnpm run cssforge -- --mode style-dictionary --style-dictionary ./.cssforge/tokens.json
 
 # Keep CSS variables as values for usage matching
-pnpm run cssforge -- --mode style-dictionary --style-dictionary ./.cssforge/tokens.json
+pnpm run cssforge -- --mode style-dictionary --style-dictionary ./.cssforge/tokens.json --style-dictionary-value-mode css-reference
 ```
 
 Point Musea at the generated file:
@@ -1069,11 +1069,11 @@ pnpm run cssforge -- --watch
 # Custom paths and output
 pnpm run cssforge -- --config ./foo/bar/custom-path.ts --css ./dist/design-tokens.css --ts ./dist/design-tokens.ts --json ./dist/design-tokens.json --style-dictionary ./dist/design-tokens.sd.json --mode all
 
-# Token JSON for CSS variable usage matching (default)
+# Token JSON with final values for Musea previews or Style Dictionary (default)
 pnpm run cssforge -- --mode style-dictionary --style-dictionary ./dist/design-tokens.sd.json
 
-# Token JSON with final values for Musea previews or Style Dictionary
-pnpm run cssforge -- --mode style-dictionary --style-dictionary ./dist/design-tokens.sd.json --style-dictionary-value-mode resolved
+# Keep CSS variables as values for usage matching
+pnpm run cssforge -- --mode style-dictionary --style-dictionary ./dist/design-tokens.sd.json --style-dictionary-value-mode css-reference
 ```
 
 ## Programmatic Usage
@@ -1086,11 +1086,11 @@ import { generateCSS, generateStyleDictionaryJSON } from "jsr:@hebilicious/cssfo
 // Generate CSS string
 const css = generateCSS(config);
 
-// Keep var(--token) as each token's value for usage matching
-const usageTokens = generateStyleDictionaryJSON(config);
-
 // Write final values for Musea previews or Style Dictionary
-const resolvedTokens = generateStyleDictionaryJSON(config, { valueMode: "resolved" });
+const resolvedTokens = generateStyleDictionaryJSON(config);
+
+// Keep var(--token) as each token's value for usage matching
+const usageTokens = generateStyleDictionaryJSON(config, { valueMode: "css-reference" });
 ```
 
 ## Agentic usage

@@ -68,7 +68,7 @@ export async function build({
 	cssOutput,
 	jsonOutput,
 	styleDictionaryOutput,
-	styleDictionaryValueMode = "css-reference",
+	styleDictionaryValueMode = "resolved",
 	mode,
 }: BuildOptions): Promise<{ success: boolean; error?: unknown }> {
 	try {
@@ -212,7 +212,7 @@ const mainCommand = defineCommand({
 			type: "string",
 			description:
 				"Token value mode: css-reference for usage matching, or resolved for previews and builds",
-			default: "css-reference",
+			default: "resolved",
 		},
 		css: {
 			type: "string",

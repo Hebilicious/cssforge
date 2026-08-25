@@ -49,7 +49,7 @@ export interface StyleDictionaryJSONOptions {
 	 * for token previews and build tools that need final values. Cycles and unknown
 	 * CSS variables remain as `var(...)`.
 	 *
-	 * @default "css-reference"
+	 * @default "resolved"
 	 */
 	valueMode?: "css-reference" | "resolved";
 }
@@ -214,15 +214,15 @@ const resolveTokenValue = (
 /**
  * Generates token JSON for tools such as Musea and Style Dictionary.
  *
- * The default keeps each token's `var(--token)` call as `value` for usage matching.
- * Select `resolved` when the consumer needs final values for previews or transforms.
+ * The default writes final values for previews and transforms. Select `css-reference`
+ * to keep each token's `var(--token)` call as `value` for usage matching.
  * Both modes include resolved values and CSS variable metadata.
  */
 export function generateStyleDictionaryJSON(
 	config: Partial<CSSForgeConfig>,
 	options: StyleDictionaryJSONOptions = {},
 ): string {
-	const valueMode = options.valueMode ?? "css-reference";
+	const valueMode = options.valueMode ?? "resolved";
 	const resolveMap = collectResolveMap(config);
 	const tokensByCssVariable = new Map(
 		[...resolveMap.values()].map((token) => [token.key, token]),
