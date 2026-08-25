@@ -14,7 +14,15 @@ tasks:
       - "scripts/sync-readme.ts"
       - "/packages/cssforge/README.md"
     outputs:
-      - "docs.md"
+      - "contributing.md"
+      - "guide/getting-started.md"
+      - "guide/configuration.md"
+      - "guide/usage.md"
+      - "guide/examples.md"
+      - "tokens/colors.md"
+      - "tokens/spacing.md"
+      - "tokens/typography.md"
+      - "tokens/primitives.md"
     options:
       runInCI: "affected"
 

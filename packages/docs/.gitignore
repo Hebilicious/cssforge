@@ -2,3 +2,6 @@
 .vitepress/dist
 .cssforge
 docs.md
+contributing.md
+guide/*.md
+tokens/*.md
