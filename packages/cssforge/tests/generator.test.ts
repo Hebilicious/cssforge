@@ -1,9 +1,11 @@
+import { spawnSync } from "node:child_process";
+import { existsSync } from "node:fs";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import cliCommand, { build } from "../src/cli.ts";
-import { defineConfig } from "../src/config.ts";
-import { generateStyleDictionaryJSON } from "../src/generator.ts";
+import { fileURLToPath } from "node:url";
+import { build } from "../src/cli.ts";
+import { defineConfig, generateStyleDictionaryJSON } from "../src/mod.ts";
 import { assertEquals, assertSnapshot, Deno } from "./vitest-compat.ts";
 
 Deno.test("generateStyleDictionaryJSON - preserves references and resolved values", async (t) => {
@@ -116,6 +118,118 @@ Deno.test("generateStyleDictionaryJSON - can use resolved values as token values
 	);
 });
 
+Deno.test("generateStyleDictionaryJSON - resolves hyphenated CSSForge aliases", () => {
+	const config = defineConfig({
+		colors: {
+			palette: {
+				value: {
+					neutral: {
+						900: "#111",
+					},
+				},
+			},
+		},
+		primitives: {
+			button: {
+				value: {
+					default: {
+						value: {
+							color: "var(--theme-color)",
+						},
+						variables: {
+							"theme-color": "palette.neutral.900",
+						},
+					},
+				},
+			},
+		},
+	});
+
+	const result = JSON.parse(
+		generateStyleDictionaryJSON(config, { valueMode: "resolved" }),
+	);
+
+	assertEquals(
+		result.primitives.button.default.color.value,
+		"oklch(17.764% 0 0)",
+	);
+	assertEquals(result.primitives.button.default.color.attributes.referencePaths, [
+		"palette.neutral.900",
+	]);
+});
+
+Deno.test("generateStyleDictionaryJSON - preserves cycles and unresolved custom properties", () => {
+	const config = defineConfig({
+		colors: {
+			palette: { value: {} },
+			theme: {
+				light: {
+					value: {
+						content: {
+							value: {
+								first: "var(--second)",
+								second: "var(--first)",
+								external: "var(--external-property)",
+							},
+							settings: { variantNameOnly: true },
+						},
+					},
+				},
+			},
+		},
+	});
+
+	const result = JSON.parse(
+		generateStyleDictionaryJSON(config, { valueMode: "resolved" }),
+	);
+
+	assertEquals(result.theme.light.content.first.value, "var(--second)");
+	assertEquals(result.theme.light.content.second.value, "var(--first)");
+	assertEquals(
+		result.theme.light.content.external.value,
+		"var(--external-property)",
+	);
+});
+
+Deno.test("generateStyleDictionaryJSON - uses emitted paths for fluid source metadata", () => {
+	const config = defineConfig({
+		spacing: {
+			fluid: {
+				base: {
+					value: {
+						minSize: 4,
+						maxSize: 24,
+						minWidth: 320,
+						maxWidth: 1280,
+						negativeSteps: [0],
+						positiveSteps: [1],
+					},
+				},
+			},
+		},
+		primitives: {
+			card: {
+				value: {
+					default: {
+						value: { gap: "var(--space)" },
+						variables: { space: "spacing_fluid.base@s" },
+					},
+				},
+			},
+		},
+	});
+
+	const result = JSON.parse(generateStyleDictionaryJSON(config));
+
+	assertEquals(
+		result.spacing_fluid.base.s.attributes.sourcePath,
+		"spacing_fluid.base.s",
+	);
+	assertEquals(result.primitives.card.default.gap.attributes.referencePaths, [
+		"spacing_fluid.base.s",
+	]);
+});
+
 Deno.test("generateStyleDictionaryJSON - supports legacy value-wrapper reference paths", () => {
 	const config = defineConfig({
 		colors: {
@@ -218,17 +332,15 @@ Deno.test("generateStyleDictionaryJSON - supports legacy value-wrapper reference
 	);
 });
 
-Deno.test("cli - exposes documented style-dictionary flag", () => {
-	assertEquals("style-dictionary" in (cliCommand.args ?? {}), true);
-	assertEquals("styleDictionary" in (cliCommand.args ?? {}), false);
-});
-
-Deno.test("build - writes Style Dictionary output", async () => {
+Deno.test("cli - style-dictionary mode writes only the requested token file", async () => {
 	const tempDir = await mkdtemp(join(tmpdir(), "cssforge-style-dictionary-"));
 
 	try {
 		const configPath = join(tempDir, "cssforge.config.ts");
 		const styleDictionaryOutput = join(tempDir, "tokens.sd.json");
+		const cssOutput = join(tempDir, "output.css");
+		const jsonOutput = join(tempDir, "output.json");
+		const tsOutput = join(tempDir, "output.ts");
 		await writeFile(
 			configPath,
 			`export default {
@@ -245,19 +357,113 @@ Deno.test("build - writes Style Dictionary output", async () => {
 			"utf8",
 		);
 
-		const result = await build({
-			config: configPath,
-			mode: "style-dictionary",
-			cssOutput: join(tempDir, "output.css"),
-			jsonOutput: join(tempDir, "output.json"),
-			tsOutput: join(tempDir, "output.ts"),
-			styleDictionaryOutput,
-		});
+		const cliPath = fileURLToPath(new URL("../src/cli.ts", import.meta.url));
+		const result = spawnSync(
+			process.execPath,
+			[
+				cliPath,
+				"--config",
+				configPath,
+				"--mode",
+				"style-dictionary",
+				"--style-dictionary",
+				styleDictionaryOutput,
+				"--css",
+				cssOutput,
+				"--json",
+				jsonOutput,
+				"--ts",
+				tsOutput,
+			],
+			{ cwd: tempDir, encoding: "utf8" },
+		);
 
 		const output = JSON.parse(await readFile(styleDictionaryOutput, "utf8"));
 
-		assertEquals(result.success, true);
+		assertEquals(result.status, 0);
+		assertEquals(result.stderr, "");
+		assertEquals(
+			result.stdout.includes("Generated Style Dictionary JSON written"),
+			true,
+		);
 		assertEquals(output.spacing.custom.size["2"].value, "var(--spacing-size-2)");
+		assertEquals(existsSync(cssOutput), false);
+		assertEquals(existsSync(jsonOutput), false);
+		assertEquals(existsSync(tsOutput), false);
+	} finally {
+		await rm(tempDir, { recursive: true, force: true });
+	}
+});
+
+Deno.test("cli - style-dictionary mode can emit resolved consumer values", async () => {
+	const tempDir = await mkdtemp(join(tmpdir(), "cssforge-style-dictionary-resolved-"));
+
+	try {
+		const configPath = join(tempDir, "cssforge.config.ts");
+		const styleDictionaryOutput = join(tempDir, "tokens.sd.json");
+		await writeFile(
+			configPath,
+			`export default {
+				spacing: {
+					custom: { size: { value: { 2: "8px" } } },
+				},
+			};`,
+			"utf8",
+		);
+
+		const cliPath = fileURLToPath(new URL("../src/cli.ts", import.meta.url));
+		const result = spawnSync(
+			process.execPath,
+			[
+				cliPath,
+				"--config",
+				configPath,
+				"--mode",
+				"style-dictionary",
+				"--style-dictionary",
+				styleDictionaryOutput,
+				"--style-dictionary-value-mode",
+				"resolved",
+			],
+			{ cwd: tempDir, encoding: "utf8" },
+		);
+
+		const output = JSON.parse(await readFile(styleDictionaryOutput, "utf8"));
+
+		assertEquals(result.status, 0);
+		assertEquals(result.stderr, "");
+		assertEquals(output.spacing.custom.size["2"].value, "0.5rem");
+	} finally {
+		await rm(tempDir, { recursive: true, force: true });
+	}
+});
+
+Deno.test("build - legacy output modes do not require a Style Dictionary path", async () => {
+	const tempDir = await mkdtemp(join(tmpdir(), "cssforge-legacy-build-"));
+
+	try {
+		const configPath = join(tempDir, "cssforge.config.ts");
+		const cssOutput = join(tempDir, "output.css");
+		await writeFile(
+			configPath,
+			`export default {
+				spacing: {
+					custom: { size: { value: { 2: "8px" } } },
+				},
+			};`,
+			"utf8",
+		);
+
+		const result = await build({
+			config: configPath,
+			mode: "css",
+			cssOutput,
+			jsonOutput: join(tempDir, "output.json"),
+			tsOutput: join(tempDir, "output.ts"),
+		});
+
+		assertEquals(result.success, true);
+		assertEquals(existsSync(cssOutput), true);
 	} finally {
 		await rm(tempDir, { recursive: true, force: true });
 	}

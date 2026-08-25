@@ -179,15 +179,23 @@ import { cssForge } from "./.cssforge/output.ts";
 export { cssForge };
 ```
 
-5. Use the Style Dictionary-compatible token JSON in token-aware tools:
+5. Use scanner-oriented token JSON in token-aware tools:
 
-CSS Forge can also generate token JSON where each leaf keeps the CSS variable reference
-as `value`, the fully resolved value as `$resolvedValue`, and provenance metadata under
-`attributes`. This is useful for tools such as Musea that scan component styles for
-`var(--token)` usage while still needing resolved values for labels and swatches.
+CSS Forge can also generate Style Dictionary-readable token JSON. The default
+`css-reference` value mode is designed for tools such as Musea that scan component styles:
+each leaf keeps its own `var(--token)` reference as `value`, the recursively resolved known
+value as `$resolvedValue`, and provenance metadata under `attributes`.
+
+These `var(--token)` values are literal CSS custom-property references, not Style
+Dictionary aliases. Official Style Dictionary aliases use `{path.to.token}`. When Style
+Dictionary itself will transform the file, select `resolved` mode so its consumer receives
+literal resolved values. Cycles and unknown external custom properties remain as `var(...)`.
 
 ```bash
 pnpm run cssforge -- --mode style-dictionary --style-dictionary ./.cssforge/tokens.sd.json
+
+# Emit values intended for a Style Dictionary build consumer
+pnpm run cssforge -- --mode style-dictionary --style-dictionary-value-mode resolved
 ```
 
 ## Configuration
@@ -1041,8 +1049,11 @@ pnpm run cssforge -- --watch
 # Custom paths and output
 pnpm run cssforge -- --config ./foo/bar/custom-path.ts --css ./dist/design-tokens.css --ts ./dist/design-tokens.ts --json ./dist/design-tokens.json --style-dictionary ./dist/design-tokens.sd.json --mode all
 
-# Style Dictionary-compatible JSON only
+# Scanner-oriented JSON only (the default value mode)
 pnpm run cssforge -- --mode style-dictionary --style-dictionary ./dist/design-tokens.sd.json
+
+# Style Dictionary consumer input with recursively resolved known values
+pnpm run cssforge -- --mode style-dictionary --style-dictionary ./dist/design-tokens.sd.json --style-dictionary-value-mode resolved
 ```
 
 ## Programmatic Usage
@@ -1055,8 +1066,11 @@ import { generateCSS, generateStyleDictionaryJSON } from "jsr:@hebilicious/cssfo
 // Generate CSS string
 const css = generateCSS(config);
 
-// Generate Style Dictionary-compatible token JSON
-const tokens = generateStyleDictionaryJSON(config);
+// Scanner-oriented values: value is the token's own var(--token) reference
+const scannerTokens = generateStyleDictionaryJSON(config);
+
+// Style Dictionary consumer values: known CSSForge references are resolved
+const resolvedTokens = generateStyleDictionaryJSON(config, { valueMode: "resolved" });
 ```
 
 ## Agentic usage
