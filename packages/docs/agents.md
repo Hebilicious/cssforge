@@ -20,6 +20,8 @@ The compact machine-readable route index is available at [`/llms.txt`](/llms.txt
 
 ## Repository sources of truth
 
+The root `README.md` is canonical. Its generated package copy at `packages/cssforge/README.md` should not be edited directly.
+
 - [Public exports](https://github.com/Hebilicious/cssforge/blob/main/packages/cssforge/src/mod.ts)
 - [Configuration types](https://github.com/Hebilicious/cssforge/blob/main/packages/cssforge/src/config.ts)
 - [CLI implementation](https://github.com/Hebilicious/cssforge/blob/main/packages/cssforge/src/cli.ts)
