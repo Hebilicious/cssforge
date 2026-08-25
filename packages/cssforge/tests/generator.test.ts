@@ -149,10 +149,7 @@ Deno.test("generateStyleDictionaryJSON - resolves hyphenated CSSForge aliases", 
 		generateStyleDictionaryJSON(config, { valueMode: "resolved" }),
 	);
 
-	assertEquals(
-		result.primitives.button.default.color.value,
-		"oklch(17.764% 0 0)",
-	);
+	assertEquals(result.primitives.button.default.color.value, "oklch(17.764% 0 0)");
 	assertEquals(result.primitives.button.default.color.attributes.referencePaths, [
 		"palette.neutral.900",
 	]);
@@ -185,10 +182,7 @@ Deno.test("generateStyleDictionaryJSON - preserves cycles and unresolved custom 
 
 	assertEquals(result.theme.light.content.first.value, "var(--second)");
 	assertEquals(result.theme.light.content.second.value, "var(--first)");
-	assertEquals(
-		result.theme.light.content.external.value,
-		"var(--external-property)",
-	);
+	assertEquals(result.theme.light.content.external.value, "var(--external-property)");
 });
 
 Deno.test("generateStyleDictionaryJSON - uses emitted paths for fluid source metadata", () => {
@@ -221,10 +215,7 @@ Deno.test("generateStyleDictionaryJSON - uses emitted paths for fluid source met
 
 	const result = JSON.parse(generateStyleDictionaryJSON(config));
 
-	assertEquals(
-		result.spacing_fluid.base.s.attributes.sourcePath,
-		"spacing_fluid.base.s",
-	);
+	assertEquals(result.spacing_fluid.base.s.attributes.sourcePath, "spacing_fluid.base.s");
 	assertEquals(result.primitives.card.default.gap.attributes.referencePaths, [
 		"spacing_fluid.base.s",
 	]);
@@ -332,7 +323,7 @@ Deno.test("generateStyleDictionaryJSON - supports legacy value-wrapper reference
 	);
 });
 
-Deno.test("cli - style-dictionary mode writes only the requested token file", async () => {
+Deno.test("cli - style-dictionary and all modes write their declared outputs", async () => {
 	const tempDir = await mkdtemp(join(tmpdir(), "cssforge-style-dictionary-"));
 
 	try {
@@ -382,14 +373,44 @@ Deno.test("cli - style-dictionary mode writes only the requested token file", as
 
 		assertEquals(result.status, 0);
 		assertEquals(result.stderr, "");
-		assertEquals(
-			result.stdout.includes("Generated Style Dictionary JSON written"),
-			true,
-		);
+		assertEquals(result.stdout.includes("Generated Style Dictionary JSON written"), true);
 		assertEquals(output.spacing.custom.size["2"].value, "var(--spacing-size-2)");
 		assertEquals(existsSync(cssOutput), false);
 		assertEquals(existsSync(jsonOutput), false);
 		assertEquals(existsSync(tsOutput), false);
+
+		const allResult = spawnSync(
+			process.execPath,
+			[
+				cliPath,
+				"--config",
+				configPath,
+				"--mode",
+				"all",
+				"--style-dictionary",
+				styleDictionaryOutput,
+				"--css",
+				cssOutput,
+				"--json",
+				jsonOutput,
+				"--ts",
+				tsOutput,
+			],
+			{ cwd: tempDir, encoding: "utf8" },
+		);
+		const legacyJson = JSON.parse(await readFile(jsonOutput, "utf8"));
+
+		assertEquals(allResult.status, 0);
+		assertEquals(allResult.stderr, "");
+		assertEquals(existsSync(cssOutput), true);
+		assertEquals(existsSync(jsonOutput), true);
+		assertEquals(existsSync(tsOutput), true);
+		assertEquals(existsSync(styleDictionaryOutput), true);
+		assertEquals(Object.keys(legacyJson.spacing.custom.size["2"]).sort(), [
+			"key",
+			"value",
+			"variable",
+		]);
 	} finally {
 		await rm(tempDir, { recursive: true, force: true });
 	}
@@ -433,6 +454,27 @@ Deno.test("cli - style-dictionary mode can emit resolved consumer values", async
 		assertEquals(result.status, 0);
 		assertEquals(result.stderr, "");
 		assertEquals(output.spacing.custom.size["2"].value, "0.5rem");
+	} finally {
+		await rm(tempDir, { recursive: true, force: true });
+	}
+});
+
+Deno.test("cli - rejects unknown output modes", async () => {
+	const tempDir = await mkdtemp(join(tmpdir(), "cssforge-invalid-mode-"));
+
+	try {
+		const configPath = join(tempDir, "cssforge.config.ts");
+		await writeFile(configPath, "export default {};", "utf8");
+
+		const cliPath = fileURLToPath(new URL("../src/cli.ts", import.meta.url));
+		const result = spawnSync(
+			process.execPath,
+			[cliPath, "--config", configPath, "--mode", "style-dictionary-typo"],
+			{ cwd: tempDir, encoding: "utf8" },
+		);
+
+		assertEquals(result.status, 1);
+		assertEquals(result.stderr.includes("Invalid output mode"), true);
 	} finally {
 		await rm(tempDir, { recursive: true, force: true });
 	}
