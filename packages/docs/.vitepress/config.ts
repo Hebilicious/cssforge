@@ -46,6 +46,10 @@ export default defineConfig({
           { text: "Getting started", link: "/guide/getting-started" },
           { text: "Configuration", link: "/guide/configuration" },
           { text: "CLI and API", link: "/guide/usage" },
+          {
+            text: "Style Dictionary JSON",
+            link: "/guide/style-dictionary",
+          },
           { text: "Examples", link: "/guide/examples" },
         ],
       },

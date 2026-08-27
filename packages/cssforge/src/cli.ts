@@ -14,12 +14,28 @@ import type { CommandDef } from "citty";
  */
 import { defineCommand, runMain } from "citty";
 import type { CSSForgeConfig } from "./config.ts";
-import { generateCSS, generateJSON, generateTS } from "./generator.ts";
+import {
+	generateCSS,
+	generateJSON,
+	generateStyleDictionaryJSON,
+	generateTS,
+} from "./generator.ts";
 
 const writeFileRecursive = (path: string, data: string) =>
 	fs
 		.mkdir(path.replace(/\/[^/]*$/, ""), { recursive: true })
 		.then(() => fs.writeFile(path, data));
+
+const outputModes = ["css", "json", "ts", "style-dictionary", "all"] as const;
+type OutputMode = (typeof outputModes)[number];
+const styleDictionaryValueModes = ["css-reference", "resolved"] as const;
+type StyleDictionaryValueMode = (typeof styleDictionaryValueModes)[number];
+
+const isOutputMode = (value: unknown): value is OutputMode =>
+	typeof value === "string" && outputModes.some((mode) => mode === value);
+
+const isStyleDictionaryValueMode = (value: unknown): value is StyleDictionaryValueMode =>
+	typeof value === "string" && styleDictionaryValueModes.some((mode) => mode === value);
 
 /**
  * Defines the options for the build command.
@@ -28,11 +44,15 @@ export interface BuildOptions {
 	/** Path to the configuration file. */
 	config: string;
 	/** The output mode. */
-	mode: "css" | "json" | "ts" | "all";
+	mode: OutputMode;
 	/** Path for the CSS output file. */
 	cssOutput: string;
 	/** Path for the JSON output file. */
 	jsonOutput: string;
+	/** Path for the Style Dictionary-compatible JSON output file. */
+	styleDictionaryOutput?: string;
+	/** Value representation used by the Style Dictionary-compatible JSON output. */
+	styleDictionaryValueMode?: StyleDictionaryValueMode;
 	/** Path for the TypeScript output file. */
 	tsOutput: string;
 }
@@ -47,9 +67,14 @@ export async function build({
 	tsOutput,
 	cssOutput,
 	jsonOutput,
+	styleDictionaryOutput,
+	styleDictionaryValueMode = "resolved",
 	mode,
 }: BuildOptions): Promise<{ success: boolean; error?: unknown }> {
 	try {
+		if (!isOutputMode(mode)) {
+			throw new Error(`Invalid output mode: ${mode}`);
+		}
 		const absoluteconfig = resolve(process.cwd(), config);
 		const absoluteCssOutput = resolve(process.cwd(), cssOutput);
 		const absoluteJsonOutput = resolve(process.cwd(), jsonOutput);
@@ -73,6 +98,23 @@ export async function build({
 				generateJSON(userConfig.default as CSSForgeConfig),
 			);
 			console.log(`✔ Generated JSON written to ${jsonOutput}`);
+		}
+
+		if (mode === "style-dictionary" || mode === "all") {
+			if (!isStyleDictionaryValueMode(styleDictionaryValueMode)) {
+				throw new Error(
+					`Invalid Style Dictionary value mode: ${styleDictionaryValueMode}`,
+				);
+			}
+			const outputPath = styleDictionaryOutput ?? "./.cssforge/tokens.sd.json";
+			const absoluteStyleDictionaryOutput = resolve(process.cwd(), outputPath);
+			await writeFileRecursive(
+				absoluteStyleDictionaryOutput,
+				generateStyleDictionaryJSON(userConfig.default as CSSForgeConfig, {
+					valueMode: styleDictionaryValueMode,
+				}),
+			);
+			console.log(`✔ Generated Style Dictionary JSON written to ${outputPath}`);
 		}
 
 		if (mode === "ts" || mode === "all") {
@@ -147,7 +189,7 @@ const mainCommand = defineCommand({
 		},
 		mode: {
 			type: "string",
-			description: "Output mode (css, json, ts, all)",
+			description: "Output mode (css, json, ts, style-dictionary, all)",
 			alias: "m",
 			default: "all",
 		},
@@ -160,6 +202,17 @@ const mainCommand = defineCommand({
 			type: "string",
 			description: "Optional path for an output JSON file",
 			default: "./.cssforge/output.json",
+		},
+		"style-dictionary": {
+			type: "string",
+			description: "Path for the Style Dictionary token JSON file",
+			default: "./.cssforge/tokens.sd.json",
+		},
+		"style-dictionary-value-mode": {
+			type: "string",
+			description:
+				"Token value mode: css-reference for usage matching, or resolved for previews and builds",
+			default: "resolved",
 		},
 		css: {
 			type: "string",
@@ -174,14 +227,30 @@ const mainCommand = defineCommand({
 	},
 	async run({ args }) {
 		const { watch: shouldWatch, config, css, json, ts, mode, prefix } = args;
+		const styleDictionary = args["style-dictionary"];
+		const styleDictionaryValueMode = args["style-dictionary-value-mode"];
+		if (!isOutputMode(mode)) {
+			console.error(`Error during build: Error: Invalid output mode: ${mode}`);
+			process.exit(1);
+			return;
+		}
+		if (!isStyleDictionaryValueMode(styleDictionaryValueMode)) {
+			console.error(
+				`Error during build: Error: Invalid Style Dictionary value mode: ${styleDictionaryValueMode}`,
+			);
+			process.exit(1);
+			return;
+		}
 		const realPath = (p: string) => resolve(prefix, p);
-		const settings = {
+		const settings: BuildOptions = {
 			mode,
 			config: realPath(config),
 			cssOutput: realPath(css),
 			tsOutput: realPath(ts),
 			jsonOutput: realPath(json),
-		} as BuildOptions;
+			styleDictionaryOutput: realPath(styleDictionary),
+			styleDictionaryValueMode,
+		};
 		if (shouldWatch) {
 			const cleanup = await watch(settings);
 

@@ -9,7 +9,7 @@
 
 import type { CSSForgeConfig } from "./config.ts";
 import { defineConfig } from "./config.ts";
-import { generateCSS } from "./generator.ts";
+import { generateCSS, generateStyleDictionaryJSON } from "./generator.ts";
 import { processColors } from "./modules/colors.ts";
 import { processPrimitives } from "./modules/primitive.ts";
 import { processSpacing } from "./modules/spacing.ts";
@@ -18,6 +18,7 @@ import { processTypography } from "./modules/typography.ts";
  * The main configuration object for CSSForge.
  */
 export type { CSSForgeConfig };
+export type { StyleDictionaryJSONOptions } from "./generator.ts";
 
 export {
 	/**
@@ -32,6 +33,12 @@ export {
 	 * @returns The generated CSS string.
 	 */
 	generateCSS,
+	/**
+	 * Generates a Style Dictionary-readable JSON string from a CSSForge configuration.
+	 * @param config The CSSForge configuration.
+	 * @returns The generated Style Dictionary-readable JSON string.
+	 */
+	generateStyleDictionaryJSON,
 	/**
 	 * Processes the colors section of the configuration.
 	 * @param colors The colors configuration.

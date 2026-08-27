@@ -1,5 +1,6 @@
 import { pxToRem, validateName } from "../helpers.ts";
 import {
+	getReferencePaths,
 	getResolvedVariablesMap,
 	type Output,
 	resolveValue,
@@ -113,6 +114,7 @@ export function processPrimitives(config: {
 						: propValue;
 
 					const resolvedValue = resolveValue({ map: resolvedMap, value: convertedValue });
+					const referencePaths = getReferencePaths({ value: convertedValue, variables });
 
 					const key = `--${primitiveName}-${variantName}-${propName}`;
 					const variable = `${key}: ${resolvedValue};`;
@@ -121,6 +123,10 @@ export function processPrimitives(config: {
 						key,
 						value: resolvedValue,
 						variable,
+						sourcePath: `${moduleKey}.${primitiveName}.${variantName}.${propName}`,
+						...(referencePaths ? { referencePaths } : {}),
+						type: "component",
+						tier: referencePaths ? "semantic" : "primitive",
 					});
 				}
 			} catch (error) {

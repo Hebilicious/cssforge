@@ -1027,8 +1027,14 @@ pnpm run cssforge
 # Watch mode
 pnpm run cssforge -- --watch
 
-# Custom paths and output 
-pnpm run cssforge -- --config ./foo/bar/custom-path.ts --css ./dist/design-tokens.css --ts ./dist/design-tokens.ts --json ./dist/design-tokens.json --mode all
+# Custom paths and output
+pnpm run cssforge -- --config ./foo/bar/custom-path.ts --css ./dist/design-tokens.css --ts ./dist/design-tokens.ts --json ./dist/design-tokens.json --style-dictionary ./dist/design-tokens.sd.json --mode all
+
+# Style Dictionary JSON with final values (default)
+pnpm run cssforge -- --mode style-dictionary --style-dictionary ./dist/design-tokens.sd.json
+
+# Keep CSS variables as values for usage matching
+pnpm run cssforge -- --mode style-dictionary --style-dictionary ./dist/design-tokens.sd.json --style-dictionary-value-mode css-reference
 ```
 
 ## Programmatic Usage
@@ -1036,10 +1042,101 @@ pnpm run cssforge -- --config ./foo/bar/custom-path.ts --css ./dist/design-token
 You can also use CSS Forge programmatically:
 
 ```typescript
-import { generateCSS } from "jsr:@hebilicious/cssforge";
+import { generateCSS, generateStyleDictionaryJSON } from "jsr:@hebilicious/cssforge";
 
 // Generate CSS string
 const css = generateCSS(config);
+
+// Write final values for Style Dictionary
+const resolvedTokens = generateStyleDictionaryJSON(config);
+
+// Keep var(--token) as each token's value for usage matching
+const usageTokens = generateStyleDictionaryJSON(config, { valueMode: "css-reference" });
+```
+
+## Style Dictionary JSON
+
+CSS Forge can generate a separate token file for Style Dictionary and other tools that read
+the same JSON shape. This output does not change the CSS, TypeScript, or regular JSON files
+you already generate.
+
+### Generate the file
+
+Use `style-dictionary` mode to generate only the token file:
+
+```bash
+pnpm run cssforge -- --mode style-dictionary --style-dictionary ./.cssforge/tokens.json
+```
+
+Use `--mode all` to generate it together with the CSS, TypeScript, and regular JSON outputs.
+The `--style-dictionary` option controls where the token file is written.
+
+A generated token looks like this:
+
+```json
+{
+  "palette": {
+    "neutral": {
+      "900": {
+        "value": "oklch(17.764% 0 0)",
+        "type": "color",
+        "$tier": "primitive",
+        "$resolvedValue": "oklch(17.764% 0 0)",
+        "attributes": {
+          "cssVariable": "--palette-neutral-900",
+          "cssVariableReference": "var(--palette-neutral-900)",
+          "resolvedValue": "oklch(17.764% 0 0)",
+          "sourcePath": "palette.neutral.900"
+        }
+      }
+    }
+  }
+}
+```
+
+Semantic tokens also include `$reference` and `attributes.referencePaths`. These paths match
+the keys in the generated file, so consumers can connect a semantic token to its source.
+
+### Choose the value mode
+
+| Mode | `value` contains | Use it for |
+| --- | --- | --- |
+| `resolved` (default) | The final value, such as `oklch(...)`, `1rem`, or `clamp(...)` | Style Dictionary transforms and token previews |
+| `css-reference` | The token's own CSS variable, such as `var(--palette-neutral-900)` | Tools that match CSS variable usage in source files |
+
+The default `resolved` mode recursively resolves references to other CSS Forge tokens. Cycles
+and unknown CSS variables remain as `var(...)` instead of causing generation to fail.
+
+`css-reference` values are CSS custom-property references, not Style Dictionary aliases.
+Style Dictionary aliases use `{path.to.token}`. Use the default `resolved` mode when Style
+Dictionary will transform the file.
+
+```bash
+# Keep CSS variables as values for usage matching
+pnpm run cssforge -- --mode style-dictionary --style-dictionary ./.cssforge/tokens.json --style-dictionary-value-mode css-reference
+```
+
+### Programmatic API
+
+```typescript
+import { generateStyleDictionaryJSON } from "jsr:@hebilicious/cssforge";
+
+const resolvedTokens = generateStyleDictionaryJSON(config);
+const usageTokens = generateStyleDictionaryJSON(config, {
+  valueMode: "css-reference",
+});
+```
+
+### Example: Musea
+
+Musea can use the generated file as its token source:
+
+```typescript
+import { musea } from "@vizejs/vite-plugin-musea";
+
+musea({
+  tokensPath: ".cssforge/tokens.json",
+});
 ```
 
 ## Agentic usage
