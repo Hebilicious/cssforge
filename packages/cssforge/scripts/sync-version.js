@@ -9,8 +9,19 @@ const packageJsonPath = path.join(packageRoot, "package.json");
 const jsrJsonPath = path.join(packageRoot, "jsr.json");
 
 const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf8"));
-const jsrJson = JSON.parse(fs.readFileSync(jsrJsonPath, "utf8"));
+const jsrJsonSource = fs.readFileSync(jsrJsonPath, "utf8");
 
-jsrJson.version = packageJson.version;
+// Rewrite the version in place so the file keeps the repository formatting.
+const versionPattern = /("version"\s*:\s*")[^"]*(")/;
+if (!versionPattern.test(jsrJsonSource)) {
+	throw new Error(`No version field found in ${jsrJsonPath}`);
+}
 
-fs.writeFileSync(jsrJsonPath, `${JSON.stringify(jsrJson, null, 2)}\n`);
+const updatedJsrJsonSource = jsrJsonSource.replace(
+	versionPattern,
+	`$1${packageJson.version}$2`,
+);
+
+JSON.parse(updatedJsrJsonSource);
+
+fs.writeFileSync(jsrJsonPath, updatedJsrJsonSource);
