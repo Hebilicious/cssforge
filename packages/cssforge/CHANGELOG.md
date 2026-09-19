@@ -1,5 +1,11 @@
 # @hebilicious/cssforge
 
+## 0.5.0
+
+### Minor Changes
+
+- 438b9a1: Add Style Dictionary token JSON output, with resolved values by default and an optional CSS-variable mode for usage matching.
+
 ## 0.4.1
 
 ### Patch Changes
