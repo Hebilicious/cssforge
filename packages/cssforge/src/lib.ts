@@ -1,8 +1,42 @@
+export type TokenType =
+	| "color"
+	| "gradient"
+	| "spacing"
+	| "typography"
+	| "primitive"
+	| "component";
+
+export type TokenTier = "primitive" | "semantic";
+
 /**
- * A map where keys are dot-separated paths and values are objects
- * containing the CSS variable key, its value, and the full variable declaration.
+ * Metadata carried through generation so alternate outputs can preserve token
+ * provenance without changing the generated CSS.
  */
-export type ResolveMap = Map<string, { key: string; value: string; variable: string }>;
+export interface TokenMetadata {
+	/** The original cssforge path used to resolve this token. */
+	sourcePath: string;
+	/** cssforge paths referenced while composing this token. */
+	referencePaths?: string[];
+	/** The broad token category for Style Dictionary-compatible outputs. */
+	type: TokenType;
+	/** Primitive tokens have no source reference; semantic tokens alias other tokens. */
+	tier?: TokenTier;
+}
+
+export interface ResolvedToken extends TokenMetadata {
+	/** CSS custom property name, e.g. `--theme-light-content-primary`. */
+	key: string;
+	/** The generated CSS value. This may contain `var(...)` references. */
+	value: string;
+	/** The full CSS declaration. */
+	variable: string;
+}
+
+/**
+ * A map where keys are cssforge paths and values are objects containing the CSS
+ * variable key, generated value, full declaration, and token metadata.
+ */
+export type ResolveMap = Map<string, ResolvedToken>;
 
 /**
  * Represents the output of a processing function, containing the generated
@@ -19,6 +53,28 @@ export interface Variables {
 	[key: string]: string;
 }
 
+const cssVariableReferencePattern = /var\(\s*(--[\w-]+)\s*\)/g;
+
+/**
+ * Rewrites CSS custom-property references using the canonical CSSForge parser.
+ */
+export const replaceCssVariableReferences = (
+	value: string,
+	replacer: (cssVariable: string, match: string) => string,
+): string =>
+	value.replace(cssVariableReferencePattern, (match, cssVariable: string) =>
+		replacer(cssVariable, match),
+	);
+
+const getCssVariableReferences = (value: string): string[] => {
+	const references: string[] = [];
+	replaceCssVariableReferences(value, (cssVariable, match) => {
+		references.push(cssVariable);
+		return match;
+	});
+	return references;
+};
+
 interface Modules {
 	colors?: Output | null;
 	typography?: Output | null;
@@ -32,6 +88,34 @@ interface ResolveVariableParams extends Modules {
 interface GetResolvedVariablesMapParams extends Modules {
 	variables: Variables | undefined;
 }
+
+/**
+ * Normalizes historical config paths that included `value` wrapper segments.
+ */
+export const normalizeTokenPath = (varPath: string): string => {
+	const path = varPath.split(".");
+	const [module, ...parts] = path;
+
+	if (!module) return varPath;
+
+	if (
+		(module === "palette" || module === "gradients" || module === "theme") &&
+		parts[0] === "value"
+	) {
+		return [module, ...parts.slice(1)].join(".");
+	}
+
+	if (module === "spacing" && parts[0] === "custom" && parts[2] === "value") {
+		return [module, parts[0], parts[1], ...parts.slice(3)].join(".");
+	}
+
+	if (module === "typography" && parts[0] === "weight" && parts[2] === "value") {
+		return [module, parts[0], parts[1], ...parts.slice(3)].join(".");
+	}
+
+	return varPath;
+};
+
 /**
  * Resolves a variable path to its corresponding CSS variable name.
  * This function is used to resolve references to other design tokens.
@@ -52,7 +136,8 @@ function resolveVariable({
 	typography,
 	spacing,
 }: ResolveVariableParams) {
-	const path = varPath.split(".");
+	const normalizedPath = normalizeTokenPath(varPath);
+	const path = normalizedPath.split(".");
 	const module = path[0];
 	//TODO: Make this configurable
 	const keyMap = {
@@ -69,7 +154,7 @@ function resolveVariable({
 		case keyMap.gradients:
 		case keyMap.theme: {
 			if (!colors) throw new Error("The colors object must be passed.");
-			const result = colors.resolveMap.get(varPath);
+			const result = colors.resolveMap.get(normalizedPath);
 			if (!result) {
 				throw new Error(
 					`The color path ${varPath} could not be resolved. Map contains ${Array.from(
@@ -82,7 +167,7 @@ function resolveVariable({
 		case keyMap.typography_fluid:
 		case keyMap.typography: {
 			if (!typography) throw new Error("The typography object must be passed.");
-			const result = typography.resolveMap.get(varPath);
+			const result = typography.resolveMap.get(normalizedPath);
 			if (!result) {
 				throw new Error(
 					`The typography path ${varPath} could not be resolved. Map contains ${Array.from(
@@ -95,7 +180,7 @@ function resolveVariable({
 		case keyMap.spacing:
 		case keyMap.spacing_fluid: {
 			if (!spacing) throw new Error("The spacing object must be passed.");
-			const result = spacing.resolveMap.get(varPath);
+			const result = spacing.resolveMap.get(normalizedPath);
 			if (!result) {
 				throw new Error(
 					`The spacing path ${varPath} could not be resolved.  Map contains ${Array.from(
@@ -130,6 +215,28 @@ export const getResolvedVariablesMap = ({
 };
 
 /**
+ * Returns the cssforge reference paths actually used by `var(--alias)` calls in a value.
+ */
+export const getReferencePaths = ({
+	value,
+	variables,
+}: {
+	value: string;
+	variables: Variables | undefined;
+}): string[] | undefined => {
+	if (!variables) return undefined;
+
+	const referencePaths = getCssVariableReferences(value)
+		.map((cssVariable) => {
+			const path = variables[cssVariable.slice(2)];
+			return path ? normalizeTokenPath(path) : undefined;
+		})
+		.filter((path): path is string => Boolean(path));
+
+	return referencePaths.length > 0 ? Array.from(new Set(referencePaths)) : undefined;
+};
+
+/**
  * Resolves a CSS variable value using a map of variable paths.
  * It replaces occurrences of `var(--key)` in the value with the corresponding
  * CSS variable from the map.
@@ -141,7 +248,7 @@ export const resolveValue = ({
 	map: Map<string, string>;
 	value: string;
 }) =>
-	value.replace(
-		/var\(--(\w+)\)/g,
-		(_, key: string) => `var(${map.get(`--${key}`) ?? `--${key}`})`,
+	replaceCssVariableReferences(
+		value,
+		(cssVariable) => `var(${map.get(cssVariable) ?? cssVariable})`,
 	);
