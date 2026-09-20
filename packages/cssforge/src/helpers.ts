@@ -95,9 +95,15 @@ function validateNameCharacters(name: string, path: string): void {
 /**
  * Validates the alias keys of a `variables` map.
  *
- * Alias keys become the emitted `var(--alias)` reference, so they must contribute
- * valid identifier characters. A key written as `--alias` is accepted; the leading
- * hyphens describe the CSS form the author reads, not the segment.
+ * `getResolvedVariablesMap` builds the emitted reference as `` `--${varKey}` ``
+ * and matches it against authored `var(...)` calls, so an alias key is validated
+ * verbatim as the author configured it. A key written as `--alias` is therefore a
+ * key whose name already includes the hyphens, not a shorthand for one.
+ *
+ * An empty key is rejected. It would emit the unresolvable reference `var(--)`,
+ * which no declaration can ever match. Note that an empty segment is not rejected
+ * for typography `customLabel` values, where it legitimately emits a trailing
+ * hyphen in the generated key.
  *
  * Only the CSS character rule applies here. Alias keys are not token keys, so
  * existing names such as `spacing` keep working.
@@ -117,8 +123,15 @@ export function validateVariableAliases({
 }): void {
 	if (!aliases) return;
 	for (const aliasKey of Object.keys(aliases)) {
-		const segment = aliasKey.startsWith("--") ? aliasKey.slice(2) : aliasKey;
-		validateNameCharacters(segment, `${path}.variables.${aliasKey}`);
+		const aliasPath = `${path}.variables.${aliasKey}`;
+		if (aliasKey.length === 0) {
+			throw new InvalidNameError(
+				`Invalid name: ${aliasKey} at configuration path "${aliasPath}". Alias keys ` +
+					`must be non-empty, because an empty key emits the unresolvable ` +
+					`reference "var(--)".`,
+			);
+		}
+		validateNameCharacters(aliasKey, aliasPath);
 	}
 }
 

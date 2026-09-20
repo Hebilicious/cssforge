@@ -474,6 +474,75 @@ Deno.test("validateName - rejects variable alias keys that would emit invalid re
 	);
 });
 
+Deno.test("validateName - rejects an empty alias key that would emit var(--)", () => {
+	const message = captureError(() =>
+		processPrimitives({
+			colors: { palette: { value: { coral: { value: { "50": { hex: "#FF7E60" } } } } } },
+			primitives: {
+				btn: {
+					value: {
+						d: {
+							value: { color: "var(--)" },
+							variables: { "": "palette.coral.50" },
+						},
+					},
+				},
+			},
+		} as never),
+	);
+	assert(
+		message.includes("primitives.btn.d.variables.") && message.includes("non-empty"),
+		`An empty alias key must be rejected with its path. Received: ${message}`,
+	);
+});
+
+Deno.test("validateName - names the configured alias key verbatim in the error", () => {
+	// The alias key is used verbatim: `getResolvedVariablesMap` builds the emitted
+	// reference as `--${varKey}`, so a key written `--alias` already includes its
+	// hyphens. The message must quote the configured key, not a stripped variant.
+	const message = captureError(() =>
+		processPrimitives({
+			colors: { palette: { value: { coral: { value: { "50": { hex: "#FF7E60" } } } } } },
+			primitives: {
+				btn: {
+					value: {
+						d: {
+							value: { color: "var(----a b)" },
+							variables: { "--a b": "palette.coral.50" },
+						},
+					},
+				},
+			},
+		} as never),
+	);
+	assert(
+		message.includes("Invalid name: --a b") &&
+			message.includes("primitives.btn.d.variables.--a b"),
+		`Error must name the configured key verbatim. Received: ${message}`,
+	);
+});
+
+Deno.test("validateName - keeps a hyphen-only alias key that resolves", () => {
+	// `--` is a key whose name already contains the hyphens, so the emitted
+	// reference is `var(----)`, which resolves. It must not be rejected, because it
+	// produces a working declaration.
+	const result = processPrimitives({
+		colors: { palette: { value: { coral: { value: { "50": { hex: "#FF7E60" } } } } } },
+		primitives: {
+			btn: {
+				value: {
+					d: {
+						value: { color: "var(----)" },
+						variables: { "--": "palette.coral.50" },
+					},
+				},
+			},
+		},
+	} as never);
+	assertEquals(result.css.root, "/* btn */\n--btn-d-color: var(--palette-coral-50);");
+	assertEquals(invalidDashedIdentifiers(result.css.root ?? ""), []);
+});
+
 Deno.test("validateName - rejects each ASCII delimiter and keeps ASCII identifier characters", () => {
 	const rejected = " !\"#$%&'()*+,./:;<=>?@[\\]^`{|}~";
 	const accepted = "-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz";
