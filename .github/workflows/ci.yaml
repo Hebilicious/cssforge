@@ -28,9 +28,45 @@ jobs:
       # is excluded from CI for the same reason.
       - name: Check release metadata consistency
         run: moon run --force cssforge:version-check
+      # `cssforge:jsr-smoke` runs the JSR entry points, but only JSR's own slow
+      # type analysis rejects a public API without explicit types. That defect
+      # breaks `jsr publish` after npm has already been published, so it has to
+      # gate the pull request. Moon resolves the build this target depends on.
+      - name: Check JSR publishability
+        run: moon run --force cssforge:jsr-dry-run
 
       - name: Run CI
         run: moon ci
+
+  browser-e2e:
+    name: Browser e2e (theme scoping)
+    runs-on: ubuntu-latest
+
+    # Pull requests only. The suite exists to stop a token or scoping
+    # regression from reaching main, and `moon ci` does not select it (every
+    # example task stays `runInCI: false`), so this job is what runs it.
+    # Guarding on `pull_request` keeps the browser download off the
+    # push-to-main run, whose commit was already gated by its own PR.
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup toolchain
+        uses: moonrepo/setup-toolchain@v0
+        with:
+          moon-version: "2.0.0"
+          auto-install: true
+
+      # Chromium only: it is the single project in the example's Playwright
+      # config.
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Run the browser suite
+        run: moon run --force vanilla-react-css:e2e
 
   node-floor:
     name: Package smoke on Node 24.0.0
