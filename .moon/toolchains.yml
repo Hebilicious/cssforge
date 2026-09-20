@@ -10,8 +10,11 @@ pnpm: {}
 
 typescript:
   # The TypeScript toolchain plugin adds every synced project as a reference to
-  # the workspace root `tsconfig.json`. Both files are tracked, so every task
-  # that syncs a project left the repository dirty (issue #51). The project
-  # references this repository needs are committed in the `tsconfig.json` files
-  # themselves, so moon does not have to manage them.
+  # the workspace root `tsconfig.json`. Both that root config and the project
+  # configs are tracked, so every task that synced a project left the
+  # repository dirty (issue #51). The project references this repository needs
+  # are committed in those files, so moon does not have to manage them.
+  # Disabling the sync also turns off `createMissingConfig`, which sits in the
+  # same plugin guard, so moon no longer auto-creates a missing project
+  # `tsconfig.json`; every project currently ships one.
   syncProjectReferences: false
