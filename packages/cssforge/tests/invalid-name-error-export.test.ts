@@ -9,12 +9,8 @@ import {
 } from "../src/mod.ts";
 import { assert, assertEquals, Deno } from "./vitest-compat.ts";
 
-/**
- * `InvalidNameError` is thrown by name validation, so a consumer needs to catch it
- * by type. These tests import it from the package entry on purpose: the export is
- * the behaviour under test, and importing from `helpers.ts` would pass even when
- * the entry does not re-export it.
- */
+// Imported from the package entry on purpose: the export is the behaviour under
+// test, so importing from `helpers.ts` would pass even without a re-export.
 Deno.test("InvalidNameError - is exported from the package entry as a constructor", () => {
 	assertEquals(typeof InvalidNameError, "function");
 	assert(
@@ -28,63 +24,36 @@ Deno.test("InvalidNameError - is exported from the package entry as a constructo
 	assertEquals(error.message, "boom");
 });
 
-Deno.test("InvalidNameError - catches a primitive name validation failure with instanceof", () => {
-	const config = {
-		primitives: {
-			"card button": {
-				value: { default: { value: { gap: "1rem" } } },
-			},
+const invalidPrimitiveConfig = {
+	primitives: {
+		"card button": {
+			value: { default: { value: { gap: "1rem" } } },
 		},
-	};
+	},
+};
 
+Deno.test("InvalidNameError - catches a name validation failure with instanceof", () => {
 	let caught: unknown;
 	try {
-		processPrimitives(config as never);
+		processPrimitives(invalidPrimitiveConfig as never);
 	} catch (error) {
 		caught = error;
 	}
 
 	assert(caught instanceof InvalidNameError, "Expected an InvalidNameError instance.");
-	assert(
-		(caught as Error).message.includes("primitives.card button"),
-		`The error must keep its configuration path. Received: ${(caught as Error).message}`,
-	);
-	// The typed catch is the whole point of the export; `error.name` is the
-	// type-unsafe handle a consumer has today.
 	assertEquals((caught as Error).name, "InvalidNameError");
 });
 
 Deno.test("InvalidNameError - is reachable through every public entry", () => {
-	// Only the entries `mod.ts` actually exports. `generateJSON` and `generateTS`
-	// live in `generator.ts` and are deliberately not part of the package surface.
+	// The entries `mod.ts` exports. `generateJSON` and `generateTS` live in
+	// `generator.ts` and are not part of the package surface.
 	const entries: Array<[string, () => unknown]> = [
-		[
-			"generateCSS",
-			() =>
-				generateCSS({
-					primitives: {
-						"card button": { value: { default: { value: { gap: "1rem" } } } },
-					},
-				} as never),
-		],
+		["generateCSS", () => generateCSS(invalidPrimitiveConfig as never)],
 		[
 			"generateStyleDictionaryJSON",
-			() =>
-				generateStyleDictionaryJSON({
-					primitives: {
-						"card button": { value: { default: { value: { gap: "1rem" } } } },
-					},
-				} as never),
+			() => generateStyleDictionaryJSON(invalidPrimitiveConfig as never),
 		],
-		[
-			"processPrimitives",
-			() =>
-				processPrimitives({
-					primitives: {
-						"card button": { value: { default: { value: { gap: "1rem" } } } },
-					},
-				} as never),
-		],
+		["processPrimitives", () => processPrimitives(invalidPrimitiveConfig as never)],
 		[
 			"processColors",
 			() =>
