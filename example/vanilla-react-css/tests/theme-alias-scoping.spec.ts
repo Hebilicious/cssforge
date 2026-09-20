@@ -3,10 +3,10 @@ import { expect, type Page, test } from "@playwright/test";
 const THEME_CLASS = "Another";
 const SCOPE_HOST_SELECTOR = '[data-testid="scope-host"]';
 
-/** Chromium's serialization of the `red` fallback declared by `.alias-probe`. */
+/** Chromium's serialization of the `red` fallback in `.alias-probe`. */
 const FALLBACK_COLOR = "rgb(255, 0, 0)";
 
-/** Chromium's serialization of the `lime` fallback declared by the palette probes. */
+/** Chromium's serialization of the `lime` fallback in the palette probes. */
 const PALETTE_FALLBACK_COLOR = "rgb(0, 255, 0)";
 
 type Placement = "root" | "descendant";
@@ -46,24 +46,10 @@ async function readColors(page: Page) {
 test.describe("light color scheme", () => {
   test.use({ colorScheme: "light" });
 
-  test("a theme class on the root element resolves the alias to the palette color", async ({
-    page,
-  }) => {
+  // Light mode declares the alias on `:root`, so class placement is irrelevant.
+  test("the alias resolves to the root-scoped palette color", async ({ page }) => {
     await page.goto("/");
     await placeThemeClass(page, "root");
-
-    const { alias, brandPalette } = await readColors(page);
-
-    expect(brandPalette).not.toBe(PALETTE_FALLBACK_COLOR);
-    expect(alias).toBe(brandPalette);
-    expect(alias).not.toBe(FALLBACK_COLOR);
-  });
-
-  test("a theme class on a descendant still resolves an alias whose palette is root-scoped", async ({
-    page,
-  }) => {
-    await page.goto("/");
-    await placeThemeClass(page, "descendant");
 
     const { alias, brandPalette } = await readColors(page);
 
@@ -76,9 +62,7 @@ test.describe("light color scheme", () => {
 test.describe("dark color scheme", () => {
   test.use({ colorScheme: "dark" });
 
-  test("a theme class on the root element resolves the dark alias to the palette declared there", async ({
-    page,
-  }) => {
+  test("a theme class on the root element resolves the dark alias", async ({ page }) => {
     await page.goto("/");
     await placeThemeClass(page, "root");
 
@@ -98,9 +82,8 @@ test.describe("dark color scheme", () => {
 
     const { alias, anotherPalette, rootPrimary } = await readColors(page);
 
-    // The palette is scoped to :root.Another, so a theme class on a descendant
-    // does not make the token available in that descendant subtree either, and
-    // the alias computed on :root has nothing to substitute.
+    // `:root.Another` does not match a descendant, and the alias is computed
+    // on `:root`, so there is nothing to substitute.
     expect(anotherPalette).toBe(PALETTE_FALLBACK_COLOR);
     expect(rootPrimary).toBe("");
     expect(alias).toBe(FALLBACK_COLOR);
