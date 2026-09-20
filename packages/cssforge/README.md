@@ -53,16 +53,6 @@ pnpm cssforge --mode all # pnpm
 npx cssforge --mode all # npm
 ```
 
-Add it to your `package.json` scripts if you prefer the shorter form:
-
-```json
-{
-  "scripts": {
-    "cssforge": "cssforge"
-  }
-}
-```
-
 The rest of this document writes commands as `cssforge <args>`.
 
 ### Alternative installation (Deno and JSR)
