@@ -21,8 +21,9 @@ const run = (
 	command: string,
 	args: string[],
 	cwd: string,
+	env: NodeJS.ProcessEnv = childEnv,
 ): { status: number | null; stdout: string; stderr: string } => {
-	const result = spawnSync(command, args, { cwd, encoding: "utf8", env: childEnv });
+	const result = spawnSync(command, args, { cwd, encoding: "utf8", env });
 	assert(
 		result.error === undefined,
 		`${command} could not start: ${result.error?.message}`,
@@ -39,6 +40,25 @@ const readVersion = (path: string): string => {
 	);
 
 	return String((parsed as { version: unknown }).version);
+};
+
+/**
+ * Replaces the `version` field of a JSON manifest without depending on the
+ * version the workspace currently carries, so the tests keep working after the
+ * next release bump.
+ */
+const withVersion = (source: string, version: string): string => {
+	const updated = source.replace(
+		/("version"\s*:\s*")[^"]*(")/,
+		(_match, prefix: string, suffix: string) => `${prefix}${version}${suffix}`,
+	);
+	assert(
+		updated !== source || source.includes(`"${version}"`),
+		"no version field to replace",
+	);
+	JSON.parse(updated);
+
+	return updated;
 };
 
 /** `npm pack --json` reports one entry per package, as a list or a keyed object. */
@@ -105,6 +125,49 @@ const copyWorkspace = (destination: string): void => {
  */
 const fixtureVersion = "0.7.0-issue28.1";
 
+Deno.test("cli - reports the manifest version verbatim, with and without CI", () => {
+	const cli = join(packageRoot, "dist", "cli.js");
+	assert(
+		existsSync(cli),
+		`${cli} is missing; run \`moon run cssforge:build\` before the tests`,
+	);
+
+	const manifestVersion = readVersion(join(packageRoot, "package.json"));
+
+	for (const [description, env] of [
+		["a plain environment", childEnv],
+		// citty prints its version through consola, which decorates log output
+		// once `CI` is set. Scripts and CI parse `--version`, so the output must
+		// not depend on the environment.
+		["CI", { ...childEnv, CI: "1" }],
+		// The same reporter change is triggered by other CI markers.
+		["CI and GITHUB_ACTIONS", { ...childEnv, CI: "1", GITHUB_ACTIONS: "true" }],
+	] as const) {
+		for (const flag of ["--version", "-v"]) {
+			const result = run(process.execPath, [cli, flag], packageRoot, env);
+			assertSucceeded(result, `cssforge ${flag} in ${description}`);
+			assertEquals(
+				result.stdout.trim(),
+				manifestVersion,
+				`cssforge ${flag} in ${description} must print the manifest version verbatim`,
+			);
+		}
+	}
+
+	// A version flag next to other arguments stays a normal build, which is how
+	// citty resolves its own version flag.
+	const combined = run(
+		process.execPath,
+		[cli, "--version", "--mode", "css"],
+		packageRoot,
+		{ ...childEnv, CI: "1" },
+	);
+	assert(
+		combined.stdout.trim() !== manifestVersion,
+		"a version flag combined with other arguments must not short-circuit the command",
+	);
+});
+
 Deno.test("cli - a packed artifact reports the version its manifest declares", async () => {
 	const workDir = await mkdtemp(join(tmpdir(), "cssforge-artifact-version-"));
 	const workspace = join(workDir, "workspace");
@@ -122,10 +185,7 @@ Deno.test("cli - a packed artifact reports the version its manifest declares", a
 		const fixtureManifest = join(workspace, "packages/cssforge/package.json");
 		writeFileSync(
 			fixtureManifest,
-			readFileSync(fixtureManifest, "utf8").replace(
-				`"version": "0.6.0"`,
-				`"version": "${fixtureVersion}"`,
-			),
+			withVersion(readFileSync(fixtureManifest, "utf8"), fixtureVersion),
 		);
 		writeFileSync(
 			join(workspace, "packages/cssforge/CHANGELOG.md"),
@@ -235,22 +295,18 @@ Deno.test("cli - rejects metadata that disagrees with the package version", asyn
 	try {
 		copyWorkspace(workspace);
 		const packageDir = join(workspace, "packages/cssforge");
+		const check = () => run("node", ["scripts/version.ts", "--check"], packageDir);
+		const sync = () => run("node", ["scripts/version.ts"], packageDir);
 
-		assertSucceeded(
-			run("node", ["scripts/version.ts"], packageDir),
-			"version sync in the fixture copy",
-		);
-		assertSucceeded(
-			run("node", ["scripts/version.ts", "--check"], packageDir),
-			"version check on consistent metadata",
-		);
+		assertSucceeded(sync(), "version sync in the fixture copy");
+		assertSucceeded(check(), "version check on consistent metadata");
 
 		const jsrPath = join(packageDir, "jsr.json");
-		writeFileSync(
-			jsrPath,
-			readFileSync(jsrPath, "utf8").replace(`"version": "0.6.0"`, `"version": "0.9.9"`),
-		);
-		const rejected = run("node", ["scripts/version.ts", "--check"], packageDir);
+		writeFileSync(jsrPath, withVersion(readFileSync(jsrPath, "utf8"), "0.9.9"));
+
+		// The gate must observe drift rather than repair it, so it is never
+		// allowed to run the writing mode first.
+		const rejected = check();
 		assert(
 			rejected.status !== 0,
 			"the consistency check accepted a jsr.json that disagrees with package.json",
@@ -258,6 +314,48 @@ Deno.test("cli - rejects metadata that disagrees with the package version", asyn
 		assert(
 			`${rejected.stderr}${rejected.stdout}`.includes("jsr.json declares 0.9.9"),
 			`the consistency check did not explain the disagreement: ${rejected.stderr}`,
+		);
+
+		// The generated module is the channel JSR publishes, so drift there must
+		// be rejected too.
+		assertSucceeded(sync(), "version sync after the jsr.json edit");
+		const generatedPath = join(packageDir, "src/version.ts");
+		writeFileSync(
+			generatedPath,
+			readFileSync(generatedPath, "utf8").replace(
+				/export const version = "[^"]+";/,
+				'export const version = "9.9.9";',
+			),
+		);
+		const staleGenerated = check();
+		assert(
+			staleGenerated.status !== 0,
+			"the consistency check accepted a generated module that disagrees with package.json",
+		);
+		assert(
+			`${staleGenerated.stderr}${staleGenerated.stdout}`.includes(
+				"src/version.ts declares 9.9.9",
+			),
+			`the consistency check did not explain the generated-module drift: ${staleGenerated.stderr}`,
+		);
+
+		// The published tarball ships this changelog, so a release without a
+		// matching entry must not pass.
+		assertSucceeded(sync(), "version sync after the generated-module edit");
+		const changelogPath = join(packageDir, "CHANGELOG.md");
+		const changelog = readFileSync(changelogPath, "utf8");
+		writeFileSync(
+			changelogPath,
+			changelog.replace(/^## .+$/m, "## 0.0.0-no-entry-for-this-version"),
+		);
+		const missingEntry = check();
+		assert(
+			missingEntry.status !== 0,
+			"the consistency check accepted a release with no matching changelog entry",
+		);
+		assert(
+			`${missingEntry.stderr}${missingEntry.stdout}`.includes('has no "## '),
+			`the consistency check did not explain the changelog drift: ${missingEntry.stderr}`,
 		);
 	} finally {
 		await rm(workDir, { recursive: true, force: true });

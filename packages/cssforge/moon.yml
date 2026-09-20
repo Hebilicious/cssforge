@@ -9,7 +9,7 @@ tags:
 tasks:
   version-sync:
     command: "node"
-    args: ["./scripts/version.ts"]
+    args: ["./scripts/version.ts", "--if-present"]
     inputs:
       - "package.json"
       - "jsr.json"
@@ -23,8 +23,6 @@ tasks:
   version-check:
     command: "node"
     args: ["./scripts/version.ts", "--check"]
-    deps:
-      - "~:version-sync"
     inputs:
       - "package.json"
       - "jsr.json"
@@ -164,7 +162,6 @@ tasks:
     command: "node"
     args: ["./scripts/smoke-test.ts"]
     deps:
-      - "~:build"
       - "~:version-check"
     inputs:
       - "src/**/*"
@@ -184,6 +181,7 @@ tasks:
     args: ["./scripts/jsr-smoke.ts"]
     deps:
       - "~:version-check"
+      - "~:build"
     inputs:
       - "src/**/*"
       - "src/version.ts"

@@ -31,6 +31,9 @@ const writeFileRecursive = (path: string, data: string) =>
 const outputModes = ["css", "json", "ts", "style-dictionary", "all"] as const;
 type OutputMode = (typeof outputModes)[number];
 const outputModeList = outputModes.join(", ");
+
+/** The version flag forms the CLI answers directly, without citty's consola. */
+const versionFlags = ["--version", "-v"] as const;
 const styleDictionaryValueModes = ["css-reference", "resolved"] as const;
 type StyleDictionaryValueMode = (typeof styleDictionaryValueModes)[number];
 
@@ -302,7 +305,16 @@ const isDirectRun = (): boolean => {
 
 // Run if called directly
 if (isDirectRun()) {
-	runMain(mainCommand);
+	// citty prints its version through consola, which decorates the output when
+	// `CI` is set and a script parsing `--version` would then read
+	// `[log] 0.6.0`. Answer the version flag here instead, with the same shape
+	// citty accepts: only when it is the sole argument.
+	const rawArgs = process.argv.slice(2);
+	if (rawArgs.length === 1 && versionFlags.some((flag) => flag === rawArgs[0])) {
+		console.log(version);
+	} else {
+		runMain(mainCommand);
+	}
 }
 
 /**

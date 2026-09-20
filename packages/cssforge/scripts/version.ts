@@ -14,7 +14,12 @@
  *
  * `--check` is the release consistency gate: it rejects a `jsr.json`, a
  * `src/version.ts`, or a `CHANGELOG.md` that does not describe the version
- * declared in `package.json`.
+ * declared in `package.json`. It only reads, so nothing repairs drift before
+ * the gate observes it; a dependency on the writing mode would defeat it.
+ *
+ * `--if-present` rewrites only metadata that already exists, which is the mode
+ * a build uses: a released version is complete, while a build from a manifest
+ * whose version was just changed must not ship a stale generated module.
  */
 import { readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -61,6 +66,15 @@ const readSourceOrDefault = (path: string): string => {
 		return readFileSync(path, "utf8");
 	} catch {
 		return "";
+	}
+};
+
+/** Reads a file only when it is present. */
+const readSourceOrUndefined = (path: string): string | undefined => {
+	try {
+		return readFileSync(path, "utf8");
+	} catch {
+		return undefined;
 	}
 };
 
@@ -124,20 +138,19 @@ const rewriteVersionField = (
 const verifyChangelog = (version: string): void => {
 	const heading = new RegExp(`^##\\s+${version.replaceAll(".", "\\.")}\\s*$`, "m");
 
-	for (const [path, description] of [
-		[packageChangelogPath, "packages/cssforge/CHANGELOG.md"],
-		[workspaceChangelogPath, "the root CHANGELOG.md"],
-	] as const) {
-		let source: string;
-		try {
-			source = readSource(path);
-		} catch {
-			// The root changelog is optional for a release that only bumps this package.
-			continue;
-		}
+	// This package ships its changelog in the published tarball, so it must
+	// answer for every released version.
+	check(
+		heading.test(readSource(packageChangelogPath)),
+		`packages/cssforge/CHANGELOG.md has no "## ${version}" entry, so the release version and the changelog disagree`,
+	);
+
+	// The root changelog is optional for a release that only bumps this package.
+	const workspaceChangelog = readSourceOrUndefined(workspaceChangelogPath);
+	if (workspaceChangelog !== undefined) {
 		check(
-			heading.test(source),
-			`${description} has no "## ${version}" entry, so the release version and the changelog disagree`,
+			heading.test(workspaceChangelog),
+			`the root CHANGELOG.md has no "## ${version}" entry, so the release version and the changelog disagree`,
 		);
 	}
 };
@@ -154,7 +167,7 @@ const main = (): void => {
 			discrepancies.push(`jsr.json declares ${jsrVersion}`);
 		}
 
-		const generated = readGeneratedVersion(readSource(versionModulePath));
+		const generated = readGeneratedVersion(readSourceOrDefault(versionModulePath));
 		if (generated !== version) {
 			discrepancies.push(`src/version.ts declares ${generated ?? "no version"}`);
 		}
@@ -172,12 +185,17 @@ const main = (): void => {
 		return;
 	}
 
-	rewriteVersionField(jsrManifestPath, "jsr.json", version);
+	const onlyWhenPresent = process.argv.includes("--if-present");
 
-	const moduleSource = renderVersionModule(version);
-	if (readGeneratedVersion(readSourceOrDefault(versionModulePath)) !== version) {
-		writeFileSync(versionModulePath, moduleSource);
-		console.log(`src/version.ts: version written as ${version}`);
+	if (!onlyWhenPresent || readSourceOrUndefined(jsrManifestPath) !== undefined) {
+		rewriteVersionField(jsrManifestPath, "jsr.json", version);
+	}
+
+	if (!onlyWhenPresent || readSourceOrUndefined(versionModulePath) !== undefined) {
+		if (readGeneratedVersion(readSourceOrDefault(versionModulePath)) !== version) {
+			writeFileSync(versionModulePath, renderVersionModule(version));
+			console.log(`src/version.ts: version written as ${version}`);
+		}
 	}
 
 	console.log(`version source: package.json@${version}`);
