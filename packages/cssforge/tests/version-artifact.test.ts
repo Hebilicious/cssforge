@@ -126,13 +126,16 @@ const copyWorkspace = (destination: string): void => {
 const fixtureVersion = "0.7.0-issue28.1";
 
 Deno.test("cli - reports the manifest version verbatim, with and without CI", () => {
-	const cli = join(packageRoot, "dist", "cli.js");
-	assert(
-		existsSync(cli),
-		`${cli} is missing; run \`moon run cssforge:build\` before the tests`,
-	);
-
 	const manifestVersion = readVersion(join(packageRoot, "package.json"));
+
+	// The promise is about the built artifact, so build it here: the test task
+	// does not depend on the build, and an implicit dependency would be a
+	// different promise than "the built CLI prints this".
+	const built = run("npx", ["tsup"], packageRoot);
+	assertSucceeded(built, "tsup build for the built-CLI check");
+
+	const cli = join(packageRoot, "dist", "cli.js");
+	assert(existsSync(cli), `${cli} is missing after the build`);
 
 	for (const [description, env] of [
 		["a plain environment", childEnv],
@@ -166,7 +169,7 @@ Deno.test("cli - reports the manifest version verbatim, with and without CI", ()
 		combined.stdout.trim() !== manifestVersion,
 		"a version flag combined with other arguments must not short-circuit the command",
 	);
-});
+}, 180_000);
 
 Deno.test("cli - a packed artifact reports the version its manifest declares", async () => {
 	const workDir = await mkdtemp(join(tmpdir(), "cssforge-artifact-version-"));

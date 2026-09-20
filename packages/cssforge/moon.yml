@@ -162,7 +162,10 @@ tasks:
     command: "node"
     args: ["./scripts/smoke-test.ts"]
     deps:
+      # The gate runs before the build: build regenerates src/version.ts and
+      # jsr.json, so checking after it would never observe drift.
       - "~:version-check"
+      - "~:build"
     inputs:
       - "src/**/*"
       - "src/version.ts"
