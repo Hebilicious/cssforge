@@ -31,6 +31,10 @@ export default defineConfig({
       },
       { text: "Agents", link: "/agents" },
       {
+        text: "npm",
+        link: "https://www.npmjs.com/package/@hebilicious/cssforge",
+      },
+      {
         text: "JSR",
         link: "https://jsr.io/@hebilicious/cssforge",
       },

@@ -33,14 +33,17 @@ In the future, CSSforge will try to integrate with popular design tools such as 
 
 ## Installation
 
-For programmatic usage, you can install CSS Forge as a dependency:
+CSS Forge requires Node 24 or newer. It loads `cssforge.config.ts` with the native
+TypeScript support of that runtime, so no extra loader or `tsx` installation is needed.
+Configuration files use ES module syntax; add `"type": "module"` to your `package.json` to
+load them without Node's module type detection warning.
 
 ```bash
 # Using npm
-npx jsr add @hebilicious/cssforge
+npm install --save-dev @hebilicious/cssforge
 
-# Using pnpm (10.9 +)
-pnpm i jsr:@hebilicious/cssforge
+# Using pnpm
+pnpm add -D @hebilicious/cssforge
 ```
 
 Then to run CSS forge, add the following script to your `package.json`:
@@ -48,7 +51,7 @@ Then to run CSS forge, add the following script to your `package.json`:
 ```json
 {
   "scripts": {
-    "cssforge": "tsx ./node_modules/@hebilicious/cssforge/src/cli.ts"
+    "cssforge": "cssforge"
   }
 }
 ```
@@ -57,6 +60,32 @@ then run :
 
 ```bash
 pnpm run cssforge
+```
+
+### Alternative installation (Deno and JSR)
+
+CSS Forge is also published to [JSR](https://jsr.io/@hebilicious/cssforge) as a secondary
+channel. JSR receives the same version as npm, and is published after it, so it can lag
+behind when that channel fails. Use it for Deno projects and for JSR-native imports:
+
+```bash
+# Deno
+deno add jsr:@hebilicious/cssforge
+
+# npm (10.9 +) or pnpm
+npx jsr add @hebilicious/cssforge
+pnpm i jsr:@hebilicious/cssforge
+```
+
+The `jsr:` specifier replaces the package name in imports, and the published CLI entry
+point runs directly with Deno:
+
+```bash
+deno run -A jsr:@hebilicious/cssforge/cli --mode all
+```
+
+```typescript
+import { defineConfig } from "jsr:@hebilicious/cssforge";
 ```
 
 ## Contributing Workflow
@@ -69,15 +98,21 @@ moon run :format
 moon run cssforge:test
 moon run cssforge:typecheck
 moon run cssforge:build
+moon run cssforge:smoke-test
+moon run cssforge:jsr-smoke
 moon run cssforge:jsr-dry-run
 ```
+
+`cssforge:smoke-test` packs the package and installs that tarball in clean npm and pnpm
+projects, and `cssforge:jsr-smoke` exercises the JSR entry points (with Deno when it is
+installed).
 
 ## Quick Start
 
 1. Create a configuration file (`cssforge.config.ts`):
 
 ```typescript
-import { defineConfig } from "jsr:@hebilicious/cssforge";
+import { defineConfig } from "@hebilicious/cssforge";
 
 export default defineConfig({
   spacing: {
@@ -139,7 +174,7 @@ If you're using a `package.json`, add the following to your scripts:
 ```json
 {
   "scripts": {
-    "cssforge": "tsx ./node_modules/@hebilicious/cssforge/src/cli.ts"
+    "cssforge": "cssforge"
   }
 }
 ```
@@ -1042,7 +1077,7 @@ pnpm run cssforge -- --mode style-dictionary --style-dictionary ./dist/design-to
 You can also use CSS Forge programmatically:
 
 ```typescript
-import { generateCSS, generateStyleDictionaryJSON } from "jsr:@hebilicious/cssforge";
+import { generateCSS, generateStyleDictionaryJSON } from "@hebilicious/cssforge";
 
 // Generate CSS string
 const css = generateCSS(config);
@@ -1142,7 +1177,7 @@ pnpm run cssforge -- --mode style-dictionary --style-dictionary ./.cssforge/toke
 ### Programmatic API
 
 ```typescript
-import { generateStyleDictionaryJSON } from "jsr:@hebilicious/cssforge";
+import { generateStyleDictionaryJSON } from "@hebilicious/cssforge";
 
 const resolvedTokens = generateStyleDictionaryJSON(config);
 const usageTokens = generateStyleDictionaryJSON(config, {

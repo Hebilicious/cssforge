@@ -1,8 +1,9 @@
 #!/usr/bin/env node
+import { realpathSync } from "node:fs";
 import fs from "node:fs/promises";
 import { resolve } from "node:path";
 import process from "node:process";
-import { pathToFileURL } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import chokidar from "chokidar";
 import type { CommandDef } from "citty";
 /**
@@ -268,12 +269,26 @@ const mainCommand = defineCommand({
 });
 
 const isDirectRun = (): boolean => {
+	// Deno and recent Node versions report whether this module is the entry
+	// point. This also covers the JSR channel, where the module URL is remote
+	// and cannot be mapped to a file path.
+	const isMain = (import.meta as ImportMeta & { main?: boolean }).main;
+	if (typeof isMain === "boolean") {
+		return isMain;
+	}
+
+	// Otherwise compare entry points. Package managers expose binaries as
+	// symlinks in `node_modules/.bin`, so both sides are resolved first.
 	const entryFile = process.argv[1];
 	if (!entryFile) {
 		return false;
 	}
 
-	return import.meta.url === pathToFileURL(entryFile).href;
+	try {
+		return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(entryFile);
+	} catch {
+		return false;
+	}
 };
 
 // Run if called directly

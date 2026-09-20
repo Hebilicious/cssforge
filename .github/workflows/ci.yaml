@@ -25,3 +25,51 @@ jobs:
 
       - name: Run CI
         run: moon ci
+
+  node-floor:
+    name: Package smoke on Node 24.0.0
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup toolchain
+        uses: moonrepo/setup-toolchain@v0
+        with:
+          moon-version: "2.0.0"
+          auto-install: true
+
+      # 24.0.0 is the floor declared by the package `engines` field.
+      - name: Setup Node 24.0.0
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24.0.0"
+          package-manager-cache: false
+
+      - name: Smoke test the packed package on the supported engine floor
+        run: moon run cssforge:smoke-test -- --node "$(command -v node)"
+
+  jsr-entries:
+    name: JSR entry points
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup toolchain
+        uses: moonrepo/setup-toolchain@v0
+        with:
+          moon-version: "2.0.0"
+          auto-install: true
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Smoke test the JSR entry points with Deno
+        run: moon run cssforge:jsr-smoke -- --require-deno

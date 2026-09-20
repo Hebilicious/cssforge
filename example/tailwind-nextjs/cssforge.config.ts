@@ -1,4 +1,4 @@
-import { defineConfig } from "/cssforge";
+import { defineConfig } from "@hebilicious/cssforge";
 
 export default defineConfig({
   colors: {

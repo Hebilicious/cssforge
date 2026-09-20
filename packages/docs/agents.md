@@ -28,6 +28,18 @@ The root `README.md` is canonical. Its generated package copy at `packages/cssfo
 - [Generated reference source](https://github.com/Hebilicious/cssforge/blob/main/README.md)
 - [Example projects](https://github.com/Hebilicious/cssforge/tree/main/example)
 
+## Distribution
+
+npm is the primary channel and JSR is the secondary fallback. JSR is published after npm
+and can lag behind the same version when that channel fails.
+
+- Install: `npm install --save-dev @hebilicious/cssforge` or `pnpm add -D @hebilicious/cssforge`
+- Import: `import { defineConfig } from "@hebilicious/cssforge";`
+- Run: the package exposes a `cssforge` executable, so `"cssforge": "cssforge"` in `scripts`
+  works, as does `npx cssforge --mode all`
+- Deno: `deno add jsr:@hebilicious/cssforge`, then `deno run -A jsr:@hebilicious/cssforge/cli`
+- Runtime: Node 24 or newer, which loads `cssforge.config.ts` without a loader or `tsx`
+
 ## Agent workflow
 
 1. Identify whether the task concerns installation, a token family, references, CLI behavior, or framework integration.

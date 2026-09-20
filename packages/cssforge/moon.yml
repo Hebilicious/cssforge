@@ -111,6 +111,51 @@ tasks:
       - "dist"
     options:
       runInCI: "affected"
+  pack:
+    command: "npm"
+    args: ["pack"]
+    deps:
+      - "~:build"
+    inputs:
+      - "src/**/*"
+      - "package.json"
+      - "tsconfig.json"
+      - "tsup.config.ts"
+      - "README.md"
+      - "CHANGELOG.md"
+      - "jsr.json"
+    outputs:
+      - "*.tgz"
+    options:
+      runInCI: "affected"
+  smoke-test:
+    command: "node"
+    args: ["./scripts/smoke-test.ts"]
+    deps:
+      - "~:build"
+    inputs:
+      - "src/**/*"
+      - "scripts/smoke-test.ts"
+      - "package.json"
+      - "tsconfig.json"
+      - "tsup.config.ts"
+      - "README.md"
+      - "CHANGELOG.md"
+      - "jsr.json"
+    options:
+      runInCI: "always"
+      cache: false
+  jsr-smoke:
+    command: "node"
+    args: ["./scripts/jsr-smoke.ts"]
+    inputs:
+      - "src/**/*"
+      - "scripts/jsr-smoke.ts"
+      - "jsr.json"
+      - "package.json"
+    options:
+      runInCI: "always"
+      cache: false
   jsr-dry-run:
     command: "npx"
     args: ["jsr", "publish", "--dry-run", "--allow-dirty"]
@@ -123,18 +168,35 @@ tasks:
       - "CHANGELOG.md"
     options:
       runInCI: false
-  jsr-publish:
-    command: "npx"
-    args: ["jsr", "publish"]
+  npm-publish:
+    command: "node"
+    args: ["./scripts/publish.ts", "npm"]
     deps:
       - "~:build"
     inputs:
       - "src/**/*"
-      - "jsr.json"
+      - "scripts/publish.ts"
+      - "package.json"
       - "README.md"
       - "CHANGELOG.md"
     options:
       runInCI: false
+      cache: false
+  jsr-publish:
+    command: "node"
+    args: ["./scripts/publish.ts", "jsr"]
+    deps:
+      - "~:build"
+    inputs:
+      - "src/**/*"
+      - "scripts/publish.ts"
+      - "jsr.json"
+      - "package.json"
+      - "README.md"
+      - "CHANGELOG.md"
+    options:
+      runInCI: false
+      cache: false
   readme-update:
     command: "tsx"
     args: ["./scripts/update-readme.ts"]
