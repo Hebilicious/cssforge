@@ -5,14 +5,8 @@ import { tmpdir } from "node:os";
 import { join, resolve, win32 } from "node:path";
 import { fileURLToPath } from "node:url";
 import { writeFileRecursive } from "../src/cli.ts";
+import { childEnv } from "./helpers.ts";
 import { assertEquals, Deno } from "./vitest-compat.ts";
-
-// citty prints usage through consola, which silences log output in test
-// environments (`TEST` and `NODE_ENV=test`, both set by vitest). Consumers run
-// the CLI from a shell, so the child process gets a non-test environment.
-const childEnv = { ...process.env };
-delete childEnv.TEST;
-delete childEnv.NODE_ENV;
 
 const cssForgeConfig = `export default {
 	spacing: {
@@ -106,23 +100,23 @@ Deno.test("writeFileRecursive - resolves a Windows output path's parent with the
 const sourceCliEntry = fileURLToPath(new URL("../src/cli.ts", import.meta.url));
 const builtCliEntry = fileURLToPath(new URL("../dist/cli.js", import.meta.url));
 
-// The `test` moon task has no dependency on `~:build`, so a clean test run may
-// not have dist/. The built entry is exercised whenever it is present; the
-// source entry is the same module that bundle is built from and always runs.
+// The `test` moon task depends on `~:build`, so the built entry is always
+// present when the suite runs through its owning target. Both entries are
+// registered unconditionally so a missing bundle fails loudly instead of
+// silently dropping the built-CLI coverage.
 const cliEntries = [
 	{ label: "src/cli.ts", entry: sourceCliEntry },
-	...(existsSync(builtCliEntry) ? [{ label: "dist/cli.js", entry: builtCliEntry }] : []),
+	{ label: "dist/cli.js", entry: builtCliEntry },
 ];
-
-if (!existsSync(builtCliEntry)) {
-	console.warn(
-		"dist/cli.js is missing, so the built CLI entry is not exercised. " +
-			"Run `moon run cssforge:build` before `moon run cssforge:test` for that coverage.",
-	);
-}
 
 for (const { label, entry } of cliEntries) {
 	Deno.test(`cli - writes every output kind for every path shape through the ${label} entry`, async () => {
+		assertEquals(
+			existsSync(entry),
+			true,
+			`${entry} is missing; run \`moon run cssforge:build\` before running this suite directly`,
+		);
+
 		const dir = await mkdtemp(join(tmpdir(), "cssforge-cli-paths-"));
 
 		try {

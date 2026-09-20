@@ -119,6 +119,10 @@ tasks:
   test:
     command: "vitest"
     args: ["run"]
+    # The CLI integration test runs against the built bundle as well as the
+    # source entry, so the test task owns the build it depends on.
+    deps:
+      - "~:build"
     inputs:
       - "src/**/*"
       - "tests/**/*"

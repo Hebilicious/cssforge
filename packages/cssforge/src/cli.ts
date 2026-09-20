@@ -41,7 +41,7 @@ export const writeFileRecursive = (
 	path: string,
 	data: string,
 	parentDirectory: (outputPath: string) => string = dirname,
-) =>
+): Promise<void> =>
 	fs
 		.mkdir(parentDirectory(path), { recursive: true })
 		.then(() => fs.writeFile(path, data));
