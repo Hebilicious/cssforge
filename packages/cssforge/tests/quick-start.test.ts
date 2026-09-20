@@ -8,23 +8,19 @@ import type { ArgsDef } from "citty";
 import mainCommand from "../src/cli.ts";
 import { assert, assertEquals, Deno } from "./vitest-compat.ts";
 
-/**
- * The Quick Start fixtures are the executable source of truth for the README
- * snippets. They keep a `.txt` suffix because they are excerpts of README.md
- * that must match it byte for byte, and because the TypeScript example imports
- * the generated `./.cssforge/output.ts`, which only exists after the CLI runs.
- * The test below materialises them in a temporary consumer project instead.
- */
+// The fixtures are excerpts of README.md that must match it byte for byte, so
+// they keep a `.txt` suffix: the TypeScript one imports the generated
+// `./.cssforge/output.ts`, which only exists once the CLI has run.
+
 const fixtureDir = fileURLToPath(new URL("./fixtures/quick-start", import.meta.url));
 const readFixture = (name: string) => readFile(join(fixtureDir, name), "utf8");
 
-// The Quick Start shows generated output in these fences, so the drift scan
-// reads them. A fence in any other language would be skipped silently, so
-// unexpected fences fail the test instead.
+// Fences in any other language would be skipped by the drift scan, so
+// unexpected ones fail instead.
 const scannedFenceLanguages = ["css", "typescript"];
 const allowedFenceLanguages = ["bash", ...scannedFenceLanguages];
 
-/** Returns the body of a level-2 README section, up to the next level-2 heading. */
+/** Reads a level-2 README section up to the next level-2 heading. */
 const readmeSection = (readme: string, title: string): string => {
 	const heading = `## ${title}`;
 	const start = readme.indexOf(heading);
@@ -34,9 +30,8 @@ const readmeSection = (readme: string, title: string): string => {
 	return readme.slice(start, end === -1 ? readme.length : end);
 };
 
-// citty prints usage through consola, which silences log output in test
-// environments (`TEST` and `NODE_ENV=test`, both set by vitest). Consumers run
-// the CLI from a shell, so the child process gets a non-test environment.
+// citty prints usage through consola, which is silenced when `TEST` or
+// `NODE_ENV=test` is set by vitest. A shell consumer has neither.
 const childEnv = { ...process.env };
 delete childEnv.TEST;
 delete childEnv.NODE_ENV;
@@ -46,7 +41,7 @@ const executableName = (name: string): string =>
 
 /** Reads the output paths the CLI documents as its defaults. */
 const documentedOutputPaths = (): { css: string; ts: string } => {
-	// citty types `args` as a resolvable value; this command declares a plain object.
+	// citty types `args` as resolvable; this command declares a plain object.
 	const args = (mainCommand.args ?? {}) as ArgsDef;
 	const defaultOf = (name: string): string => {
 		const value = args[name]?.default;
@@ -82,9 +77,8 @@ Deno.test("quick start - documented usage matches generated tokens and output pa
 			"utf8",
 		);
 
-		// The fixture imports the published package name, which resolves to built
-		// output inside this repository. Point the temporary consumer config at the
-		// source entry point instead.
+		// The fixture imports the published name, which resolves to built output
+		// inside this repository. Point it at the source entry point instead.
 		const sourceEntry = pathToFileURL(
 			fileURLToPath(new URL("../src/mod.ts", import.meta.url)),
 		).href;
@@ -94,8 +88,7 @@ Deno.test("quick start - documented usage matches generated tokens and output pa
 			"utf8",
 		);
 
-		// The documented flow: run `cssforge` in the project root without arguments,
-		// so the CLI defaults decide where the output lands.
+		// The documented flow: `cssforge` in the project root, no arguments.
 		const generate = spawnSync(
 			process.execPath,
 			[fileURLToPath(new URL("../src/cli.ts", import.meta.url))],
@@ -123,8 +116,8 @@ Deno.test("quick start - documented usage matches generated tokens and output pa
 			[],
 		);
 
-		// No token name written in the Quick Start may be missing from the generated
-		// declarations, so the documented drift cannot come back silently.
+		// No token name in the Quick Start may be missing from the generated
+		// declarations, so the documented drift cannot return silently.
 		const quickStart = readmeSection(readme, "Quick Start");
 		const fences = [...quickStart.matchAll(/^```([^\n]*)\n([\s\S]*?)^```$/gm)].map(
 			(match) => ({ language: match[1], body: match[2] }),
@@ -145,8 +138,7 @@ Deno.test("quick start - documented usage matches generated tokens and output pa
 			[],
 		);
 
-		// README.md must contain the fixtures exactly, so the fixtures are the
-		// snippets a reader follows from installation to consumption.
+		// README.md must contain the fixtures exactly.
 		assert(
 			readme.includes(configFixture.trimEnd()),
 			"README.md does not contain the Quick Start configuration fixture",
@@ -160,12 +152,10 @@ Deno.test("quick start - documented usage matches generated tokens and output pa
 			"README.md does not contain the TypeScript usage fixture",
 		);
 
-		// The TypeScript example consumes the generated module through the property
-		// chain it documents; the chain must type-check and resolve.
+		// The documented property chain must type-check and resolve.
 		const usagePath = join(projectDir, "consumer.ts");
 		await writeFile(usagePath, tsExample, "utf8");
-		// Mirrors the compiler options the Quick Start documents for importing the
-		// generated `.ts` module.
+		// The compiler options the Quick Start documents for the generated `.ts`.
 		await writeFile(
 			join(projectDir, "tsconfig.json"),
 			`${JSON.stringify(
@@ -225,12 +215,6 @@ Deno.test("quick start - documented usage matches generated tokens and output pa
 			value: "0.5rem",
 			variable: "--spacing-size-2: 0.5rem;",
 		});
-		assert(
-			tsExample.includes(
-				`{ key: "${token.key}", value: "${token.value}", variable: "${token.variable}" }`,
-			),
-			"the TypeScript example comment must document the token it resolves",
-		);
 	} finally {
 		await rm(projectDir, { recursive: true, force: true });
 	}

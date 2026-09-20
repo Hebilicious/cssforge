@@ -350,9 +350,8 @@ const verifyTarball = (manifest: PackageManifest, packed: PackResult): void => {
 
 /**
  * Properties the Quick Start CSS example reads that the documented
- * configuration cannot declare. Empty since #23 corrected the example; the list
- * stays self-cleaning, so an entry that becomes declared or stops being
- * consumed fails the run below.
+ * configuration cannot declare. Empty now that the README example is correct;
+ * the set stays because it is self-cleaning and catches new drift.
  */
 const quickStartUndeclaredProperties = new Set<string>([]);
 
