@@ -19,7 +19,12 @@ tasks:
       - "src/version.ts"
       - "jsr.json"
     options:
-      runInCI: "affected"
+      # Never runs in CI: this task writes release metadata, and the CI gate
+      # must observe the committed files rather than a tree this task repaired.
+      # `moon ci` would otherwise race it against `version-check` in the same
+      # pipeline, and a drifting commit would be silently fixed instead of
+      # rejected. Local repair stays available as `moon run cssforge:version-sync`.
+      runInCI: false
   version-check:
     command: "node"
     args: ["./scripts/version.ts", "--check"]
@@ -29,6 +34,7 @@ tasks:
       - "scripts/version.ts"
       - "src/version.ts"
       - "CHANGELOG.md"
+      - "/CHANGELOG.md"
     options:
       runInCI: "always"
   format:
@@ -117,6 +123,10 @@ tasks:
       - "src/**/*"
       - "tests/**/*"
       - "vitest.config.ts"
+      - "package.json"
+      - "jsr.json"
+      - "CHANGELOG.md"
+      - "scripts/version.ts"
     options:
       runInCI: "always"
   test-watch:
@@ -127,15 +137,14 @@ tasks:
       cache: false
       outputStyle: "stream"
   build:
-    command: "tsup"
-    deps:
-      - "~:version-sync"
+    command: "node"
+    args: ["./scripts/build.ts"]
     inputs:
       - "src/**/*"
       - "tsup.config.ts"
       - "tsconfig.json"
       - "package.json"
-      - "scripts/version.ts"
+      - "scripts/build.ts"
     outputs:
       - "dist"
     options:

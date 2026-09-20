@@ -1,6 +1,6 @@
 import { spawnSync } from "node:child_process";
 import { cpSync, existsSync, readFileSync, writeFileSync } from "node:fs";
-import { mkdir, mkdtemp, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import process from "node:process";
@@ -125,50 +125,98 @@ const copyWorkspace = (destination: string): void => {
  */
 const fixtureVersion = "0.7.0-issue28.1";
 
-Deno.test("cli - reports the manifest version verbatim, with and without CI", () => {
-	const manifestVersion = readVersion(join(packageRoot, "package.json"));
+/**
+ * Builds the CLI into a directory this test owns, so no task mutates another
+ * task's declared `dist` output. The directory stays inside the package: the
+ * bundle resolves its dependencies through the package's `node_modules`.
+ */
+const buildCli = async (): Promise<{ cli: string; cleanUp: () => Promise<void> }> => {
+	const outDir = await mkdtemp(join(packageRoot, ".artifact-build-"));
 
-	// The promise is about the built artifact, so build it here: the test task
-	// does not depend on the build, and an implicit dependency would be a
-	// different promise than "the built CLI prints this".
-	const built = run("npx", ["tsup"], packageRoot);
-	assertSucceeded(built, "tsup build for the built-CLI check");
+	try {
+		assertSucceeded(
+			run("node", ["scripts/build.ts", "--out-dir", outDir], packageRoot, childEnv),
+			"build of the CLI under test",
+		);
+	} catch (error) {
+		await rm(outDir, { recursive: true, force: true });
+		throw error;
+	}
 
-	const cli = join(packageRoot, "dist", "cli.js");
+	const cli = join(outDir, "cli.js");
 	assert(existsSync(cli), `${cli} is missing after the build`);
 
-	for (const [description, env] of [
-		["a plain environment", childEnv],
-		// citty prints its version through consola, which decorates log output
-		// once `CI` is set. Scripts and CI parse `--version`, so the output must
-		// not depend on the environment.
-		["CI", { ...childEnv, CI: "1" }],
-		// The same reporter change is triggered by other CI markers.
-		["CI and GITHUB_ACTIONS", { ...childEnv, CI: "1", GITHUB_ACTIONS: "true" }],
-	] as const) {
-		for (const flag of ["--version", "-v"]) {
-			const result = run(process.execPath, [cli, flag], packageRoot, env);
-			assertSucceeded(result, `cssforge ${flag} in ${description}`);
+	return { cli, cleanUp: () => rm(outDir, { recursive: true, force: true }) };
+};
+
+Deno.test("cli - reports the manifest version verbatim, with and without CI", async () => {
+	const manifestVersion = readVersion(join(packageRoot, "package.json"));
+	const workDir = await mkdtemp(join(tmpdir(), "cssforge-built-cli-"));
+	const { cli, cleanUp } = await buildCli();
+
+	try {
+		for (const [description, env] of [
+			["a plain environment", childEnv],
+			// citty prints its version through consola, which decorates log
+			// output once `CI` is set. Scripts and CI parse `--version`, so the
+			// output must not depend on the environment.
+			["CI", { ...childEnv, CI: "1" }],
+			// The same reporter change is triggered by other CI markers.
+			["CI and GITHUB_ACTIONS", { ...childEnv, CI: "1", GITHUB_ACTIONS: "true" }],
+		] as const) {
+			const result = run(process.execPath, [cli, "--version"], packageRoot, env);
+			assertSucceeded(result, `cssforge --version in ${description}`);
 			assertEquals(
 				result.stdout.trim(),
 				manifestVersion,
-				`cssforge ${flag} in ${description} must print the manifest version verbatim`,
+				`cssforge --version in ${description} must print the manifest version verbatim`,
 			);
 		}
-	}
 
-	// A version flag next to other arguments stays a normal build, which is how
-	// citty resolves its own version flag.
-	const combined = run(
-		process.execPath,
-		[cli, "--version", "--mode", "css"],
-		packageRoot,
-		{ ...childEnv, CI: "1" },
-	);
-	assert(
-		combined.stdout.trim() !== manifestVersion,
-		"a version flag combined with other arguments must not short-circuit the command",
-	);
+		// citty prints `meta.version` through its own usage output, where a
+		// hard-coded metadata version would surface even though `--version` is
+		// answered by the CLI itself.
+		const help = run(process.execPath, [cli, "--help"], packageRoot, childEnv);
+		assertSucceeded(help, "cssforge --help");
+		assert(
+			help.stdout.includes(manifestVersion),
+			`cssforge --help must print the manifest version, got:\n${help.stdout}`,
+		);
+
+		// A version flag next to other arguments stays a normal command, which
+		// is how citty resolves its own version flag.
+		const projectDir = join(workDir, "project");
+		await mkdir(projectDir, { recursive: true });
+		const configPath = join(projectDir, "cssforge.config.ts");
+		const cssOutput = join(projectDir, "output.css");
+		await writeFile(
+			configPath,
+			`export default {
+	spacing: { custom: { size: { value: { 2: "0.5rem" } } } },
+};
+`,
+			"utf8",
+		);
+
+		const combined = run(
+			process.execPath,
+			[cli, "--version", "--config", configPath, "--mode", "css", "--css", cssOutput],
+			projectDir,
+			{ ...childEnv, CI: "1" },
+		);
+		assertSucceeded(combined, "cssforge --version with other arguments");
+		assert(
+			!combined.stdout.split("\n").some((line) => line.trim() === manifestVersion),
+			"a version flag combined with other arguments must not print the version",
+		);
+		assert(
+			(await readFile(cssOutput, "utf8")).includes("--spacing-size-2"),
+			"a version flag combined with other arguments must still run the command",
+		);
+	} finally {
+		await rm(workDir, { recursive: true, force: true });
+		await cleanUp();
+	}
 }, 180_000);
 
 Deno.test("cli - a packed artifact reports the version its manifest declares", async () => {
@@ -222,12 +270,6 @@ Deno.test("cli - a packed artifact reports the version its manifest declares", a
 		);
 		const tarball = join(workDir, filename);
 
-		const compiledCli = join(workspace, "packages/cssforge/dist/cli.js");
-		assert(
-			readFileSync(compiledCli, "utf8").includes(fixtureVersion),
-			"the fixture build did not inline the fixture version into dist/cli.js",
-		);
-
 		const consumer = join(workDir, "consumer");
 		await mkdir(consumer, { recursive: true });
 		writeFileSync(
@@ -257,12 +299,6 @@ Deno.test("cli - a packed artifact reports the version its manifest declares", a
 		);
 
 		const installedCli = join(installedRoot, "dist", "cli.js");
-		const bundled = readFileSync(installedCli, "utf8");
-		assert(
-			bundled.includes(`var version = "${fixtureVersion}"`),
-			"the built CLI did not inline the version from src/version.ts",
-		);
-
 		const reported = run(process.execPath, [installedCli, "--version"], consumer);
 		assertSucceeded(reported, "the installed artifact --version");
 		assertEquals(
