@@ -18,6 +18,22 @@ import { assert, assertEquals, Deno } from "./vitest-compat.ts";
 const fixtureDir = fileURLToPath(new URL("./fixtures/quick-start", import.meta.url));
 const readFixture = (name: string) => readFile(join(fixtureDir, name), "utf8");
 
+// The Quick Start shows generated output in these fences, so the drift scan
+// reads them. A fence in any other language would be skipped silently, so
+// unexpected fences fail the test instead.
+const scannedFenceLanguages = ["css", "typescript"];
+const allowedFenceLanguages = ["bash", ...scannedFenceLanguages];
+
+/** Returns the body of a level-2 README section, up to the next level-2 heading. */
+const readmeSection = (readme: string, title: string): string => {
+	const heading = `## ${title}`;
+	const start = readme.indexOf(heading);
+	assert(start >= 0, `README.md must contain a '${heading}' section`);
+	const end = readme.indexOf("\n## ", start + heading.length);
+
+	return readme.slice(start, end === -1 ? readme.length : end);
+};
+
 // citty prints usage through consola, which silences log output in test
 // environments (`TEST` and `NODE_ENV=test`, both set by vitest). Consumers run
 // the CLI from a shell, so the child process gets a non-test environment.
@@ -109,15 +125,20 @@ Deno.test("quick start - documented usage matches generated tokens and output pa
 
 		// No token name written in the Quick Start may be missing from the generated
 		// declarations, so the documented drift cannot come back silently.
-		const quickStart = readme.slice(
-			readme.indexOf("## Quick Start"),
-			readme.indexOf("## Configuration"),
+		const quickStart = readmeSection(readme, "Quick Start");
+		const fences = [...quickStart.matchAll(/^```([^\n]*)\n([\s\S]*?)^```$/gm)].map(
+			(match) => ({ language: match[1], body: match[2] }),
 		);
-		const referenced = [
-			...quickStart.matchAll(/^```(?:css|typescript)\n([\s\S]*?)^```$/gm),
-		].flatMap((block) =>
-			[...block[1].matchAll(/--[a-zA-Z][\w-]*/g)].map((match) => match[0]),
+		assertEquals(
+			fences.filter((fence) => !allowedFenceLanguages.includes(fence.language)),
+			[],
+			"the Quick Start must only fence code in languages this scan understands",
 		);
+		const referenced = fences
+			.filter((fence) => scannedFenceLanguages.includes(fence.language))
+			.flatMap((fence) =>
+				[...fence.body.matchAll(/--[a-zA-Z][\w-]*/g)].map((match) => match[0]),
+			);
 		assert(referenced.length > 0, "the Quick Start must reference generated tokens");
 		assertEquals(
 			[...new Set(referenced)].filter((name) => !declared.has(name)),
@@ -143,6 +164,8 @@ Deno.test("quick start - documented usage matches generated tokens and output pa
 		// chain it documents; the chain must type-check and resolve.
 		const usagePath = join(projectDir, "consumer.ts");
 		await writeFile(usagePath, tsExample, "utf8");
+		// Mirrors the compiler options the Quick Start documents for importing the
+		// generated `.ts` module.
 		await writeFile(
 			join(projectDir, "tsconfig.json"),
 			`${JSON.stringify(

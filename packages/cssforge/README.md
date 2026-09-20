@@ -200,6 +200,9 @@ export const spacing2 = cssForge.spacing.custom.size["2"];
 export { cssForge };
 ```
 
+The generated file is a `.ts` module, so importing it needs
+`"allowImportingTsExtensions": true` (with `"noEmit": true`) in your `tsconfig.json`.
+
 ## Configuration
 
 ### Colors
