@@ -22,9 +22,8 @@ const cssForgeConfig = `export default {
 
 /**
  * The directory shapes a user can pass to `--css`, `--json`, `--ts` and
- * `--style-dictionary`, anchored in a throwaway directory. The bare shape has
- * no directory component at all, which is what a parent-directory expression
- * built from string slicing gets wrong on every platform.
+ * `--style-dictionary`. The bare shape has no directory component, which is what
+ * a parent directory built by string slicing gets wrong.
  */
 const outputDirectoryShapes = (dir: string) =>
 	[
@@ -84,8 +83,8 @@ Deno.test("writeFileRecursive - resolves a Windows output path's parent with the
 	await inTempCwd(async (dir) => {
 		await writeFileRecursive(windowsOutput, "css{}", win32.dirname);
 
-		// POSIX treats backslashes as ordinary characters, so the Windows path
-		// is a literal relative path here. What this observes is the parent the
+		// POSIX treats backslashes as ordinary characters, so here the Windows
+		// path is a literal relative path. What this observes is the parent the
 		// helper chose: the containing directory, never the output file path.
 		const parentStats = await stat(join(dir, windowsParent));
 		assertEquals(

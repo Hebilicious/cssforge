@@ -24,18 +24,12 @@ import {
 import { version } from "./version.ts";
 
 /**
- * Writes a file, creating its parent directory first.
+ * Writes a file, creating its parent directory first. The parent comes from the
+ * platform-aware `dirname` of `node:path`, so `C:\project\.cssforge\output.css`
+ * creates `C:\project\.cssforge` rather than a directory at the output file path.
  *
- * The parent comes from the platform-aware `dirname` of `node:path`, so a
- * Windows output path such as `C:\project\.cssforge\output.css` creates
- * `C:\project\.cssforge` instead of a directory at the output file path. A
- * filename without a directory component resolves to the current directory.
- *
- * @param path The output file path.
- * @param data The file contents.
- * @param parentDirectory Resolves the parent directory of an output path.
- * Defaults to `node:path`'s platform-aware `dirname`, and is injectable so the
- * Windows path shape can be exercised on any platform.
+ * `parentDirectory` is injectable so the Windows path shape can be exercised on
+ * any platform.
  */
 export const writeFileRecursive = (
 	path: string,
