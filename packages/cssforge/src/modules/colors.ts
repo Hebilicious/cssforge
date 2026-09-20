@@ -6,8 +6,23 @@ import {
 	getResolvedVariablesMap,
 	type Output,
 	type ResolveMap,
+	ROOT_SCOPE,
 	resolveValue,
+	withTokenScope,
 } from "../lib.ts";
+
+/**
+ * Describes the wrapper chain a declaration is emitted into. `selector` and
+ * `atRule` are both part of the identity, because two declarations only
+ * overwrite each other when they share the same wrapper chain. With no wrapper
+ * the declaration lands in `:root`.
+ */
+export const describeScope = (settings: WithCondition | undefined): string => {
+	const atRule = settings?.atRule ?? "";
+	const selector = settings?.selector ?? "";
+	if (!atRule && !selector) return ROOT_SCOPE;
+	return `${atRule}|${selector}`;
+};
 
 type ExactlyOne<T> = {
 	[K in keyof T]: {
@@ -283,6 +298,12 @@ export function processColors(colors: ColorConfig): Output {
 		if (!hasSelector && !hasAtRule) rootOutput.push(initialComment);
 
 		return {
+			/**
+			 * The effective wrapper chain these declarations are emitted into, so
+			 * callers can record which scope a token belongs to. Declarations
+			 * without a wrapper land in `:root`.
+			 */
+			scope: describeScope(settings),
 			addComment(c: string) {
 				if (hasSelector || hasAtRule) innerComments.push(c);
 				else rootOutput.push(c);
@@ -345,14 +366,20 @@ export function processColors(colors: ColorConfig): Output {
 
 				handler.pushVariable(variable);
 
-				resolveMap.set(`${moduleKey}.${colorName}.${variantId}`, {
-					key,
-					value,
-					variable,
-					sourcePath: `${moduleKey}.${colorName}.${variantId}`,
-					type: "color",
-					tier: "primitive",
-				});
+				resolveMap.set(
+					`${moduleKey}.${colorName}.${variantId}`,
+					withTokenScope(
+						{
+							key,
+							value,
+							variable,
+							sourcePath: `${moduleKey}.${colorName}.${variantId}`,
+							type: "color",
+							tier: "primitive",
+						},
+						handler.scope,
+					),
+				);
 			}
 
 			handler.finalize();
@@ -394,15 +421,21 @@ export function processColors(colors: ColorConfig): Output {
 
 					handler.pushVariable(variable);
 
-					resolveMap.set(`${moduleKey}.${gradientName}.${variantName}`, {
-						variable,
-						key,
-						value: gradientValue,
-						sourcePath: `${moduleKey}.${gradientName}.${variantName}`,
-						...(referencePaths ? { referencePaths } : {}),
-						type: "gradient",
-						tier: referencePaths ? "semantic" : "primitive",
-					});
+					resolveMap.set(
+						`${moduleKey}.${gradientName}.${variantName}`,
+						withTokenScope(
+							{
+								variable,
+								key,
+								value: gradientValue,
+								sourcePath: `${moduleKey}.${gradientName}.${variantName}`,
+								...(referencePaths ? { referencePaths } : {}),
+								type: "gradient",
+								tier: referencePaths ? "semantic" : "primitive",
+							},
+							handler.scope,
+						),
+					);
 				} catch (error) {
 					console.error(
 						`Error processing gradient ${gradientName}-${variantName}:`,
@@ -469,15 +502,21 @@ export function processColors(colors: ColorConfig): Output {
 
 						handler.pushVariable(variable);
 
-						resolveMap.set(`${moduleKey}.${themeName}.${colorName}.${variantName}`, {
-							key,
-							value: resolvedValue,
-							variable,
-							sourcePath: `${moduleKey}.${themeName}.${colorName}.${variantName}`,
-							...(referencePaths ? { referencePaths } : {}),
-							type: "color",
-							tier: referencePaths ? "semantic" : "primitive",
-						});
+						resolveMap.set(
+							`${moduleKey}.${themeName}.${colorName}.${variantName}`,
+							withTokenScope(
+								{
+									key,
+									value: resolvedValue,
+									variable,
+									sourcePath: `${moduleKey}.${themeName}.${colorName}.${variantName}`,
+									...(referencePaths ? { referencePaths } : {}),
+									type: "color",
+									tier: referencePaths ? "semantic" : "primitive",
+								},
+								handler.scope,
+							),
+						);
 					}
 				}
 

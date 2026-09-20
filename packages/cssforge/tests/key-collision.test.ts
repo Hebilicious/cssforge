@@ -1,23 +1,21 @@
-import { expect } from "vitest";
 import {
 	generateCSS,
 	generateJSON,
 	generateStyleDictionaryJSON,
 	generateTS,
 } from "../src/generator.ts";
-import { defineConfig } from "../src/mod.ts";
-import { assertEquals, assertSnapshot, Deno } from "./vitest-compat.ts";
+// The public entry point, so the diagnostic is proven reachable by consumers.
+import { defineConfig, generateCSS as generateCSSFromPublicEntry } from "../src/mod.ts";
+import {
+	assertDoesNotThrow,
+	assertEquals,
+	assertSnapshot,
+	assertThrows,
+	Deno,
+} from "./vitest-compat.ts";
 
 /** Captures a thrown Error so the assertion can inspect its message. */
-const captureError = (run: () => unknown): Error => {
-	try {
-		run();
-	} catch (error) {
-		if (error instanceof Error) return error;
-		throw error;
-	}
-	throw new Error("Expected the generator to throw, but it returned a value.");
-};
+const captureError = (run: () => unknown): Error => assertThrows(run);
 
 /**
  * Two distinct configuration paths: `primitives.a-b.c.x` and
@@ -55,11 +53,8 @@ Deno.test("generateStyleDictionaryJSON - rejects two paths that generate the sam
 });
 
 Deno.test("generator - the collision error escapes the public entry point", () => {
-	const error = captureError(() => generateCSS(collidingConfig()));
-	expect(error).toBeInstanceOf(Error);
-	expect(error.message).toContain('"primitives.a-b.c.x"');
-	expect(error.message).toContain('"primitives.a.b-c.x"');
-	expect(error.message).toContain('"--a-b-c-x"');
+	const error = captureError(() => generateCSSFromPublicEntry(collidingConfig()));
+	assertEquals(error.message, collisionMessage);
 });
 
 Deno.test("generator - a near-miss with distinct keys is unaffected", async (t) => {
@@ -144,9 +139,9 @@ Deno.test("generateCSS - rejects a collision in the spacing module", () => {
 			}),
 		),
 	);
-	expect(error.message).toContain("Token key collision");
-	expect(error.message).toContain('"spacing.custom.a-b.c"');
-	expect(error.message).toContain('"spacing.custom.a.b-c"');
+	assertEquals(error.message.includes("Token key collision"), true);
+	assertEquals(error.message.includes('"spacing.custom.a-b.c"'), true);
+	assertEquals(error.message.includes('"spacing.custom.a.b-c"'), true);
 });
 
 Deno.test("generator - variantNameOnly themes may reuse a key in different scopes", async (t) => {
@@ -227,5 +222,168 @@ Deno.test("generator - two variantNameOnly themes in the same scope do collide",
 	assertEquals(
 		error.message,
 		'Token key collision: "theme.light.background.primary" and "theme.other.background.primary" both generate "--primary". Rename one of the configuration paths.',
+	);
+});
+
+Deno.test("generator - a variantNameOnly theme collides with unscoped spacing", () => {
+	// Both declarations land in `:root`, so the shared name is a real collision
+	// even though one comes from a theme and the other from the spacing module.
+	const error = captureError(() =>
+		generateCSS(
+			defineConfig({
+				colors: {
+					palette: { value: { white: { value: { x: { hex: "#ffffff" } } } } },
+					theme: {
+						light: {
+							value: {
+								background: {
+									value: { "spacing-size-1": "var(--white)" },
+									variables: { white: "palette.white.x" },
+									settings: { variantNameOnly: true },
+								},
+							},
+						},
+					},
+				},
+				spacing: {
+					custom: { size: { value: { "1": "4px" } } },
+				},
+			}),
+		),
+	);
+	assertEquals(
+		error.message,
+		'Token key collision: "theme.light.background.spacing-size-1" and "spacing.custom.size.1" both generate "--spacing-size-1". Rename one of the configuration paths.',
+	);
+});
+
+Deno.test("generator - a variantNameOnly theme collides with an unscoped palette color", () => {
+	const error = captureError(() =>
+		generateCSS(
+			defineConfig({
+				colors: {
+					palette: { value: { brand: { value: { "500": { hex: "#ffffff" } } } } },
+					theme: {
+						light: {
+							value: {
+								background: {
+									value: { "palette-brand-500": "var(--brand)" },
+									variables: { brand: "palette.brand.500" },
+									settings: { variantNameOnly: true },
+								},
+							},
+						},
+					},
+				},
+			}),
+		),
+	);
+	assertEquals(
+		error.message,
+		'Token key collision: "palette.brand.500" and "theme.light.background.palette-brand-500" both generate "--palette-brand-500". Rename one of the configuration paths.',
+	);
+});
+
+Deno.test("generator - palette colors with different selectors may share a key", () => {
+	// `a-b.c` is wrapped in `.ThemeAlt` and `a.b-c` is unscoped, so the shared
+	// name is emitted into two different scopes and does not overwrite.
+	const config = defineConfig({
+		colors: {
+			palette: {
+				value: {
+					"a-b": {
+						value: { c: { hex: "#ffffff" } },
+						settings: { selector: ".ThemeAlt" },
+					},
+					a: { value: { "b-c": { hex: "#000000" } } },
+				},
+			},
+		},
+	});
+
+	assertDoesNotThrow(() => generateCSS(config));
+	const css = generateCSS(config);
+	assertEquals((css.match(/--palette-a-b-c:/g) ?? []).length, 2);
+	assertEquals(css.includes(".ThemeAlt {"), true);
+});
+
+Deno.test("generator - palette colors with different at-rules may share a key", () => {
+	const config = defineConfig({
+		colors: {
+			palette: {
+				value: {
+					"a-b": {
+						value: { c: { hex: "#ffffff" } },
+						settings: { atRule: "@media (prefers-color-scheme: dark)" },
+					},
+					a: { value: { "b-c": { hex: "#000000" } } },
+				},
+			},
+		},
+	});
+
+	assertDoesNotThrow(() => generateCSS(config));
+	assertEquals(
+		generateCSS(config).includes("@media (prefers-color-scheme: dark) {"),
+		true,
+	);
+});
+
+Deno.test("generator - gradients with different selectors may share a key", () => {
+	// `Gradient.settings` wraps every variant of that named gradient, so `a-b.c`
+	// lands in `.Alt` while `a.b-c` stays unscoped. The shared name therefore
+	// does not overwrite anything.
+	const gradientVariant = () => ({
+		value: "linear-gradient(var(--w), var(--w))",
+		variables: { w: "palette.white.x" },
+	});
+
+	const config = defineConfig({
+		colors: {
+			palette: { value: { white: { value: { x: { hex: "#ffffff" } } } } },
+			gradients: {
+				value: {
+					"a-b": {
+						value: { c: gradientVariant() },
+						settings: { selector: ".Alt" },
+					},
+					a: { value: { "b-c": gradientVariant() } },
+				},
+			},
+		},
+	});
+
+	assertDoesNotThrow(() => generateCSS(config));
+	const css = generateCSS(config);
+	assertEquals((css.match(/--gradients-a-b-c:/g) ?? []).length, 2);
+	assertEquals(css.includes(".Alt {"), true);
+});
+
+Deno.test("generator - unscoped themes that reuse a key are rejected", () => {
+	const unscopedTheme = () => ({
+		background: {
+			value: { primary: "var(--white)" },
+			variables: { white: "palette.white.x" },
+			settings: { variantNameOnly: true },
+		},
+	});
+
+	const error = captureError(() =>
+		generateCSS(
+			defineConfig({
+				colors: {
+					palette: { value: { white: { value: { x: { hex: "#ffffff" } } } } },
+					theme: {
+						light: { value: unscopedTheme() },
+						dark: { value: unscopedTheme() },
+					},
+				},
+			}),
+		),
+	);
+	assertEquals(
+		error.message.includes("Token key collision") &&
+			error.message.includes('"--primary"'),
+		true,
 	);
 });
