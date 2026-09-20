@@ -7,6 +7,9 @@
  * install nothing beyond the tarball, so this also proves that no repository
  * development dependency (such as `tsx`) is required.
  *
+ * The installed CLI must also report the version the packed artifact declares,
+ * which is what makes a misleading `--version` impossible to ship.
+ *
  * Usage: node ./scripts/smoke-test.ts [--node <path-to-node>]
  * `--node` runs the consumer commands with that Node runtime instead of the one
  * executing this script, which is how the supported engine floor is tested.
@@ -46,6 +49,8 @@ type Consumer = {
 	tarball: string;
 	node: string;
 	env: NodeJS.ProcessEnv;
+	/** The version the packed artifact declares. */
+	expectedVersion: string;
 };
 
 const packageRoot = resolve(import.meta.dirname, "..");
@@ -133,6 +138,51 @@ const run = (
 	}
 
 	return result.stdout;
+};
+
+/**
+ * `--version` is citty's version flag (it only answers a bare `--version`), so
+ * the reported string is the CLI metadata of the installed artifact. A package
+ * manager prints its own banner around a script run and a pnpm shim can
+ * interleave the CLI's own log output, so the version is located in the output
+ * rather than assumed to be the whole of it.
+ */
+const assertReportsVersion = (
+	command: string,
+	args: string[],
+	consumer: Consumer,
+): string => {
+	const output = run(command, [...args, "--version"], {
+		cwd: consumer.projectDir,
+		env: consumer.env,
+	});
+	const reported = output
+		.split("\n")
+		.map((line) => line.trim())
+		.find((line) => line === consumer.expectedVersion);
+
+	check(
+		reported !== undefined,
+		`${command} ${args.join(" ")} --version did not report ${consumer.expectedVersion}\n` +
+			`stdout:\n${output}`,
+	);
+
+	return reported;
+};
+
+/**
+ * `pnpm run <script> -- --version` cannot be asserted: pnpm 10 forwards the
+ * separator, so the CLI receives `-- --version`, and citty then runs a normal
+ * build instead of printing its version. That is pnpm's behaviour, not the
+ * metadata's, so this only records which output was observed.
+ */
+const observeScriptVersion = (consumer: Consumer): string => {
+	const output = run(consumer.manager, ["run", "cssforge", "--", "--version"], {
+		cwd: consumer.projectDir,
+		env: consumer.env,
+	});
+
+	return output.includes(consumer.expectedVersion) ? "reported" : "not forwarded";
 };
 
 const readNodeArgument = (): string | undefined => {
@@ -263,7 +313,7 @@ const verifyTarball = (manifest: PackageManifest, packed: PackResult): void => {
 };
 
 const verifyConsumer = async (consumer: Consumer): Promise<void> => {
-	const { manager, projectDir, tarball, node, env } = consumer;
+	const { manager, projectDir, tarball, node, env, expectedVersion } = consumer;
 
 	await mkdir(projectDir, { recursive: true });
 	await writeFile(
@@ -287,6 +337,10 @@ const verifyConsumer = async (consumer: Consumer): Promise<void> => {
 	);
 
 	const installed = readManifest(join(installedRoot, "package.json"));
+	check(
+		installed.version === expectedVersion,
+		`${manager} installed ${installed.version} but the packed artifact is ${expectedVersion}`,
+	);
 	check(
 		Object.keys(installed.bin ?? {}).includes("cssforge"),
 		`the installed ${manager} package does not declare the cssforge executable`,
@@ -323,6 +377,16 @@ const verifyConsumer = async (consumer: Consumer): Promise<void> => {
 
 	// The executable symlink (npm) or shim (pnpm), invoked directly.
 	run(executable, ["--help"], { cwd: projectDir, env });
+
+	// The version the installed artifact reports when a consumer runs the
+	// executable it actually calls. `assertReportsVersion` asserts that string
+	// equals the version of the installed package.json.
+	const reported = assertReportsVersion(executable, [], consumer);
+	const viaScript = observeScriptVersion(consumer);
+	console.log(
+		`smoke test: ${manager} ${executableName("cssforge")} --version reports ${reported}, ` +
+			`through \`${manager} run cssforge -- --version\` the version is ${viaScript}`,
+	);
 
 	run(
 		manager,
@@ -410,6 +474,7 @@ const main = async (): Promise<void> => {
 				tarball,
 				node,
 				env,
+				expectedVersion: manifest.version,
 			};
 			await verifyConsumer(consumer);
 			if (manager === "npm") {

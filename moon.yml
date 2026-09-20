@@ -10,6 +10,6 @@ tasks:
     options:
       runInCI: false
   version:
-    script: "npx changeset version && node packages/cssforge/scripts/sync-version.js"
+    script: "npx changeset version && node packages/cssforge/scripts/version.ts"
     options:
       runInCI: false

@@ -21,6 +21,7 @@ import {
 	generateStyleDictionaryJSON,
 	generateTS,
 } from "./generator.ts";
+import { version } from "./version.ts";
 
 const writeFileRecursive = (path: string, data: string) =>
 	fs
@@ -182,7 +183,7 @@ export async function watch({
 const mainCommand = defineCommand({
 	meta: {
 		name: "cssforge",
-		version: "0.1.0",
+		version,
 		description: "Generate CSS variables from a configuration file",
 	},
 	args: {

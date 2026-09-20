@@ -7,6 +7,32 @@ tags:
   - "cssforge"
 
 tasks:
+  version-sync:
+    command: "node"
+    args: ["./scripts/version.ts"]
+    inputs:
+      - "package.json"
+      - "jsr.json"
+      - "scripts/version.ts"
+      - "src/version.ts"
+    outputs:
+      - "src/version.ts"
+      - "jsr.json"
+    options:
+      runInCI: "affected"
+  version-check:
+    command: "node"
+    args: ["./scripts/version.ts", "--check"]
+    deps:
+      - "~:version-sync"
+    inputs:
+      - "package.json"
+      - "jsr.json"
+      - "scripts/version.ts"
+      - "src/version.ts"
+      - "CHANGELOG.md"
+    options:
+      runInCI: "always"
   format:
     command: "biome"
     args:
@@ -31,6 +57,7 @@ tasks:
       - "vitest.config.ts"
       - "tsup.config.ts"
       - "jsr.json"
+      - "src/version.ts"
       - "/biome.json"
     options:
       runInCI: "always"
@@ -103,10 +130,14 @@ tasks:
       outputStyle: "stream"
   build:
     command: "tsup"
+    deps:
+      - "~:version-sync"
     inputs:
       - "src/**/*"
       - "tsup.config.ts"
       - "tsconfig.json"
+      - "package.json"
+      - "scripts/version.ts"
     outputs:
       - "dist"
     options:
@@ -118,6 +149,7 @@ tasks:
       - "~:build"
     inputs:
       - "src/**/*"
+      - "src/version.ts"
       - "package.json"
       - "tsconfig.json"
       - "tsup.config.ts"
@@ -133,8 +165,10 @@ tasks:
     args: ["./scripts/smoke-test.ts"]
     deps:
       - "~:build"
+      - "~:version-check"
     inputs:
       - "src/**/*"
+      - "src/version.ts"
       - "scripts/smoke-test.ts"
       - "package.json"
       - "tsconfig.json"
@@ -148,8 +182,11 @@ tasks:
   jsr-smoke:
     command: "node"
     args: ["./scripts/jsr-smoke.ts"]
+    deps:
+      - "~:version-check"
     inputs:
       - "src/**/*"
+      - "src/version.ts"
       - "scripts/jsr-smoke.ts"
       - "jsr.json"
       - "package.json"
@@ -175,6 +212,7 @@ tasks:
       - "~:build"
     inputs:
       - "src/**/*"
+      - "src/version.ts"
       - "scripts/publish.ts"
       - "package.json"
       - "README.md"
@@ -189,6 +227,7 @@ tasks:
       - "~:build"
     inputs:
       - "src/**/*"
+      - "src/version.ts"
       - "scripts/publish.ts"
       - "jsr.json"
       - "package.json"
