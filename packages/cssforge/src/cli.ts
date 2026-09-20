@@ -27,7 +27,7 @@ const writeFileRecursive = (path: string, data: string) =>
 		.mkdir(path.replace(/\/[^/]*$/, ""), { recursive: true })
 		.then(() => fs.writeFile(path, data));
 
-export const outputModes = ["css", "json", "ts", "style-dictionary", "all"] as const;
+const outputModes = ["css", "json", "ts", "style-dictionary", "all"] as const;
 type OutputMode = (typeof outputModes)[number];
 const outputModeList = outputModes.join(", ");
 const styleDictionaryValueModes = ["css-reference", "resolved"] as const;
@@ -36,10 +36,6 @@ type StyleDictionaryValueMode = (typeof styleDictionaryValueModes)[number];
 const isOutputMode = (value: unknown): value is OutputMode =>
 	typeof value === "string" && outputModes.some((mode) => mode === value);
 
-/**
- * Describes why an unsupported output mode was rejected, listing the accepted
- * alternatives so a typo is actionable.
- */
 const invalidOutputModeMessage = (mode: unknown) =>
 	`Invalid output mode: ${String(mode)}. Accepted modes: ${outputModeList}.`;
 
