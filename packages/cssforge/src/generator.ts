@@ -1,12 +1,13 @@
 import type { CSSForgeConfig } from "./config.ts";
 import {
+	type Output,
 	type ResolvedToken,
 	type ResolveMap,
 	replaceCssVariableReferences,
 	type TokenTier,
 	type TokenType,
 } from "./lib.ts";
-import { processColors } from "./modules/colors.ts";
+import { processColors, type ThemeConfig } from "./modules/colors.ts";
 import { processPrimitives } from "./modules/primitive.ts";
 import { processSpacing } from "./modules/spacing.ts";
 import { processTypography } from "./modules/typography.ts";
@@ -95,6 +96,102 @@ const deepMerge = <T extends Record<string, unknown>>(target: T, source: T): T =
 	return result as T;
 };
 
+/**
+ * Returns the CSS scope a token is emitted into, or `""` for the `:root` block.
+ *
+ * Themes may deliberately reuse a custom property name in different scopes:
+ * `variantNameOnly: true` makes every theme emit `--primary`, and each theme is
+ * separated by its own `selector` or `atRule`. Two tokens only conflict when
+ * they share both a custom property name and a scope, because only then does
+ * one silently overwrite the other. A theme's scope is the `selector`/`atRule`
+ * declared on the theme; palette, gradient and per-color settings can add their
+ * own wrapper, so they contribute to the scope as well.
+ */
+const tokenScopeOf = (config: Partial<CSSForgeConfig>, path: string): string => {
+	const segments = path.split(".");
+
+	// Palette colors and gradients read their wrapper from their own settings,
+	// not from the path, so only themes need the path walk.
+	if (segments[0] !== "theme") return "";
+
+	const theme = config.colors?.theme;
+	if (!theme) return "";
+
+	// Mirror the normalization `processColors` applies: themes may be declared
+	// directly or nested under a `value` key.
+	const themes = ("value" in theme ? theme.value : theme) as Record<
+		string,
+		ThemeConfig | ThemeConfig["value"]
+	>;
+
+	const themeEntry = segments[1] ? themes[segments[1]] : undefined;
+	const themeConfig = (
+		themeEntry && "value" in themeEntry
+			? themeEntry
+			: { value: themeEntry as ThemeConfig["value"] }
+	) as ThemeConfig;
+
+	// Only the theme carries a `selector`/`atRule`. A per-color `settings` block
+	// can only set `variantNameOnly`, which changes the name, not the scope.
+	const selector = themeConfig.settings?.selector;
+	const atRule = themeConfig.settings?.atRule;
+
+	return `${atRule ?? ""}|${selector ?? ""}`;
+};
+
+/**
+ * Rejects a configuration whose distinct token paths generate the same CSS
+ * custom property name in the same scope. Generated names are built by joining
+ * path segments with hyphens, so `primitives.a-b.c.x` and `primitives.a.b-c.x`
+ * both produce `--a-b-c-x`. Silently emitting two declarations for one name
+ * makes the CSS, JSON and TypeScript outputs disagree, so the configuration is
+ * rejected with both contributing paths named.
+ *
+ * Tokens that share a name but target different scopes are not a collision:
+ * two `variantNameOnly` themes emitting `--primary` under different selectors
+ * is the documented way to build themes.
+ */
+const assertNoKeyCollisions = (
+	resolveMap: ResolveMap,
+	config: Partial<CSSForgeConfig>,
+): void => {
+	const sourcesByScopeAndKey = new Map<string, string>();
+
+	for (const token of resolveMap.values()) {
+		const scope = tokenScopeOf(config, token.sourcePath);
+		const scopedKey = `${scope}\u0000${token.key}`;
+		const existingSourcePath = sourcesByScopeAndKey.get(scopedKey);
+
+		if (existingSourcePath !== undefined && existingSourcePath !== token.sourcePath) {
+			throw new Error(
+				`Token key collision: "${existingSourcePath}" and "${token.sourcePath}" both generate "${token.key}". Rename one of the configuration paths.`,
+			);
+		}
+
+		sourcesByScopeAndKey.set(scopedKey, token.sourcePath);
+	}
+};
+
+/**
+ * Merges the per-module resolve maps into the single map every output consumes.
+ * Later modules win when two produce the same path, which preserves the
+ * previous `collectResolveMap` behaviour.
+ */
+const mergeResolveMaps = (
+	outputs: ReadonlyArray<Output | null | undefined>,
+): ResolveMap => {
+	const resolveMap: ResolveMap = new Map();
+
+	for (const output of outputs) {
+		if (!output) continue;
+		for (const [path, token] of output.resolveMap.entries()) {
+			resolveMap.set(path, token);
+		}
+	}
+
+	return resolveMap;
+};
+
 const collectResolveMap = (config: Partial<CSSForgeConfig>): ResolveMap => {
 	const forge = {
 		colors: config.colors ? processColors(config.colors) : undefined,
@@ -110,13 +207,8 @@ const collectResolveMap = (config: Partial<CSSForgeConfig>): ResolveMap => {
 			: undefined,
 	};
 
-	const resolveMap: ResolveMap = new Map();
-	for (const value of Object.values(forge)) {
-		if (!value) continue;
-		for (const [path, token] of value.resolveMap.entries()) {
-			resolveMap.set(path, token);
-		}
-	}
+	const resolveMap = mergeResolveMaps(Object.values(forge));
+	assertNoKeyCollisions(resolveMap, config);
 	return resolveMap;
 };
 
@@ -494,6 +586,7 @@ export function generateCSS(config: Partial<CSSForgeConfig>): string {
 			typography: config.typography,
 			spacing: config.spacing,
 		});
+		processedConfig.primitives = primitiveVars;
 		if (primitiveVars) {
 			if (primitiveVars.css.root) {
 				chunks.push("/*____ Primitives ____*/");
@@ -504,6 +597,11 @@ export function generateCSS(config: Partial<CSSForgeConfig>): string {
 			}
 		}
 	}
+
+	// Reject colliding keys before returning any output. This reuses the module
+	// results gathered above and feeds the same `assertNoKeyCollisions` used by
+	// JSON, TypeScript and Style Dictionary output.
+	assertNoKeyCollisions(mergeResolveMaps(Object.values(processedConfig)), config);
 
 	chunks.push("}");
 
