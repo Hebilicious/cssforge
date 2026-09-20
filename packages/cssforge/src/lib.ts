@@ -49,6 +49,19 @@ export interface Output {
 	resolveMap: ResolveMap;
 }
 
+/**
+ * Aliases for a token's value. Keys are the alias names as referenced in
+ * `var(--key)`, written without the `--` prefix, and values are the cssforge
+ * token paths they point at. A key such as `"surface-muted"` is referenced as
+ * `var(--surface-muted)`.
+ *
+ * Hyphens are supported and the key is used verbatim as the custom property
+ * name after `getResolvedVariablesMap` prefixes it with `--`. A key that is
+ * empty or contains whitespace, `(`, `)`, `,`, `"`, or `'` cannot be referenced
+ * and is left unresolved in the generated value. Note that the alias keys name
+ * CSS custom properties, while the resolver that produces their targets
+ * (`validateName`) rejects periods in token names.
+ */
 export interface Variables {
 	[key: string]: string;
 }
@@ -124,6 +137,29 @@ const findVarOpenParen = (value: string, varIndex: number): number => {
 };
 
 /**
+ * Returns the index of the first character at or after `start` that is neither
+ * whitespace nor part of a CSS comment, stopping at `end`.
+ */
+const skipTrivia = (value: string, start: number, end: number): number => {
+	let index = start;
+
+	while (index < end) {
+		if (value.startsWith("/*", index)) {
+			const commentEnd = value.indexOf("*/", index + 2);
+			if (commentEnd === -1 || commentEnd >= end) return end;
+			index = commentEnd + 2;
+			continue;
+		}
+
+		const character = value[index];
+		if (character === undefined || !/\s/.test(character)) return index;
+		index += 1;
+	}
+
+	return index;
+};
+
+/**
  * Rewrites CSS custom-property references using the canonical CSSForge parser.
  *
  * The replacer receives the custom property name (`--surface-muted`), the
@@ -187,13 +223,12 @@ export const replaceCssVariableReferences = (
 		}
 
 		const nameOffset = openParenIndex + 1;
-		const nameMatch = /^\s*(--[^\s(),"']+)/.exec(
-			value.slice(nameOffset, closeParenIndex),
-		);
+		const nameStart = skipTrivia(value, nameOffset, closeParenIndex);
+		const nameMatch = /^(--[^\s(),"']+)/.exec(value.slice(nameStart, closeParenIndex));
 		const cssVariable = nameMatch?.[1];
 
 		if (cssVariable && cssVariableNamePattern.test(cssVariable)) {
-			const nameEnd = nameOffset + (nameMatch?.index ?? 0) + cssVariable.length;
+			const nameEnd = nameStart + cssVariable.length;
 			const closed = value.slice(nameEnd, closeParenIndex + 1);
 
 			result += value.slice(cursor, index);

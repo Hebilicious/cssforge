@@ -65,6 +65,15 @@ Deno.test("resolveValue - does not rewrite var() text inside a quoted string", (
 	assertEquals(resolve("content: 'var(--bg)'"), "content: 'var(--bg)'");
 });
 
+Deno.test("resolveValue - ignores comments and whitespace around the alias name", () => {
+	assertEquals(resolve("var(/* alias */--bg)"), "var(/* alias */--palette-gray-100)");
+	assertEquals(
+		resolve("var( /* alias */ --bg )"),
+		"var( /* alias */ --palette-gray-100 )",
+	);
+	assertEquals(resolve("var(--bg /* alias */)"), "var(--palette-gray-100 /* alias */)");
+});
+
 Deno.test("resolveValue - leaves malformed var() text unchanged", () => {
 	assertEquals(resolve("var(--bg"), "var(--bg");
 	assertEquals(resolve("var()"), "var()");
