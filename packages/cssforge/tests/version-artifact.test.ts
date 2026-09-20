@@ -10,9 +10,8 @@ import { assert, assertEquals, Deno } from "./vitest-compat.ts";
 const packageRoot = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const workspaceRoot = resolve(packageRoot, "../..");
 
-// citty prints usage through consola, which silences log output in test
-// environments (`TEST` and `NODE_ENV=test`, both set by vitest). The CLI runs
-// from a shell for real consumers, so children get a non-test environment.
+// citty prints usage through consola, which silences log output when `TEST` or
+// `NODE_ENV=test` is set, as vitest does. Real consumers run from a shell.
 const childEnv: NodeJS.ProcessEnv = { ...process.env };
 delete childEnv.TEST;
 delete childEnv.NODE_ENV;
@@ -42,11 +41,7 @@ const readVersion = (path: string): string => {
 	return String((parsed as { version: unknown }).version);
 };
 
-/**
- * Replaces the `version` field of a JSON manifest without depending on the
- * version the workspace currently carries, so the tests keep working after the
- * next release bump.
- */
+/** Replaces a manifest's `version` field whatever version the workspace carries. */
 const withVersion = (source: string, version: string): string => {
 	const updated = source.replace(
 		/("version"\s*:\s*")[^"]*(")/,
@@ -90,9 +85,8 @@ const assertSucceeded = (
 };
 
 /**
- * Copies the workspace the way a release checkout looks, minus the installed
- * dependencies and build output. `pnpm install` and `npm pack` run inside the
- * copy afterwards.
+ * Copies the workspace as a release checkout looks, minus installed
+ * dependencies and build output.
  */
 const copyWorkspace = (destination: string): void => {
 	for (const entry of [
@@ -113,23 +107,14 @@ const copyWorkspace = (destination: string): void => {
 };
 
 /**
- * The promise: a packed artifact whose manifest declares a different release
- * version reports that version from its CLI, without `cli.ts` being edited.
- *
- * The fixture version is written into a copy of the workspace before packing,
- * so the assertion runs against a real tarball laid out by `npm pack` and
- * installed by `npm install`. The copy is filtered to the files a release
- * checkout needs, because `node_modules` and `dist` contain symlinks that make
- * a raw copy slow or wrong. The fixture is a version that has never been
- * published, so nothing here can republish or rewrite registry history.
+ * A packed artifact whose manifest declares a different release version reports
+ * that version from its CLI. The fixture version is never published, so nothing
+ * here can rewrite registry history. `node_modules` and `dist` are excluded from
+ * the copy because their symlinks make a raw copy slow or wrong.
  */
 const fixtureVersion = "0.7.0-issue28.1";
 
-/**
- * Builds the CLI into a directory this test owns, so no task mutates another
- * task's declared `dist` output. The directory stays inside the package: the
- * bundle resolves its dependencies through the package's `node_modules`.
- */
+/** Builds the CLI into a directory inside the package, which resolves its deps. */
 const buildCli = async (): Promise<{ cli: string; cleanUp: () => Promise<void> }> => {
 	const outDir = await mkdtemp(join(packageRoot, ".artifact-build-"));
 
