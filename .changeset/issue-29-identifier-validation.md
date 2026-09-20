@@ -28,25 +28,32 @@ underscores and non-ASCII characters only.
 
 Compatibility implications:
 
-- Breaking for configurations that relied on the broken behaviour. A name that
-  already produced valid CSS keeps working unchanged.
+- Breaking only for configurations that emitted invalid CSS. A name that already
+  produced valid CSS keeps working unchanged.
 - Numeric keys (`palette.coral.50`), hyphens (`2xl`, `background-color`),
   underscores (`sm_2`) and non-ASCII names (`größe`) are still accepted, because
   segments are joined with hyphens and CSS identifiers allow those characters.
-- Rejected segments are whitespace and the ASCII characters
+  A segment may also begin with a digit or a hyphen, since the module prefix
+  starts the identifier.
+- Rejected token key segments are whitespace and the ASCII characters
   ``!"#$%&'()*+,./:;<=>?@[\]^`{|}~``. Accepted ASCII is limited to letters,
   digits, hyphens and underscores; every code point from U+0080 upward is
-  accepted.
+  accepted. A backslash escape is rejected even though raw CSS accepts it,
+  because the name would not survive round-tripping through configuration paths,
+  generated keys and `variables` lookups.
 - This applies to every module that shares name validation: palette colors,
   gradient and theme names, spacing scales, prefixes and tokens, typography
-  scales, prefixes, weights and custom labels, and primitive names, variants and
-  property names.
-- Variable alias keys (`variables: { "my color": "..." }`) are validated too,
-  because they are interpolated into emitted `var(--...)` references. Aliases
-  written as `--name` are accepted, and the leading `--` is ignored during
-  validation.
-- Typography `settings.customLabel` values are validated, because they are
-  interpolated into generated keys.
+  scales, prefixes and weights, and primitive names, variants and property names.
+- Variable alias keys (`variables: { "my color": "..." }`) and typography
+  `settings.customLabel` values are validated too, because they are interpolated
+  into emitted `var(--...)` references and generated keys. These two fields are
+  display names rather than token keys, so only the CSS character rule applies:
+  an alias named `spacing` or a label named `value` keeps working, as it did
+  before. Aliases written as `--name` are accepted, and the leading `--` is
+  ignored during validation.
+- A `customLabel` entry may resolve through the prototype chain because
+  generation reads it with bracket access. The label that is actually emitted is
+  validated, so an inherited mapping cannot leak an invalid key.
 - Palette colors and themes log ordinary per-token failures and continue. Name
   errors are raised as an `InvalidNameError` and are re-thrown through those
   handlers, so a configuration mistake now fails loudly instead of being logged

@@ -74,11 +74,33 @@ export function validateName(name: string, path?: string): boolean {
 }
 
 /**
+ * Validates the CSS characters of a name segment used to build a custom property
+ * name or a `var(--...)` reference.
+ *
+ * This is the part of {@link validateName} that a `variables` alias key or a
+ * typography `customLabel` value needs. Those fields are not token keys, so the
+ * reserved-keyword and period rules do not apply to them and applying those rules
+ * would reject configurations that produce valid CSS today, such as an alias
+ * named `spacing` or a label named `value`.
+ */
+function validateNameCharacters(name: string, path: string): void {
+	if (!invalidNameSegmentPattern.test(name)) return;
+	throw new InvalidNameError(
+		`Invalid name: ${name} at configuration path "${path}". Names must be valid ` +
+			`CSS identifier segments: letters, digits, hyphens, underscores and ` +
+			`non-ASCII characters only.`,
+	);
+}
+
+/**
  * Validates the alias keys of a `variables` map.
  *
- * Alias keys become the emitted `var(--alias)` reference, so they follow the
- * same rule as every other name segment. A key written as `--alias` is accepted;
- * the leading hyphens describe the CSS form the author reads, not the segment.
+ * Alias keys become the emitted `var(--alias)` reference, so they must contribute
+ * valid identifier characters. A key written as `--alias` is accepted; the leading
+ * hyphens describe the CSS form the author reads, not the segment.
+ *
+ * Only the CSS character rule applies here. Alias keys are not token keys, so
+ * existing names such as `spacing` keep working.
  *
  * @example
  * ```ts
@@ -95,11 +117,21 @@ export function validateVariableAliases({
 }): void {
 	if (!aliases) return;
 	for (const aliasKey of Object.keys(aliases)) {
-		validateName(
-			aliasKey.startsWith("--") ? aliasKey.slice(2) : aliasKey,
-			`${path}.variables.${aliasKey}`,
-		);
+		const segment = aliasKey.startsWith("--") ? aliasKey.slice(2) : aliasKey;
+		validateNameCharacters(segment, `${path}.variables.${aliasKey}`);
 	}
+}
+
+/**
+ * Validates a typography `settings.customLabel` value.
+ *
+ * Label values are interpolated into generated keys, so they must contribute
+ * valid identifier characters. They are display labels rather than token keys, so
+ * only the CSS character rule applies and existing labels such as `value` keep
+ * working.
+ */
+export function validateCustomLabel(label: string, path: string): void {
+	validateNameCharacters(label, path);
 }
 
 /**

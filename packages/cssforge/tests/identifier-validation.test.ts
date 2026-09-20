@@ -7,17 +7,37 @@ import { processTypography } from "../src/modules/typography.ts";
 import { assert, assertEquals, Deno } from "./vitest-compat.ts";
 
 /**
- * Custom property names that are not valid CSS dashed identifiers.
+ * Custom property declarations whose name is not a valid CSS dashed identifier.
  *
- * A declaration name is `--` followed by an identifier. An identifier is
- * `[-]*` then a letter, underscore or non-ASCII code point, then any number of
- * letters, digits, hyphens, underscores or non-ASCII code points.
+ * A declaration name is `--` followed by an identifier. An identifier may begin
+ * with any number of hyphens, and a custom property identifier additionally
+ * accepts a leading digit, which is why `--50-default-gap` parses as a valid
+ * declaration. The accepted characters are letters, digits, hyphens, underscores
+ * and non-ASCII code points.
+ *
+ * Verified against `css-tree`: it accepts `--50-default-gap` and
+ * `---card-default-gap` and rejects `--card button-default-gap`. The one
+ * deliberate difference is a backslash escape such as `--a\b`, which raw CSS
+ * accepts but this project rejects because the name would not survive
+ * round-tripping through configuration paths, generated keys and `variables`
+ * lookups without escaping.
+ *
+ * The whole declaration name is read up to the `:` that separates it from the
+ * value. Matching only up to whitespace would hide the bug this file guards
+ * against, because `--card button-default-gap: 1rem;` contains a space inside
+ * the name itself.
  */
 const invalidDashedIdentifiers = (css: string): string[] => {
-	const names = css.match(/--[^\s:;{}()]+/g) ?? [];
-	return names.filter(
-		(name) => !/^--[A-Za-z_\u0080-\u{10FFFF}][\w\-\u0080-\u{10FFFF}]*$/u.test(name),
-	);
+	const names: string[] = [];
+	for (const rawLine of css.split("\n")) {
+		const line = rawLine.trim();
+		if (!line.startsWith("--")) continue;
+		const name = line.slice(0, line.indexOf(":"));
+		if (!/^--[-]*[\w\u0080-\u{10FFFF}][\w\-\u0080-\u{10FFFF}]*$/u.test(name)) {
+			names.push(name);
+		}
+	}
+	return names;
 };
 
 const captureError = (fn: () => unknown): string => {
@@ -28,6 +48,19 @@ const captureError = (fn: () => unknown): string => {
 	}
 	throw new Error("Expected the call to throw, but it returned normally.");
 };
+
+Deno.test("invalidDashedIdentifiers - detects the malformed name from issue #29", () => {
+	// Guards the guard: this checker must be able to see the original bug.
+	assertEquals(invalidDashedIdentifiers("--card button-default-gap: 1rem;"), [
+		"--card button-default-gap",
+	]);
+	assertEquals(invalidDashedIdentifiers("--card-default-row gap: 1rem;"), [
+		"--card-default-row gap",
+	]);
+	assertEquals(invalidDashedIdentifiers("--palette-coral-50: oklch(0 0 0);"), []);
+	assertEquals(invalidDashedIdentifiers("---card-default-gap: 1rem;"), []);
+	assertEquals(invalidDashedIdentifiers("--50-default-gap: 1rem;"), []);
+});
 
 Deno.test("validateName - rejects primitive names that are not dashed identifiers", () => {
 	const config = defineConfig({
@@ -271,6 +304,111 @@ Deno.test("validateName - rejects typography custom labels that are not dashed i
 		message.includes("big type") &&
 			message.includes("typography_fluid.base.settings.customLabel"),
 		`Custom label error must name segment and path. Received: ${message}`,
+	);
+});
+
+Deno.test("validateName - validates the custom label that is actually emitted", () => {
+	const fluidValue = {
+		minWidth: 320,
+		minFontSize: 14,
+		minTypeScale: 1.25,
+		maxWidth: 1435,
+		maxFontSize: 16,
+		maxTypeScale: 1.25,
+		positiveSteps: 1,
+		negativeSteps: 0,
+	};
+
+	// `customLabel` is read with bracket access during generation, so a mapping can
+	// resolve through the prototype chain. Iterating own values would miss it and
+	// emit an invalid key.
+	const inherited: Record<string, string> = Object.create({
+		"1": "big type",
+		"0": "0",
+	});
+	const inheritedMessage = captureError(() =>
+		processTypography({
+			fluid: { base: { value: fluidValue, settings: { customLabel: inherited } } },
+		} as never),
+	);
+	assert(
+		inheritedMessage.includes("big type") &&
+			inheritedMessage.includes("typography_fluid.base.settings.customLabel"),
+		`An inherited invalid label must be rejected. Received: ${inheritedMessage}`,
+	);
+
+	// A label with no mapping falls back to the generated step label, which is valid.
+	const fallback = processTypography({
+		fluid: { base: { value: fluidValue, settings: { customLabel: {} } } },
+	} as never);
+	assert(
+		Boolean(fallback.css.root?.includes("--typography_fluid-base-1:")),
+		`An unmapped label must fall back to the step label. Received: ${fallback.css.root}`,
+	);
+	assertEquals(invalidDashedIdentifiers(fallback.css.root ?? ""), []);
+});
+
+Deno.test("validateName - keeps alias keys and custom labels that were valid before this change", () => {
+	// Alias keys and custom labels are interpolated into emitted names, but they are
+	// not token keys. Only the CSS character rule applies, so a name that collides
+	// with a reserved module keyword still has to work, as it did before.
+	const aliasResult = processPrimitives({
+		spacing: { custom: { size: { value: { 1: "4px" } } } },
+		primitives: {
+			btn: {
+				value: {
+					d: {
+						value: { padding: "var(--spacing)" },
+						variables: { spacing: "spacing.custom.size.1" },
+					},
+				},
+			},
+		},
+	} as never);
+	assert(
+		aliasResult.css.root?.includes("--btn-d-padding: var(--spacing-size-1);") === true,
+		`A reserved-keyword alias must keep working. Received: ${aliasResult.css.root}`,
+	);
+
+	const labelResult = processTypography({
+		fluid: {
+			base: {
+				value: {
+					minWidth: 320,
+					minFontSize: 14,
+					minTypeScale: 1.25,
+					maxWidth: 1435,
+					maxFontSize: 16,
+					maxTypeScale: 1.25,
+					positiveSteps: 1,
+					negativeSteps: 0,
+				},
+				settings: { customLabel: { "1": "value", "0": "0" } },
+			},
+		},
+	} as never);
+	assert(
+		Boolean(labelResult.css.root?.includes("--typography_fluid-base-value:")),
+		`A "value" custom label must keep working. Received: ${labelResult.css.root}`,
+	);
+
+	// Whitespace in either field is still rejected.
+	assert(
+		captureError(() =>
+			processPrimitives({
+				primitives: {
+					btn: {
+						value: {
+							d: {
+								value: { k: "var(--a b)" },
+								variables: { "a b": "palette.c.50" },
+							},
+						},
+					},
+				},
+			} as never),
+		).includes("primitives.btn.d.variables"),
+		"A whitespace alias key must still be rejected.",
 	);
 });
 
@@ -525,6 +663,11 @@ Deno.test("generateCSS - never emits a malformed custom property name", () => {
 		[],
 		`Generated CSS contains malformed custom property names: ${malformed.join(", ")}`,
 	);
+	// The same config on `origin/main` emitted the invalid primitive key below.
+	// Asserting the checker finds it keeps this test from passing vacuously.
+	assertEquals(invalidDashedIdentifiers(`${css}\n--card button-default-gap: 1rem;`), [
+		"--card button-default-gap",
+	]);
 });
 
 Deno.test("generateCSS - rejects names that would emit malformed declarations", () => {
