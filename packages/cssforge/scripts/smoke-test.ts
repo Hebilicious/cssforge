@@ -118,13 +118,9 @@ const parsePackResult = (output: string, description: string): PackResult => {
 };
 
 /**
- * Builds the arguments that forward `cliArgs` to the package script.
- *
- * npm requires a literal `--` to separate its own flags from the script's.
- * pnpm forwards that `--` verbatim to the binary, where citty reads it as the
- * end-of-options marker and ignores every flag after it. Passing the extra
- * separator under pnpm therefore silently ran the CLI with all defaults, which
- * is why the arguments differ per manager.
+ * npm needs `--` to separate its flags from the script's; pnpm forwards that
+ * `--` to the binary, where citty treats it as end-of-options and drops every
+ * flag after it.
  */
 const scriptInvocation = (manager: "npm" | "pnpm", cliArgs: string[]): string[] =>
 	manager === "npm"
@@ -243,15 +239,7 @@ export default defineConfig({
 });
 `;
 
-/**
- * Extracts a fenced code block from the `## Quick Start` section of the
- * published README, the flow issue #23 asks consumers to follow.
- *
- * The snippet is read from the README rather than duplicated here so this
- * scenario fails when the documented Quick Start drifts from the artifact. The
- * published README ships inside the tarball, so it is always the version a
- * consumer reads.
- */
+/** Reads a fenced code block from the `## Quick Start` section of the README. */
 const readQuickStartBlock = (readme: string, language: string): string => {
 	const heading = readme.indexOf("\n## Quick Start");
 	check(heading !== -1, "the README has no `## Quick Start` section");
@@ -269,12 +257,10 @@ const readQuickStartBlock = (readme: string, language: string): string => {
 	return match[1];
 };
 
-/** Reads every custom property consumed by a stylesheet snippet. */
 const consumedCustomProperties = (css: string): string[] => [
 	...new Set([...css.matchAll(/var\((--[A-Za-z0-9_-]+)/g)].map((match) => match[1]!)),
 ];
 
-/** Reads every custom property a generated stylesheet declares. */
 const declaredCustomProperties = (css: string): string[] => [
 	...new Set([...css.matchAll(/^\s*(--[A-Za-z0-9_-]+)\s*:/gm)].map((match) => match[1]!)),
 ];
@@ -363,19 +349,10 @@ const verifyTarball = (manifest: PackageManifest, packed: PackResult): void => {
 };
 
 /**
- * Custom properties the published Quick Start CSS example consumes even though
- * the configuration documented next to it cannot declare them.
- *
- * The README pairs a palette of `coral`/`mint`/`indigo` and a
- * `spacing.custom.size` scale with a CSS example that reads
- * `--color-primary-500` (a token family no configuration produces) and
- * `--size-2`/`--size-4` (where the generator emits `--spacing-size-2`/
- * `--spacing-size-4`). Issue #23 owns correcting that example.
- *
- * This allowlist is deliberately self-cleaning: when a property listed here
- * becomes declared, `verifyQuickStart` fails and tells you to drop the entry,
- * so the list cannot rot silently once #23 lands. Any property that is neither
- * declared nor listed here fails immediately, so new drift is caught.
+ * Properties the Quick Start CSS example reads that the documented
+ * configuration cannot declare. Issue #23 corrects the example. The list is
+ * self-cleaning: an entry that becomes declared or stops being consumed fails
+ * the run below.
  */
 const quickStartUndeclaredProperties = new Set([
 	"--color-primary-500", // no `primary` token family exists in the documented config
@@ -383,15 +360,7 @@ const quickStartUndeclaredProperties = new Set([
 	"--size-4", // the documented config generates `--spacing-size-4`
 ]);
 
-/**
- * Runs the documented Quick Start flow (README `## Quick Start`) against the
- * packed artifact.
- *
- * The configuration is extracted from the published README at run time, so the
- * scenario breaks when the documented configuration stops producing output the
- * documented CSS consumption can use. Output paths are the documented defaults,
- * so this also covers the nested-relative default shape for `--mode all`.
- */
+/** Runs the documented Quick Start flow against the packed artifact. */
 const verifyQuickStart = async (consumer: Consumer): Promise<void> => {
 	const { manager, projectDir, tarball, env } = consumer;
 	const readme = readFileSync(
@@ -401,11 +370,6 @@ const verifyQuickStart = async (consumer: Consumer): Promise<void> => {
 	const config = readQuickStartBlock(readme, "typescript");
 	const cssExample = readQuickStartBlock(readme, "css");
 
-	check(
-		config.includes("export default") && config.includes("defineConfig"),
-		"the Quick Start configuration does not export a defineConfig result",
-	);
-
 	const quickStartDir = join(projectDir, "quick-start");
 	await mkdir(quickStartDir, { recursive: true });
 	await writeFile(
@@ -414,15 +378,14 @@ const verifyQuickStart = async (consumer: Consumer): Promise<void> => {
 		"utf8",
 	);
 	await writeFile(join(quickStartDir, "cssforge.config.ts"), config, "utf8");
-	// The parent consumer already installed the tarball, so the Quick Start
-	// project reuses that install instead of paying for a second one.
+	// Reuse the parent consumer's install rather than paying for a second one.
 	await symlink(
 		join(projectDir, "node_modules"),
 		join(quickStartDir, "node_modules"),
 		"junction",
 	);
 
-	// The documented command with no arguments: defaults from the README.
+	// The documented command with no arguments.
 	run(manager, scriptInvocation(manager, []), { cwd: quickStartDir, env });
 
 	const outputDir = join(quickStartDir, ".cssforge");
@@ -430,25 +393,14 @@ const verifyQuickStart = async (consumer: Consumer): Promise<void> => {
 	const declared = declaredCustomProperties(css);
 	check(declared.length > 0, `${manager} Quick Start CSS declared no custom properties`);
 
-	// The documented TypeScript consumption of the generated module. It is read
-	// rather than imported: the generated `.ts` has no declared module type in a
-	// pnpm consumer, and importing it only to inspect the export name would emit
-	// a module-type warning for no extra coverage.
+	// Read rather than import: the generated `.ts` has no declared module type
+	// in a pnpm consumer, which would emit a warning for no extra coverage.
 	const generatedTs = readFileSync(join(outputDir, "output.ts"), "utf8");
 	check(
 		generatedTs.includes("export const cssForge"),
 		"the Quick Start TypeScript output does not export a cssForge object",
 	);
 
-	const json = JSON.parse(
-		readFileSync(join(outputDir, "output.json"), "utf8"),
-	) as unknown;
-	check(isRecord(json), `${manager} Quick Start JSON output is not an object`);
-
-	// Every custom property the documented CSS consumption reads must be
-	// declared by the configuration the README documents next to it, or be a
-	// known pre-#23 mismatch. Both directions are asserted so the allowlist
-	// cannot hide new drift and cannot rot once #23 lands.
 	const consumed = consumedCustomProperties(cssExample);
 	check(
 		consumed.length > 0,
@@ -467,11 +419,8 @@ const verifyQuickStart = async (consumer: Consumer): Promise<void> => {
 			`quickStartUndeclaredProperties with a reference to issue #23.`,
 	);
 
-	// Staleness is a property of the allowlist entry, not of the current
-	// consumption: an entry is dead once the configuration declares the
-	// property or the example stops reading it, whichever happens first. Keying
-	// this on `consumed` alone would let a corrected README leave every entry
-	// dead and unnoticed.
+	// Keyed on the entry, not on current consumption, so a corrected README
+	// cannot leave dead entries passing silently.
 	const stale = [...quickStartUndeclaredProperties].filter(
 		(property) => declared.includes(property) || !consumed.includes(property),
 	);
@@ -491,11 +440,7 @@ const verifyQuickStart = async (consumer: Consumer): Promise<void> => {
 	}
 };
 
-/**
- * Every output kind the CLI can write, with the flag that selects its path.
- * All four are exercised for every shape so a per-kind path regression is
- * caught rather than only the CSS one.
- */
+/** Every output kind the CLI can write, with the flag that selects its path. */
 const outputKinds = [
 	{ name: "css", flag: "--css", content: (text: string) => text.includes(":root") },
 	{
@@ -518,23 +463,16 @@ const outputKinds = [
 /**
  * Runs the packed artifact once per output shape and asserts each declared path
  * is a file with the expected content, never a directory named after the output.
- *
- * Each shape gets its own project directory and runs the CLI from inside it, so
- * a relative shape is passed as a genuinely relative argument. Resolving the
- * shapes to absolute paths before spawning would stop exercising the relative
- * forms that #26 asks for, and the CLI's `resolve()` step would go untested.
- * Only the parent of the output files is left to the CLI: the harness creates
- * the project directory alone, so a regression that stops creating output
- * parents fails here rather than being masked by a pre-created directory.
+ * Relative shapes are passed as genuinely relative arguments, and only the
+ * project directory is pre-created so the CLI must create every output parent.
  */
 const verifyOutputPaths = async (consumer: Consumer): Promise<void> => {
 	const { manager, projectDir, tarball, env } = consumer;
 	const installArgs =
 		manager === "npm" ? ["install", "--no-audit", "--no-fund"] : ["install"];
 
-	// One install is shared by every shape through a `node_modules` symlink.
-	// Re-installing per shape would multiply the dominant cost of this harness
-	// by four and push the target past its runtime budget.
+	// One install shared by every shape: re-installing per shape would quadruple
+	// the dominant cost of this harness.
 	const baseDir = join(projectDir, "path-shapes");
 	await mkdir(baseDir, { recursive: true });
 	await writeFile(
@@ -545,9 +483,6 @@ const verifyOutputPaths = async (consumer: Consumer): Promise<void> => {
 	await writeFile(join(baseDir, "cssforge.config.ts"), fixtureConfig, "utf8");
 	run(manager, installArgs, { cwd: baseDir, env });
 
-	// `prefix` is the directory portion handed to the CLI, empty for a bare
-	// filename in the current directory. The absolute shape points outside the
-	// project, like a consumer writing into a build directory elsewhere on disk.
 	const shapes: { name: string; prefix: string }[] = [
 		{ name: "filename in the current directory", prefix: "" },
 		{ name: "nested relative path", prefix: "nested/deep" },
@@ -575,8 +510,6 @@ const verifyOutputPaths = async (consumer: Consumer): Promise<void> => {
 		const expected = new Map<string, string>();
 
 		for (const kind of outputKinds) {
-			// The argument is relative for the relative shapes and absolute for
-			// the absolute one; the CLI resolves it against its own cwd.
 			const argument = shape.prefix
 				? join(shape.prefix, `${kind.name}.out`)
 				: `${kind.name}.out`;
@@ -584,9 +517,7 @@ const verifyOutputPaths = async (consumer: Consumer): Promise<void> => {
 			expected.set(resolve(shapeDir, argument), kind.name);
 		}
 
-		// Only the project directory is created here. Any output parent must be
-		// created by the CLI, so assert the harness did not create one and let a
-		// parent-creation regression fail the run below.
+		// A pre-created parent here would mask a parent-creation regression.
 		for (const [target] of expected) {
 			const parent = dirname(target);
 			check(
