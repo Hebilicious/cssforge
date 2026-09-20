@@ -467,16 +467,20 @@ const verifyQuickStart = async (consumer: Consumer): Promise<void> => {
 			`quickStartUndeclaredProperties with a reference to issue #23.`,
 	);
 
-	const stale = consumed.filter(
-		(property) =>
-			quickStartUndeclaredProperties.has(property) && declared.includes(property),
+	// Staleness is a property of the allowlist entry, not of the current
+	// consumption: an entry is dead once the configuration declares the
+	// property or the example stops reading it, whichever happens first. Keying
+	// this on `consumed` alone would let a corrected README leave every entry
+	// dead and unnoticed.
+	const stale = [...quickStartUndeclaredProperties].filter(
+		(property) => declared.includes(property) || !consumed.includes(property),
 	);
 	check(
 		stale.length === 0,
 		`quickStartUndeclaredProperties lists ${stale.join(", ")}, which the ` +
-			`documented configuration now declares. The allowlist entry is stale ` +
-			`because issue #23 has landed; remove it from ` +
-			`quickStartUndeclaredProperties.`,
+			`documented configuration now declares or the documented CSS example no ` +
+			`longer consumes. The allowlist entry is stale because issue #23 has ` +
+			`landed; remove it from quickStartUndeclaredProperties.`,
 	);
 
 	if (undeclared.length > 0) {
@@ -515,8 +519,13 @@ const outputKinds = [
  * Runs the packed artifact once per output shape and asserts each declared path
  * is a file with the expected content, never a directory named after the output.
  *
- * Each shape gets its own project directory so a "current directory" filename is
- * unambiguous and a shape cannot satisfy another shape's expectation.
+ * Each shape gets its own project directory and runs the CLI from inside it, so
+ * a relative shape is passed as a genuinely relative argument. Resolving the
+ * shapes to absolute paths before spawning would stop exercising the relative
+ * forms that #26 asks for, and the CLI's `resolve()` step would go untested.
+ * Only the parent of the output files is left to the CLI: the harness creates
+ * the project directory alone, so a regression that stops creating output
+ * parents fails here rather than being masked by a pre-created directory.
  */
 const verifyOutputPaths = async (consumer: Consumer): Promise<void> => {
 	const { manager, projectDir, tarball, env } = consumer;
@@ -536,24 +545,20 @@ const verifyOutputPaths = async (consumer: Consumer): Promise<void> => {
 	await writeFile(join(baseDir, "cssforge.config.ts"), fixtureConfig, "utf8");
 	run(manager, installArgs, { cwd: baseDir, env });
 
-	const shapes = [
-		{ name: "filename in the current directory", relative: "" },
-		{ name: "nested relative path", relative: join("nested", "deep") },
-		{ name: "absolute path", relative: "/absolute" },
-		{ name: "path containing spaces", relative: "spaces here" },
+	// `prefix` is the directory portion handed to the CLI, empty for a bare
+	// filename in the current directory. The absolute shape points outside the
+	// project, like a consumer writing into a build directory elsewhere on disk.
+	const shapes: { name: string; prefix: string }[] = [
+		{ name: "filename in the current directory", prefix: "" },
+		{ name: "nested relative path", prefix: "nested/deep" },
+		{ name: "absolute path", prefix: join(projectDir, "absolute-outputs") },
+		{ name: "path containing spaces", prefix: "spaces here" },
 	];
 
 	for (const [index, shape] of shapes.entries()) {
 		const shapeDir = join(baseDir, `shape-${index}`);
-		// An absolute shape points outside the shape directory, like a real
-		// consumer writing into a build directory.
-		const outputDir =
-			shape.relative === "/absolute"
-				? join(baseDir, "absolute-outputs")
-				: resolve(shapeDir, shape.relative || ".");
 
 		await mkdir(shapeDir, { recursive: true });
-		await mkdir(outputDir, { recursive: true });
 		await symlink(
 			join(baseDir, "node_modules"),
 			join(shapeDir, "node_modules"),
@@ -570,9 +575,25 @@ const verifyOutputPaths = async (consumer: Consumer): Promise<void> => {
 		const expected = new Map<string, string>();
 
 		for (const kind of outputKinds) {
-			const target = join(outputDir, `${kind.name}.out`);
-			args.push(kind.flag, target);
-			expected.set(target, kind.name);
+			// The argument is relative for the relative shapes and absolute for
+			// the absolute one; the CLI resolves it against its own cwd.
+			const argument = shape.prefix
+				? join(shape.prefix, `${kind.name}.out`)
+				: `${kind.name}.out`;
+			args.push(kind.flag, argument);
+			expected.set(resolve(shapeDir, argument), kind.name);
+		}
+
+		// Only the project directory is created here. Any output parent must be
+		// created by the CLI, so assert the harness did not create one and let a
+		// parent-creation regression fail the run below.
+		for (const [target] of expected) {
+			const parent = dirname(target);
+			check(
+				parent === shapeDir || !existsSync(parent),
+				`${manager} harness pre-created ${parent}, which would mask a ` +
+					`parent-creation regression in the CLI (shape: ${shape.name})`,
+			);
 		}
 
 		run(manager, scriptInvocation(manager, args), { cwd: shapeDir, env });
@@ -655,13 +676,14 @@ const verifyConsumer = async (consumer: Consumer): Promise<void> => {
 	}
 
 	// The package script documented in the README.
-	const help = run(manager, scriptInvocation(manager, ["--help"]), {
+	const helpArgs = scriptInvocation(manager, ["--help"]);
+	const help = run(manager, helpArgs, {
 		cwd: projectDir,
 		env,
 	});
 	check(
 		help.includes("USAGE") && help.includes("cssforge"),
-		`${manager} run cssforge -- --help did not print the CLI usage`,
+		`${manager} ${helpArgs.join(" ")} did not print the CLI usage`,
 	);
 
 	// The executable symlink (npm) or shim (pnpm), invoked directly.
