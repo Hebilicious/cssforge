@@ -11,6 +11,52 @@ export default defineConfig({
             surface: "#0f172a",
           },
         },
+        another: {
+          value: {
+            yellow: "#FFFF00",
+            cyan: "#00FFFF",
+          },
+          settings: {
+            // Declared on the root element so the theme aliases below, which are
+            // computed on :root, can substitute these tokens.
+            selector: ":root.Another",
+          },
+        },
+      },
+    },
+    theme: {
+      light: {
+        value: {
+          background: {
+            value: {
+              primary: "var(--1)",
+            },
+            variables: {
+              1: "palette.brand.primary",
+            },
+            settings: {
+              variantNameOnly: true,
+            },
+          },
+        },
+      },
+      dark: {
+        value: {
+          background: {
+            value: {
+              primary: "var(--1)",
+            },
+            variables: {
+              1: "palette.another.yellow",
+            },
+            settings: {
+              variantNameOnly: true,
+            },
+          },
+        },
+        settings: {
+          atRule: "@media (prefers-color-scheme: dark)",
+        },
       },
     },
   },

@@ -12,3 +12,22 @@
   margin: 0 0 var(--spacing-size-2);
   font-size: var(--typography_fluid-base-text-l);
 }
+
+.alias-scope {
+  max-width: 42rem;
+  margin: var(--spacing-size-4) auto 0;
+}
+
+/* --primary is a theme alias computed on :root. The fallback is only used when
+   the alias is invalid at computed-value time. */
+.alias-probe {
+  color: var(--primary, red);
+}
+
+.another-probe {
+  color: var(--palette-another-yellow, lime);
+}
+
+.brand-probe {
+  color: var(--palette-brand-primary, lime);
+}
