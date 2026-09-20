@@ -73,10 +73,15 @@ export function processTypography(config: TypographyConfig): Output {
 	if (config.fluid) {
 		const moduleKey = "typography_fluid";
 		for (const [scaleName, definition] of Object.entries(config.fluid)) {
-			validateName(scaleName);
+			validateName(scaleName, `${moduleKey}.${scaleName}`);
 			const { value, settings } = definition;
 			const { prefix, ...utopiaConfig } = value;
-			if (prefix) validateName(prefix);
+			if (prefix) validateName(prefix, `${moduleKey}.${scaleName}.prefix`);
+			if (settings?.customLabel) {
+				for (const label of Object.values(settings.customLabel)) {
+					validateName(label, `${moduleKey}.${scaleName}.settings.customLabel`);
+				}
+			}
 
 			const scale = calculateTypeScale({
 				labelStyle: settings?.customLabel ? "utopia" : "tshirt",
@@ -107,9 +112,9 @@ export function processTypography(config: TypographyConfig): Output {
 	if (config.weight) {
 		const moduleKey = "typography";
 		for (const [weightName, { value }] of Object.entries(config.weight)) {
-			validateName(weightName);
+			validateName(weightName, `${moduleKey}.weight.${weightName}`);
 			for (const [token, weightValue] of Object.entries(value)) {
-				validateName(token);
+				validateName(token, `${moduleKey}.weight.${weightName}.${token}`);
 				const key = `--${moduleKey}-weight-${weightName}-${token}`;
 				const variable = `${key}: ${weightValue};`;
 				cssOutput.push(variable);

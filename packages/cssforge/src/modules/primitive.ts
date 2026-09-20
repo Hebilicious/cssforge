@@ -1,4 +1,4 @@
-import { pxToRem, validateName } from "../helpers.ts";
+import { pxToRem, validateName, validateVariableAliases } from "../helpers.ts";
 import {
 	getReferencePaths,
 	getResolvedVariablesMap,
@@ -91,14 +91,18 @@ export function processPrimitives(config: {
 		: null;
 	const spacingVariables = config.spacing ? processSpacing(config.spacing) : null;
 	for (const [primitiveName, primitive] of Object.entries(config.primitives)) {
-		validateName(primitiveName);
+		validateName(primitiveName, `${moduleKey}.${primitiveName}`);
 		cssOutput.push(`/* ${primitiveName} */`);
 		for (const [
 			variantName,
 			{ value: properties, variables, settings = { pxToRem: true, rem: 16 } },
 		] of Object.entries(primitive.value)) {
-			validateName(variantName);
+			validateName(variantName, `${moduleKey}.${primitiveName}.${variantName}`);
 			try {
+				validateVariableAliases({
+					aliases: variables,
+					path: `${moduleKey}.${primitiveName}.${variantName}`,
+				});
 				const resolvedMap = getResolvedVariablesMap({
 					variables,
 					colors: colorVariables,
@@ -107,7 +111,10 @@ export function processPrimitives(config: {
 				});
 
 				for (const [propName, propValue] of Object.entries(properties)) {
-					validateName(propName);
+					validateName(
+						propName,
+						`${moduleKey}.${primitiveName}.${variantName}.${propName}`,
+					);
 
 					const convertedValue = settings.pxToRem
 						? pxToRem({ value: propValue, rem: settings.rem })

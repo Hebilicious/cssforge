@@ -1,5 +1,5 @@
 import Color from "colorjs.io";
-import { validateName } from "../helpers.ts";
+import { InvalidNameError, validateName, validateVariableAliases } from "../helpers.ts";
 import type { Variables } from "../lib.ts";
 import {
 	getReferencePaths,
@@ -328,7 +328,7 @@ export function processColors(colors: ColorConfig): Output {
 	}
 
 	for (const [colorName, colorConfig] of Object.entries(colors.palette.value)) {
-		validateName(colorName);
+		validateName(colorName, `palette.${colorName}`);
 
 		try {
 			const normalizedColorConfig = getPaletteColorConfig(colorConfig);
@@ -338,7 +338,7 @@ export function processColors(colors: ColorConfig): Output {
 			);
 
 			for (const [variantId, colorValue] of Object.entries(normalizedColorConfig.value)) {
-				validateName(variantId);
+				validateName(variantId, `palette.${colorName}.${variantId}`);
 				const key = `--${moduleKey}-${colorName}-${variantId}`;
 				const value = colorValueToOklch(colorValue);
 				const variable = `${key}: ${value};`;
@@ -357,6 +357,7 @@ export function processColors(colors: ColorConfig): Output {
 
 			handler.finalize();
 		} catch (error) {
+			if (error instanceof InvalidNameError) throw error;
 			console.error(`Error processing color ${colorName}:`, error);
 		}
 	}
@@ -370,12 +371,16 @@ export function processColors(colors: ColorConfig): Output {
 		};
 
 		for (const [gradientName, gradient] of Object.entries(colors.gradients.value)) {
-			validateName(gradientName);
+			validateName(gradientName, `gradients.${gradientName}`);
 			const handler = conditionalBuilder(gradient.settings, `/* ${gradientName} */`);
 
 			for (const [variantName, { value, variables }] of Object.entries(gradient.value)) {
-				validateName(variantName);
+				validateName(variantName, `gradients.${gradientName}.${variantName}`);
 				try {
+					validateVariableAliases({
+						aliases: variables,
+						path: `gradients.${gradientName}.${variantName}`,
+					});
 					const resolvedMapForGradient = getResolvedVariablesMap({
 						variables,
 						colors: palette,
@@ -422,7 +427,7 @@ export function processColors(colors: ColorConfig): Output {
 		};
 
 		for (const [themeName, themeConfig] of Object.entries(themes)) {
-			validateName(themeName);
+			validateName(themeName, `theme.${themeName}`);
 			const handler = conditionalBuilder(
 				themeConfig.settings,
 				`/* Theme: ${themeName} */`,
@@ -430,9 +435,14 @@ export function processColors(colors: ColorConfig): Output {
 
 			try {
 				for (const [colorName, colorInTheme] of Object.entries(themeConfig.value)) {
-					validateName(colorName);
+					validateName(colorName, `theme.${themeName}.${colorName}`);
 					const colorComment = `/* ${colorName} */`;
 					handler.addComment(colorComment);
+
+					validateVariableAliases({
+						aliases: colorInTheme.variables,
+						path: `theme.${themeName}.${colorName}`,
+					});
 
 					const resolvedMap = getResolvedVariablesMap({
 						variables: colorInTheme.variables,
@@ -441,7 +451,7 @@ export function processColors(colors: ColorConfig): Output {
 
 					const variantNameOnly = colorInTheme.settings?.variantNameOnly ?? false;
 					for (const [variantName, variantValue] of Object.entries(colorInTheme.value)) {
-						validateName(variantName);
+						validateName(variantName, `theme.${themeName}.${colorName}.${variantName}`);
 						const resolvedValue = resolveValue({
 							map: resolvedMap,
 							value: variantValue,
@@ -473,6 +483,7 @@ export function processColors(colors: ColorConfig): Output {
 
 				handler.finalize();
 			} catch (error) {
+				if (error instanceof InvalidNameError) throw error;
 				console.error(`Error processing theme ${themeName}:`, error);
 			}
 		}
