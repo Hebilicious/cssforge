@@ -363,6 +363,27 @@ const verifyTarball = (manifest: PackageManifest, packed: PackResult): void => {
 };
 
 /**
+ * Custom properties the published Quick Start CSS example consumes even though
+ * the configuration documented next to it cannot declare them.
+ *
+ * The README pairs a palette of `coral`/`mint`/`indigo` and a
+ * `spacing.custom.size` scale with a CSS example that reads
+ * `--color-primary-500` (a token family no configuration produces) and
+ * `--size-2`/`--size-4` (where the generator emits `--spacing-size-2`/
+ * `--spacing-size-4`). Issue #23 owns correcting that example.
+ *
+ * This allowlist is deliberately self-cleaning: when a property listed here
+ * becomes declared, `verifyQuickStart` fails and tells you to drop the entry,
+ * so the list cannot rot silently once #23 lands. Any property that is neither
+ * declared nor listed here fails immediately, so new drift is caught.
+ */
+const quickStartUndeclaredProperties = new Set([
+	"--color-primary-500", // no `primary` token family exists in the documented config
+	"--size-2", // the documented config generates `--spacing-size-2`
+	"--size-4", // the documented config generates `--spacing-size-4`
+]);
+
+/**
  * Runs the documented Quick Start flow (README `## Quick Start`) against the
  * packed artifact.
  *
@@ -425,25 +446,43 @@ const verifyQuickStart = async (consumer: Consumer): Promise<void> => {
 	check(isRecord(json), `${manager} Quick Start JSON output is not an object`);
 
 	// Every custom property the documented CSS consumption reads must be
-	// declared by the configuration the README documents next to it.
-	//
-	// The published README currently consumes `--color-primary-500`, which no
-	// configuration can produce, and spellings such as `--size-2` where the
-	// generator emits `--spacing-size-2`. Issue #23 owns that correction. This
-	// harness must not fail on documentation it does not own, but it must not
-	// hide the mismatch either, so it reports it and fails only if the example
-	// becomes unreadable (no `var()` usage at all).
+	// declared by the configuration the README documents next to it, or be a
+	// known pre-#23 mismatch. Both directions are asserted so the allowlist
+	// cannot hide new drift and cannot rot once #23 lands.
 	const consumed = consumedCustomProperties(cssExample);
 	check(
 		consumed.length > 0,
 		"the Quick Start CSS example does not consume any custom properties",
 	);
-	const missing = consumed.filter((property) => !declared.includes(property));
-	if (missing.length > 0) {
+
+	const undeclared = consumed.filter((property) => !declared.includes(property));
+	const unexpected = undeclared.filter(
+		(property) => !quickStartUndeclaredProperties.has(property),
+	);
+	check(
+		unexpected.length === 0,
+		`the Quick Start CSS example consumes ${unexpected.join(", ")}, which the ` +
+			`documented configuration does not declare. Either the README and the ` +
+			`configuration drifted apart, or the property belongs in ` +
+			`quickStartUndeclaredProperties with a reference to issue #23.`,
+	);
+
+	const stale = consumed.filter(
+		(property) =>
+			quickStartUndeclaredProperties.has(property) && declared.includes(property),
+	);
+	check(
+		stale.length === 0,
+		`quickStartUndeclaredProperties lists ${stale.join(", ")}, which the ` +
+			`documented configuration now declares. The allowlist entry is stale ` +
+			`because issue #23 has landed; remove it from ` +
+			`quickStartUndeclaredProperties.`,
+	);
+
+	if (undeclared.length > 0) {
 		console.log(
-			`smoke test: note: ${manager} Quick Start CSS example consumes ` +
-				`${missing.join(", ")}, not declared by the documented configuration ` +
-				`(README alignment tracked by issue #23)`,
+			`smoke test: ${manager} Quick Start CSS example consumes ` +
+				`${undeclared.join(", ")}, allowlisted as undeclared until issue #23 lands`,
 		);
 	}
 };
