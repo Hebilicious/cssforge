@@ -17,10 +17,7 @@ export const assertSnapshot = async (_ctx: TestContext, value: unknown) => {
 	expect(value).toMatchSnapshot();
 };
 
-/**
- * Asserts that `run` throws and returns the thrown Error so the caller can
- * inspect its message. Mirrors `assertThrows` from the standard library.
- */
+/** Asserts that `run` throws and returns the Error so the caller can inspect it. */
 export const assertThrows = (run: () => unknown, message?: string): Error => {
 	try {
 		run();
