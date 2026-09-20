@@ -14,8 +14,8 @@ CLI implementation: `packages/cssforge/src/cli.ts`
 
 ## Typical commands from docs
 
-The npm package exposes a `cssforge` executable, so consumers run it from a package script
-(`"cssforge": "cssforge"`) or directly:
+The npm package exposes a `cssforge` executable, so consumers run it directly (`npx cssforge`
+with npm, `pnpm cssforge` with pnpm):
 
 - Basic: `npx cssforge`
 - Watch: `npx cssforge --watch`

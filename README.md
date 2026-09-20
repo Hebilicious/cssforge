@@ -53,24 +53,12 @@ pnpm cssforge --mode all # pnpm
 npx cssforge --mode all # npm
 ```
 
-Add it to your `package.json` scripts if you prefer the shorter form:
-
-```json
-{
-  "scripts": {
-    "cssforge": "cssforge"
-  }
-}
-```
-
 The rest of this document writes commands as `cssforge <args>`.
 
 ### Alternative installation (Deno and JSR)
 
-CSS Forge also ships to [JSR](https://jsr.io/@hebilicious/cssforge). JSR is a secondary
-channel: the release workflow publishes npm first and JSR in its own job afterwards, so when
-that job fails, JSR stays on the previous version until the job is re-run. Use it for Deno
-projects and for JSR-native imports:
+CSS Forge is also published to [JSR](https://jsr.io/@hebilicious/cssforge) at the same version
+as npm. Use it for Deno projects and for JSR-native imports:
 
 ```bash
 # Deno

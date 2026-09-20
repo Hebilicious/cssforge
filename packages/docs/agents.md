@@ -30,9 +30,7 @@ The root `README.md` is canonical. Its generated package copy at `packages/cssfo
 
 ## Distribution
 
-npm is the primary channel. JSR is the secondary fallback for Deno, published by a separate
-job that runs after npm; when that job fails, JSR stays on the previous version until the job
-is retried.
+Each release publishes the same version to npm and to JSR.
 
 - Install: `npm install --save-dev @hebilicious/cssforge` or `pnpm add -D @hebilicious/cssforge`
 - Import: `import { defineConfig } from "@hebilicious/cssforge";`
