@@ -1,5 +1,5 @@
 ---
-"@hebilicious/cssforge": patch
+"@hebilicious/cssforge": minor
 ---
 
 Export `InvalidNameError` from the package entry.
@@ -23,6 +23,7 @@ try {
 }
 ```
 
-This is an additive public API change. The npm channel exposes it through
-`dist/mod.d.ts`, and the JSR channel exposes it from `src/mod.ts`. No validation
-behaviour, error message or existing export changed.
+This is a new named export on the package entry, on both the npm and JSR
+channels, so it is a minor release: `dist/mod.d.ts` now declares it and
+`src/mod.ts` re-exports it, while no existing export, validation rule, error
+message or generated output changed.
