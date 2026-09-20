@@ -55,9 +55,8 @@ tasks:
     options:
       runInCI: false
   cssforge-generate:
-    command: "tsx"
+    command: "cssforge"
     args:
-      - "../../packages/cssforge/src/cli.ts"
       - "--prefix"
       - "."
       - "--config"
@@ -88,6 +87,6 @@ tasks:
       runInCI: false
   cssforge-build-local:
     command: "moon"
-    args: ["run", "cssforge:jsr-dry-run"]
+    args: ["run", "cssforge:pack"]
     options:
       runInCI: false

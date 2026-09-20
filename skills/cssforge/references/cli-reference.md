@@ -14,10 +14,17 @@ CLI implementation: `packages/cssforge/src/cli.ts`
 
 ## Typical commands from docs
 
-- Basic: `tsx ./node_modules/@hebilicious/cssforge/src/cli.ts`
-- Watch: `tsx ./node_modules/@hebilicious/cssforge/src/cli.ts --watch`
+The npm package exposes a `cssforge` executable, so consumers run it from a package script
+(`"cssforge": "cssforge"`) or directly:
+
+- Basic: `npx cssforge`
+- Watch: `npx cssforge --watch`
 - Custom paths:
-  - `tsx ./node_modules/@hebilicious/cssforge/src/cli.ts --config ./path/cssforge.config.ts --css ./dist/tokens.css --ts ./dist/tokens.ts --json ./dist/tokens.json --mode all`
+  - `npx cssforge --config ./path/cssforge.config.ts --css ./dist/tokens.css --ts ./dist/tokens.ts --json ./dist/tokens.json --mode all`
+
+Deno projects run the same CLI from the secondary JSR channel:
+
+- `deno run -A jsr:@hebilicious/cssforge/cli --mode all`
 
 ## Programmatic API
 

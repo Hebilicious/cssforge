@@ -2,9 +2,11 @@ node_modules
 package-lock.json
 .moon/cache
 dist
+*.tgz
 generated
 convert.ts
 /cssforge.config.ts
 /.cssforge
 TODO.md
 .worktrees
+.jsr-smoke-*

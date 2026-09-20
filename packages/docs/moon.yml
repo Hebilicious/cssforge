@@ -28,9 +28,8 @@ tasks:
       runInCI: "affected"
 
   generate:
-    command: "tsx"
+    command: "cssforge"
     args:
-      - "../cssforge/src/cli.ts"
       - "--prefix"
       - "."
       - "--config"

@@ -6,13 +6,36 @@
 	"type": "module",
 	"main": "./dist/mod.js",
 	"types": "./dist/mod.d.ts",
+	"bin": {
+		"cssforge": "./dist/cli.js"
+	},
 	"exports": {
 		".": {
 			"types": "./dist/mod.d.ts",
 			"import": "./dist/mod.js",
 			"default": "./dist/mod.js"
 		},
-		"./cli": "./dist/cli.js"
+		"./cli": {
+			"types": "./dist/cli.d.ts",
+			"import": "./dist/cli.js",
+			"default": "./dist/cli.js"
+		},
+		"./package.json": "./package.json"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/Hebilicious/cssforge.git",
+		"directory": "packages/cssforge"
+	},
+	"homepage": "https://cssforge.hebilicious.workers.dev",
+	"bugs": {
+		"url": "https://github.com/Hebilicious/cssforge/issues"
+	},
+	"engines": {
+		"node": ">=24.0.0"
+	},
+	"publishConfig": {
+		"access": "public"
 	},
 	"files": [
 		"dist",

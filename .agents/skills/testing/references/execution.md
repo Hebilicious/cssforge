@@ -28,6 +28,8 @@ Do not add unrelated repository paths merely to force cache invalidation. Valida
 - During development, run the focused red/green selection repeatedly.
 - Before handoff, run the focused selection plus the nearest owning typecheck or build when the public contract can be affected.
 - Use example Playwright tasks only for browser or framework-consumption promises.
-- Use `cssforge:jsr-dry-run` only for publication-shape promises or release verification.
+- Use `cssforge:smoke-test` for published-artifact promises (packed tarball, npm and pnpm
+  consumers, executable, declarations) and `cssforge:jsr-smoke` for the JSR entry points.
+- Use `cssforge:jsr-dry-run` only to validate the JSR publish shape.
 
 Missing, skipped, flaky, or ambiguous evidence is not green. Put disposable logs, generated comparisons, and probes under `.artifacts/`.

@@ -35,12 +35,14 @@ Do not invent schema fields that are not present in docs or source types.
 - Mirror patterns from README configuration sections.
 
 3. Configure generation commands
-- For local repo examples, link the package in deps:
-  - `"@hebilicious/cssforge": "file:../.."`
-- Add local package dry-run build script when working in this repo examples:
-  - `cssforge-build-local`: `moon run cssforge:jsr-dry-run`
-- Add generation script:
-  - `cssforge-generate`: `tsx ../../packages/cssforge/src/cli.ts --prefix . --config ./cssforge.config.ts --mode css --css ./.cssforge/output.css`
+- Install the package from npm: `npm install --save-dev @hebilicious/cssforge` (Deno projects
+  use the secondary JSR channel: `deno add jsr:@hebilicious/cssforge`).
+- Add the executable to the consumer scripts:
+  - `"cssforge": "cssforge"`, then `npm run cssforge -- --mode all`
+- For local repo examples, the workspace package provides the same executable through
+  `node_modules/.bin/cssforge`:
+  - `cssforge-generate`: `cssforge --prefix . --config ./cssforge.config.ts --mode css --css ./.cssforge/output.css`
+  - `cssforge-build-local`: `moon run cssforge:pack`
 
 4. Validate outputs
 - Run `moon run <project>:cssforge-build-local` then `moon run <project>:cssforge-generate`.
