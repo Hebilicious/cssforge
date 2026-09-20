@@ -11,27 +11,39 @@ const configSource = `export default {
 	},
 };`;
 
+interface BuildPaths {
+	config: string;
+	css: string;
+	json: string;
+	ts: string;
+	styleDictionary: string;
+}
+
+const pathsIn = (tempDir: string, prefix = ""): BuildPaths => ({
+	config: join(tempDir, `${prefix}cssforge.config.ts`),
+	css: join(tempDir, `${prefix}output.css`),
+	json: join(tempDir, `${prefix}output.json`),
+	ts: join(tempDir, `${prefix}output.ts`),
+	styleDictionary: join(tempDir, `${prefix}tokens.sd.json`),
+});
+
 // A JavaScript caller is not protected by the `BuildOptions` type cast, so the
 // runtime check inside `build()` is the only thing rejecting an unsupported mode.
-const callWithMode = (mode: unknown, paths: Record<string, string>) =>
+const callWithMode = (mode: unknown, paths: BuildPaths) =>
 	build({
-		config: paths.config!,
+		config: paths.config,
 		mode: mode as never,
-		cssOutput: paths.css!,
-		jsonOutput: paths.json!,
-		tsOutput: paths.ts!,
+		cssOutput: paths.css,
+		jsonOutput: paths.json,
+		tsOutput: paths.ts,
+		styleDictionaryOutput: paths.styleDictionary,
 	});
 
 Deno.test("build - rejects an unsupported output mode for JavaScript callers", async () => {
 	const tempDir = await mkdtemp(join(tmpdir(), "cssforge-build-invalid-mode-"));
 
 	try {
-		const paths = {
-			config: join(tempDir, "cssforge.config.ts"),
-			css: join(tempDir, "output.css"),
-			json: join(tempDir, "output.json"),
-			ts: join(tempDir, "output.ts"),
-		};
+		const paths = pathsIn(tempDir);
 		await writeFile(paths.config, configSource, "utf8");
 		await writeFile(paths.css, "/* pre-existing css */", "utf8");
 
@@ -47,6 +59,7 @@ Deno.test("build - rejects an unsupported output mode for JavaScript callers", a
 		assertEquals(await readFile(paths.css, "utf8"), "/* pre-existing css */");
 		assertEquals(existsSync(paths.json), false);
 		assertEquals(existsSync(paths.ts), false);
+		assertEquals(existsSync(paths.styleDictionary), false);
 	} finally {
 		await rm(tempDir, { recursive: true, force: true });
 	}
@@ -60,25 +73,27 @@ Deno.test("build - accepts every supported output mode", async () => {
 			css: ["css"],
 			json: ["json"],
 			ts: ["ts"],
-			"style-dictionary": [],
-			all: ["css", "json", "ts"],
+			"style-dictionary": ["styleDictionary"],
+			all: ["css", "json", "ts", "styleDictionary"],
 		};
 
 		for (const [mode, produced] of Object.entries(expectedOutputs)) {
-			const paths = {
-				config: join(tempDir, `${mode}.config.ts`),
-				css: join(tempDir, `${mode}.css`),
-				json: join(tempDir, `${mode}.json`),
-				ts: join(tempDir, `${mode}.ts`),
-			};
+			const paths = pathsIn(tempDir, `${mode}.`);
 			await writeFile(paths.config, configSource, "utf8");
 
 			const result = await callWithMode(mode, paths);
 
 			assertEquals(result.success, true, `mode ${mode} should succeed`);
-			assertEquals(existsSync(paths.css), produced.includes("css"));
-			assertEquals(existsSync(paths.json), produced.includes("json"));
-			assertEquals(existsSync(paths.ts), produced.includes("ts"));
+			for (const [name, path] of Object.entries(paths)) {
+				if (name === "config") {
+					continue;
+				}
+				assertEquals(
+					existsSync(path),
+					produced.includes(name),
+					`mode ${mode} output ${name}`,
+				);
+			}
 		}
 	} finally {
 		await rm(tempDir, { recursive: true, force: true });
