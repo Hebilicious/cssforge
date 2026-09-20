@@ -30,13 +30,14 @@ The root `README.md` is canonical. Its generated package copy at `packages/cssfo
 
 ## Distribution
 
-npm is the primary channel and JSR is the secondary fallback. JSR is published after npm
-and can lag behind the same version when that channel fails.
+npm is the primary channel. JSR is the secondary fallback for Deno, published by a separate
+job that runs after npm; when that job fails, JSR stays on the previous version until the job
+is retried.
 
 - Install: `npm install --save-dev @hebilicious/cssforge` or `pnpm add -D @hebilicious/cssforge`
 - Import: `import { defineConfig } from "@hebilicious/cssforge";`
-- Run: the package exposes a `cssforge` executable, so `"cssforge": "cssforge"` in `scripts`
-  works, as does `npx cssforge --mode all`
+- Run: the package exposes a `cssforge` executable, so run it directly (`cssforge --mode all`,
+  or `npx cssforge --mode all` with npm)
 - Deno: `deno add jsr:@hebilicious/cssforge`, then `deno run -A jsr:@hebilicious/cssforge/cli`
 - Runtime: Node 24 or newer, which loads `cssforge.config.ts` without a loader or `tsx`
 

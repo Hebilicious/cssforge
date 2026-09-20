@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="CSS Forge">
+  <rect width="32" height="32" rx="7" fill="#030206" />
+  <g fill="#00f3ff">
+    <path d="M6 9.4h12.6l6.4 2.3-6.4 2.3H6z" />
+    <path d="M10.6 14.8h6.2l1.2 5.4h-8.6z" />
+    <path d="M6.4 20.8h13.2l2.6 5.2H3.8z" />
+  </g>
+</svg>
