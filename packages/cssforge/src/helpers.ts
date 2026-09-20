@@ -9,28 +9,17 @@ const reservedKeyWords = [
 ];
 
 /**
- * Matches the characters a name segment may contribute to a CSS custom property
- * name.
- *
- * CSS Syntax defines an identifier as `[-]*` followed by a letter, underscore or
- * non-ASCII code point, followed by letters, digits, hyphens, underscores and
- * non-ASCII code points. Segments are joined with hyphens when the property name
- * is built (`--module-key`), so a segment only has to contribute identifier
- * characters. That keeps existing numeric keys such as `palette.coral.50` working
- * (`--palette-coral-50` is a valid dashed identifier) while rejecting whitespace,
- * CSS delimiters and anything that would need escaping. Non-ASCII code points stay
- * accepted, because CSS identifiers allow them and rejecting them would turn this
- * rule into an accidental ASCII-only restriction.
+ * Characters a name segment may contribute to a custom property name. Segments
+ * are joined with hyphens when the property name is built, so a segment only
+ * needs identifier characters. Non-ASCII code points stay accepted, because CSS
+ * identifiers allow them.
  */
 const invalidNameSegmentPattern = /[^\w\-\u0080-\u{10FFFF}]/u;
 
 /**
  * Raised by {@link validateName} for a configuration name that cannot produce a
- * valid CSS custom property name.
- *
- * Module code wraps ordinary runtime failures so one bad token does not abort a
- * whole module. A name error is a configuration mistake rather than a token
- * failure, so those blocks re-throw this type instead of logging and continuing.
+ * valid CSS custom property name. Modules re-throw this type so a configuration
+ * mistake is not swallowed by per-token error handling.
  */
 export class InvalidNameError extends Error {
 	override name = "InvalidNameError";
@@ -40,8 +29,8 @@ export class InvalidNameError extends Error {
  * Validates a name segment used to build a CSS custom property name.
  * Throws an error if the name is invalid.
  *
- * `path` is the configuration path the segment was read from. Pass it whenever
- * the caller knows it, so the error can point at the exact configuration entry.
+ * `path` is the configuration path the segment was read from, so the error can
+ * point at the exact configuration entry.
  *
  * @example
  * ```ts
@@ -75,13 +64,9 @@ export function validateName(name: string, path?: string): boolean {
 
 /**
  * Validates the CSS characters of a name segment used to build a custom property
- * name or a `var(--...)` reference.
- *
- * This is the part of {@link validateName} that a `variables` alias key or a
- * typography `customLabel` value needs. Those fields are not token keys, so the
- * reserved-keyword and period rules do not apply to them and applying those rules
- * would reject configurations that produce valid CSS today, such as an alias
- * named `spacing` or a label named `value`.
+ * name or a `var(--...)` reference. This is the part of {@link validateName} that
+ * alias keys and typography `customLabel` values need: those fields are not token
+ * keys, so the reserved-keyword and period rules must not apply to them.
  */
 function validateNameCharacters(name: string, path: string): void {
 	if (!invalidNameSegmentPattern.test(name)) return;
@@ -95,18 +80,11 @@ function validateNameCharacters(name: string, path: string): void {
 /**
  * Validates the alias keys of a `variables` map.
  *
- * `getResolvedVariablesMap` builds the emitted reference as `` `--${varKey}` ``
- * and matches it against authored `var(...)` calls, so an alias key is validated
- * verbatim as the author configured it. A key written as `--alias` is therefore a
- * key whose name already includes the hyphens, not a shorthand for one.
- *
- * An empty key is rejected. It would emit the unresolvable reference `var(--)`,
- * which no declaration can ever match. Note that an empty segment is not rejected
- * for typography `customLabel` values, where it legitimately emits a trailing
- * hyphen in the generated key.
- *
- * Only the CSS character rule applies here. Alias keys are not token keys, so
- * existing names such as `spacing` keep working.
+ * `getResolvedVariablesMap` builds the emitted reference as `` `--${varKey}` ``,
+ * so a key is validated verbatim as authored: a key written `--alias` already
+ * includes its hyphens. An empty key is rejected because it emits the
+ * unresolvable `var(--)`. Only the CSS character rule applies, so alias keys that
+ * collide with a reserved keyword keep working.
  *
  * @example
  * ```ts
