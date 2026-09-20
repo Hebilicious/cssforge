@@ -28,6 +28,12 @@ jobs:
       # is excluded from CI for the same reason.
       - name: Check release metadata consistency
         run: moon run --force cssforge:version-check
+
+      # `moon exec` runs a task without the pipeline actions that `moon ci` and
+      # `moon run` perform, so dependencies are installed explicitly here.
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
       # `cssforge:jsr-smoke` runs the JSR entry points, but only JSR's own slow
       # type analysis rejects a public API without explicit types. That defect
       # breaks `jsr publish` after npm has already been published, so it has to
@@ -63,6 +69,10 @@ jobs:
         with:
           moon-version: "2.0.0"
           auto-install: true
+
+      # `moon exec` below skips the pipeline actions that install dependencies.
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
       # The `--filter` is required: `@playwright/test` is a dependency of the
       # example package, not of the workspace root, so `pnpm exec playwright`
