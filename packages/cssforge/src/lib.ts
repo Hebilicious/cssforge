@@ -53,18 +53,163 @@ export interface Variables {
 	[key: string]: string;
 }
 
-const cssVariableReferencePattern = /var\(\s*(--[\w-]+)\s*\)/g;
+/**
+ * CSS custom property names are case-sensitive and may contain any character
+ * other than whitespace and the syntax characters of the surrounding grammar.
+ * Alias names declared in a `variables` map are written without the `--`
+ * prefix, so `{ "surface-muted": "palette.gray.100" }` is referenced as
+ * `var(--surface-muted)`.
+ */
+const cssVariableNamePattern = /^--[^\s(),"']+$/;
+
+/**
+ * Returns the index of the `)` closing the `var(` at `openParenIndex`, or -1
+ * when the function is unbalanced. Quoted strings are skipped so a `)` inside
+ * a string literal cannot close the function early.
+ */
+const findClosingParen = (value: string, openParenIndex: number): number => {
+	let depth = 0;
+	let quote: string | undefined;
+
+	for (let index = openParenIndex; index < value.length; index += 1) {
+		const character = value[index];
+
+		if (quote) {
+			if (character === "\\") index += 1;
+			else if (character === quote) quote = undefined;
+			continue;
+		}
+
+		if (character === '"' || character === "'") {
+			quote = character;
+			continue;
+		}
+
+		if (character === "(") depth += 1;
+		else if (character === ")") {
+			depth -= 1;
+			if (depth === 0) return index;
+		}
+	}
+
+	return -1;
+};
+
+/**
+ * Returns the index of the first `(` after the `var(` at `varIndex`, skipping
+ * CSS comments and whitespace, or -1 when this is not a `var()` function.
+ */
+const findVarOpenParen = (value: string, varIndex: number): number => {
+	let index = varIndex + 3;
+
+	while (index < value.length) {
+		if (value.startsWith("/*", index)) {
+			const end = value.indexOf("*/", index + 2);
+			if (end === -1) return -1;
+			index = end + 2;
+			continue;
+		}
+
+		const character = value[index];
+		if (character === "(") return index;
+		if (character !== undefined && /\s/.test(character)) {
+			index += 1;
+			continue;
+		}
+
+		return -1;
+	}
+
+	return -1;
+};
 
 /**
  * Rewrites CSS custom-property references using the canonical CSSForge parser.
+ *
+ * The replacer receives the custom property name (`--surface-muted`), the
+ * matched `var(...)` text with any nested references already resolved, and the
+ * match index. It returns the replacement for the whole match, which lets
+ * `resolveValue` substitute only the name token while a fallback survives
+ * untouched.
+ *
+ * Text that is malformed or unbalanced, has no usable custom-property name, or
+ * appears inside a quoted string keeps its original text and is never reported
+ * to the replacer. Unmapped names are still reported so the caller can leave
+ * them unchanged.
  */
 export const replaceCssVariableReferences = (
 	value: string,
-	replacer: (cssVariable: string, match: string) => string,
-): string =>
-	value.replace(cssVariableReferencePattern, (match, cssVariable: string) =>
-		replacer(cssVariable, match),
-	);
+	replacer: (cssVariable: string, match: string, index: number) => string,
+): string => {
+	let result = "";
+	let cursor = 0;
+	let index = 0;
+	let quote: string | undefined;
+
+	while (index < value.length) {
+		const character = value[index];
+
+		if (quote) {
+			if (character === "\\") index += 2;
+			else {
+				if (character === quote) quote = undefined;
+				index += 1;
+			}
+			continue;
+		}
+
+		if (character === '"' || character === "'") {
+			quote = character;
+			index += 1;
+			continue;
+		}
+
+		if (character === "/" && value.startsWith("/*", index)) {
+			const end = value.indexOf("*/", index + 2);
+			index = end === -1 ? value.length : end + 2;
+			continue;
+		}
+
+		if (character !== "v" || !value.startsWith("var(", index)) {
+			index += 1;
+			continue;
+		}
+
+		const openParenIndex = findVarOpenParen(value, index);
+		const closeParenIndex =
+			openParenIndex === -1 ? -1 : findClosingParen(value, openParenIndex);
+
+		if (closeParenIndex === -1) {
+			// Unbalanced `var(`: skip the keyword so any nested function is still
+			// visited and the raw text survives untouched.
+			index += 4;
+			continue;
+		}
+
+		const nameOffset = openParenIndex + 1;
+		const nameMatch = /^\s*(--[^\s(),"']+)/.exec(
+			value.slice(nameOffset, closeParenIndex),
+		);
+		const cssVariable = nameMatch?.[1];
+
+		if (cssVariable && cssVariableNamePattern.test(cssVariable)) {
+			const nameEnd = nameOffset + (nameMatch?.index ?? 0) + cssVariable.length;
+			const closed = value.slice(nameEnd, closeParenIndex + 1);
+
+			result += value.slice(cursor, index);
+			result += replacer(
+				cssVariable,
+				value.slice(index, nameEnd) + replaceCssVariableReferences(closed, replacer),
+				index,
+			);
+			cursor = closeParenIndex + 1;
+		}
+
+		index = closeParenIndex + 1;
+	}
+
+	return result + value.slice(cursor);
+};
 
 const getCssVariableReferences = (value: string): string[] => {
 	const references: string[] = [];
@@ -237,9 +382,11 @@ export const getReferencePaths = ({
 };
 
 /**
- * Resolves a CSS variable value using a map of variable paths.
- * It replaces occurrences of `var(--key)` in the value with the corresponding
- * CSS variable from the map.
+ * Resolves a CSS variable value using a map of variable paths. It replaces the
+ * alias name inside each `var()` call with the referenced CSS custom property
+ * name, keeping any fallback and surrounding whitespace intact. Names that are
+ * absent from the map are left untouched, which is the native-CSS escape hatch
+ * for custom properties owned by the consumer.
  */
 export const resolveValue = ({
 	map,
@@ -248,7 +395,6 @@ export const resolveValue = ({
 	map: Map<string, string>;
 	value: string;
 }) =>
-	replaceCssVariableReferences(
-		value,
-		(cssVariable) => `var(${map.get(cssVariable) ?? cssVariable})`,
+	replaceCssVariableReferences(value, (cssVariable, match) =>
+		match.replace(cssVariable, map.get(cssVariable) ?? cssVariable),
 	);

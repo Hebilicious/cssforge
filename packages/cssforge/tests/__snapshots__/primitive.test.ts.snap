@@ -217,6 +217,44 @@ exports[`processPrimitives - references colors, gradients, and themes 2`] = `
 ]
 `;
 
+exports[`processPrimitives - resolves hyphenated aliases with fallbacks end to end 1`] = `
+{
+  "root": "/* panel */
+--panel-default-background-color: var(--palette-gray-100, var(--palette-gray-100));
+--panel-default-border-color: var(--brand-color, #fff);",
+}
+`;
+
+exports[`processPrimitives - resolves hyphenated aliases with fallbacks end to end 2`] = `
+[
+  [
+    "primitives.panel.default.background-color",
+    {
+      "key": "--panel-default-background-color",
+      "referencePaths": [
+        "palette.gray.100",
+      ],
+      "sourcePath": "primitives.panel.default.background-color",
+      "tier": "semantic",
+      "type": "component",
+      "value": "var(--palette-gray-100, var(--palette-gray-100))",
+      "variable": "--panel-default-background-color: var(--palette-gray-100, var(--palette-gray-100));",
+    },
+  ],
+  [
+    "primitives.panel.default.border-color",
+    {
+      "key": "--panel-default-border-color",
+      "sourcePath": "primitives.panel.default.border-color",
+      "tier": "primitive",
+      "type": "component",
+      "value": "var(--brand-color, #fff)",
+      "variable": "--panel-default-border-color: var(--brand-color, #fff);",
+    },
+  ],
+]
+`;
+
 exports[`processPrimitives - uses fluid spacing references 1`] = `
 {
   "root": "/* box */
