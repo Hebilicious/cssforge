@@ -28,8 +28,9 @@ tasks:
       runInCI: "affected"
 
   generate:
-    command: "cssforge"
+    command: "node"
     args:
+      - "../cssforge/dist/cli.js"
       - "--prefix"
       - "."
       - "--config"

@@ -39,9 +39,10 @@ Do not invent schema fields that are not present in docs or source types.
   use the secondary JSR channel: `deno add jsr:@hebilicious/cssforge`).
 - Add the executable to the consumer scripts:
   - `"cssforge": "cssforge"`, then `npm run cssforge -- --mode all`
-- For local repo examples, the workspace package provides the same executable through
-  `node_modules/.bin/cssforge`:
-  - `cssforge-generate`: `cssforge --prefix . --config ./cssforge.config.ts --mode css --css ./.cssforge/output.css`
+- For local repo examples, call the built CLI of the sibling package directly: pnpm only
+  links the workspace `cssforge` binary once `dist` exists, so a fresh checkout has no
+  `node_modules/.bin/cssforge` before the first build:
+  - `cssforge-generate`: `node ../../packages/cssforge/dist/cli.js --prefix . --config ./cssforge.config.ts --mode css --css ./.cssforge/output.css`
   - `cssforge-build-local`: `moon run cssforge:pack`
 
 4. Validate outputs

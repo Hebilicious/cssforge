@@ -62,8 +62,9 @@ tasks:
       cache: false
       outputStyle: "stream"
   cssforge-generate:
-    command: "cssforge"
+    command: "node"
     args:
+      - "../../packages/cssforge/dist/cli.js"
       - "--prefix"
       - "."
       - "--config"

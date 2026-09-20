@@ -42,8 +42,9 @@ tasks:
     options:
       runInCI: false
   cssforge-generate:
-    command: "cssforge"
+    command: "node"
     args:
+      - "../../packages/cssforge/dist/cli.js"
       - "--prefix"
       - "."
       - "--config"
