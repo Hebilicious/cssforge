@@ -50,36 +50,18 @@ export interface Output {
 }
 
 /**
- * Aliases for a token's value. Keys are the alias names as referenced in
- * `var(--key)`, written without the `--` prefix, and values are the cssforge
- * token paths they point at. A key such as `"surface-muted"` is referenced as
- * `var(--surface-muted)`.
- *
- * Hyphens are supported and the key is used verbatim as the custom property
- * name after `getResolvedVariablesMap` prefixes it with `--`. A key that is
- * empty or contains whitespace, `(`, `)`, `,`, `"`, or `'` cannot be referenced
- * and is left unresolved in the generated value. Note that the alias keys name
- * CSS custom properties, while the resolver that produces their targets
- * (`validateName`) rejects periods in token names.
+ * Aliases for a token's value: keys are the names referenced as `var(--key)`,
+ * written without the `--` prefix, and values are cssforge token paths. A key
+ * must be usable as a custom-property name once prefixed, so it cannot be empty
+ * or contain whitespace, `(`, `)`, `,`, `"`, or `'`.
  */
 export interface Variables {
 	[key: string]: string;
 }
 
-/**
- * CSS custom property names are case-sensitive and may contain any character
- * other than whitespace and the syntax characters of the surrounding grammar.
- * Alias names declared in a `variables` map are written without the `--`
- * prefix, so `{ "surface-muted": "palette.gray.100" }` is referenced as
- * `var(--surface-muted)`.
- */
 const cssVariableNamePattern = /^--[^\s(),"']+$/;
 
-/**
- * Returns the index of the `)` closing the `var(` at `openParenIndex`, or -1
- * when the function is unbalanced. Quoted strings are skipped so a `)` inside
- * a string literal cannot close the function early.
- */
+/** Index of the `)` closing `var(`, or -1 when unbalanced. */
 const findClosingParen = (value: string, openParenIndex: number): number => {
 	let depth = 0;
 	let quote: string | undefined;
@@ -109,8 +91,8 @@ const findClosingParen = (value: string, openParenIndex: number): number => {
 };
 
 /**
- * Returns the index of the first `(` after the `var(` at `varIndex`, skipping
- * CSS comments and whitespace, or -1 when this is not a `var()` function.
+ * Index of the first `(` after `var(` at `varIndex`, skipping comments and
+ * whitespace, or -1 when this is not a `var()` function.
  */
 const findVarOpenParen = (value: string, varIndex: number): number => {
 	let index = varIndex + 3;
@@ -136,10 +118,7 @@ const findVarOpenParen = (value: string, varIndex: number): number => {
 	return -1;
 };
 
-/**
- * Returns the index of the first character at or after `start` that is neither
- * whitespace nor part of a CSS comment, stopping at `end`.
- */
+/** Index of the first non-whitespace, non-comment character in `[start, end)`. */
 const skipTrivia = (value: string, start: number, end: number): number => {
 	let index = start;
 
@@ -162,18 +141,12 @@ const skipTrivia = (value: string, start: number, end: number): number => {
 /**
  * Rewrites CSS custom-property references using the canonical CSSForge parser.
  *
- * The replacer receives the custom property name (`--surface-muted`), the
- * matched `var(...)` text, and the match index. `match` is already
- * nested-resolved: any `var()` inside its fallback has been rewritten before
- * the replacer is called, so the replacer owns the whole match and must return
- * the complete replacement. That contract is what lets `resolveValue`
- * substitute only the name token with `match.replace(...)` while the fallback
- * survives byte for byte.
- *
- * A malformed or unbalanced `var(`, a call with no usable custom-property name,
- * and a `var(` inside a quoted string all keep their original text and are
- * never reported to the replacer. Unmapped names are still reported so the
- * caller can leave them unchanged.
+ * The replacer receives the custom property name, the full `var(...)` match,
+ * and its index, and must return the replacement for that whole match. `match`
+ * arrives nested-resolved, so `resolveValue` can substitute only the name token
+ * and keep a fallback intact. Malformed, unbalanced, unnamed, and quoted `var(`
+ * text keeps its original value and is never reported to the replacer; unmapped
+ * names are reported so the caller can leave them unchanged.
  */
 export const replaceCssVariableReferences = (
 	value: string,
@@ -218,9 +191,8 @@ export const replaceCssVariableReferences = (
 			openParenIndex === -1 ? -1 : findClosingParen(value, openParenIndex);
 
 		if (closeParenIndex === -1) {
-			// Unbalanced `var(`: the region from here on is malformed, so emit
-			// the rest of the value verbatim. Continuing the scan would rewrite
-			// references that belong to the malformed call.
+			// Emit the rest verbatim; rewriting inside a malformed call would
+			// change references that belong to it.
 			index = value.length;
 			continue;
 		}

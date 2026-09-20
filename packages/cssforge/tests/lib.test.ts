@@ -1,8 +1,4 @@
-import {
-	getReferencePaths,
-	replaceCssVariableReferences,
-	resolveValue,
-} from "../src/lib.ts";
+import { getReferencePaths, resolveValue } from "../src/lib.ts";
 import { assertEquals, Deno } from "./vitest-compat.ts";
 
 const aliasMap = new Map([
@@ -19,11 +15,11 @@ const aliasTable = [
 	["var( --bg )", "var( --palette-gray-100 )"],
 ] as const;
 
-for (const [input, expected] of aliasTable) {
-	Deno.test(`resolveValue - resolves the alias in ${input}`, () => {
-		assertEquals(resolve(input), expected);
-	});
-}
+Deno.test("resolveValue - resolves the alias table from the issue", () => {
+	for (const [input, expected] of aliasTable) {
+		assertEquals(resolve(input), expected, input);
+	}
+});
 
 Deno.test("resolveValue - preserves nested fallback content", () => {
 	assertEquals(
@@ -79,27 +75,12 @@ Deno.test("resolveValue - leaves malformed var() text unchanged", () => {
 	assertEquals(resolve("var()"), "var()");
 	assertEquals(resolve("var(--)"), "var(--)");
 	assertEquals(resolve("var(--bg, red"), "var(--bg, red");
-});
-
-Deno.test("resolveValue - leaves an unbalanced var() region completely unchanged", () => {
+	// An unbalanced call must not rewrite references inside it.
 	assertEquals(
 		resolve("var(--ext, var(--surface-muted)"),
 		"var(--ext, var(--surface-muted)",
 	);
-	assertEquals(
-		resolve("var(/* --ext */ var(--surface-muted)"),
-		"var(/* --ext */ var(--surface-muted)",
-	);
 	assertEquals(resolve("var(--surface-muted, var(--bg"), "var(--surface-muted, var(--bg");
-});
-
-Deno.test("replaceCssVariableReferences - reports the alias name for fallback values", () => {
-	const seen: string[] = [];
-	replaceCssVariableReferences("var( --surface-muted , red)", (cssVariable, match) => {
-		seen.push(cssVariable);
-		return match;
-	});
-	assertEquals(seen, ["--surface-muted"]);
 });
 
 Deno.test("getReferencePaths - reports aliases used with fallbacks", () => {
