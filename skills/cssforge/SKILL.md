@@ -37,8 +37,8 @@ Do not invent schema fields that are not present in docs or source types.
 3. Configure generation commands
 - Install the package from npm: `npm install --save-dev @hebilicious/cssforge` (Deno projects
   use the secondary JSR channel: `deno add jsr:@hebilicious/cssforge`).
-- Add the executable to the consumer scripts:
-  - `"cssforge": "cssforge"`, then `npm run cssforge -- --mode all`
+- Run the installed executable directly: `cssforge --mode all` (`npx cssforge` with npm), or add
+  `"cssforge": "cssforge"` to the consumer scripts
 - For local repo examples, call the built CLI of the sibling package directly: pnpm only
   links the workspace `cssforge` binary once `dist` exists, so a fresh checkout has no
   `node_modules/.bin/cssforge` before the first build:

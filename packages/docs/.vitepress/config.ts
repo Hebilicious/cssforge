@@ -7,6 +7,10 @@ export default defineConfig({
     "0 runtime design tokens generator for modern style systems.",
   cleanUrls: true,
   appearance: "dark",
+  head: [
+    ["link", { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" }],
+    ["meta", { name: "theme-color", content: "#030206" }],
+  ],
   markdown: {
     theme: "github-dark",
   },

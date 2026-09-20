@@ -46,7 +46,14 @@ npm install --save-dev @hebilicious/cssforge
 pnpm add -D @hebilicious/cssforge
 ```
 
-Then to run CSS forge, add the following script to your `package.json`:
+The package installs a `cssforge` executable:
+
+```bash
+pnpm cssforge --mode all # pnpm
+npx cssforge --mode all # npm
+```
+
+Add it to your `package.json` scripts if you prefer the shorter form:
 
 ```json
 {
@@ -56,17 +63,14 @@ Then to run CSS forge, add the following script to your `package.json`:
 }
 ```
 
-then run :
-
-```bash
-pnpm run cssforge
-```
+The rest of this document writes commands as `cssforge <args>`.
 
 ### Alternative installation (Deno and JSR)
 
-CSS Forge is also published to [JSR](https://jsr.io/@hebilicious/cssforge) as a secondary
-channel. JSR receives the same version as npm, and is published after it, so it can lag
-behind when that channel fails. Use it for Deno projects and for JSR-native imports:
+CSS Forge also ships to [JSR](https://jsr.io/@hebilicious/cssforge). JSR is a secondary
+channel: the release workflow publishes npm first and JSR in its own job afterwards, so when
+that job fails, JSR stays on the previous version until the job is re-run. Use it for Deno
+projects and for JSR-native imports:
 
 ```bash
 # Deno
@@ -169,22 +173,10 @@ export default defineConfig({
 
 2. Run CSS Forge with the CLI :
 
-If you're using a `package.json`, add the following to your scripts:
-
-```json
-{
-  "scripts": {
-    "cssforge": "cssforge"
-  }
-}
-```
-
-Then run the following command :
-
 ```bash
-pnpm run cssforge # Basic usage
-pnpm run cssforge -- --help # To see all options
-pnpm run cssforge -- --watch # To watch for changes
+cssforge # Basic usage
+cssforge --help # To see all options
+cssforge --watch # To watch for changes
 ```
 
 3. Use the generated variables in your CSS:
@@ -1052,24 +1044,21 @@ follow the following convention :
 
 ## CLI Usage
 
-Assuming you have added the script to your `package.json`, you can run CSS Forge like this
-:
-
 ```bash
 # Basic usage
-pnpm run cssforge
+cssforge
 
 # Watch mode
-pnpm run cssforge -- --watch
+cssforge --watch
 
 # Custom paths and output
-pnpm run cssforge -- --config ./foo/bar/custom-path.ts --css ./dist/design-tokens.css --ts ./dist/design-tokens.ts --json ./dist/design-tokens.json --style-dictionary ./dist/design-tokens.sd.json --mode all
+cssforge --config ./foo/bar/custom-path.ts --css ./dist/design-tokens.css --ts ./dist/design-tokens.ts --json ./dist/design-tokens.json --style-dictionary ./dist/design-tokens.sd.json --mode all
 
 # Style Dictionary JSON with final values (default)
-pnpm run cssforge -- --mode style-dictionary --style-dictionary ./dist/design-tokens.sd.json
+cssforge --mode style-dictionary --style-dictionary ./dist/design-tokens.sd.json
 
 # Keep CSS variables as values for usage matching
-pnpm run cssforge -- --mode style-dictionary --style-dictionary ./dist/design-tokens.sd.json --style-dictionary-value-mode css-reference
+cssforge --mode style-dictionary --style-dictionary ./dist/design-tokens.sd.json --style-dictionary-value-mode css-reference
 ```
 
 ## Programmatic Usage
@@ -1100,7 +1089,7 @@ you already generate.
 Use `style-dictionary` mode to generate only the token file:
 
 ```bash
-pnpm run cssforge -- --mode style-dictionary --style-dictionary ./.cssforge/tokens.json
+cssforge --mode style-dictionary --style-dictionary ./.cssforge/tokens.json
 ```
 
 Use `--mode all` to generate it together with the CSS, TypeScript, and regular JSON outputs.
@@ -1171,7 +1160,7 @@ Dictionary will transform the file.
 
 ```bash
 # Keep CSS variables as values for usage matching
-pnpm run cssforge -- --mode style-dictionary --style-dictionary ./.cssforge/tokens.json --style-dictionary-value-mode css-reference
+cssforge --mode style-dictionary --style-dictionary ./.cssforge/tokens.json --style-dictionary-value-mode css-reference
 ```
 
 ### Programmatic API
