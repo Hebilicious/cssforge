@@ -387,3 +387,137 @@ Deno.test("generator - unscoped themes that reuse a key are rejected", () => {
 		true,
 	);
 });
+
+Deno.test("generator - an explicit :root selector collides with an unscoped token", () => {
+	// A `:root` selector block and the implicit `:root` block declare the same
+	// property on the same element, so the shared name overwrites.
+	const error = captureError(() =>
+		generateCSS(
+			defineConfig({
+				colors: {
+					palette: {
+						value: {
+							"a-b": {
+								value: { c: { hex: "#ffffff" } },
+								settings: { selector: ":root" },
+							},
+							a: { value: { "b-c": { hex: "#000000" } } },
+						},
+					},
+				},
+			}),
+		),
+	);
+	assertEquals(
+		error.message,
+		'Token key collision: "palette.a-b.c" and "palette.a.b-c" both generate "--palette-a-b-c". Rename one of the configuration paths.',
+	);
+});
+
+Deno.test("generator - an explicit :root selector collides inside a shared at-rule", () => {
+	// Both themes put `--primary` on `:root` under the same media condition.
+	const scopedTheme = () => ({
+		bg: {
+			value: { primary: "var(--white)" },
+			variables: { white: "palette.white.x" },
+			settings: { variantNameOnly: true },
+		},
+	});
+
+	const error = captureError(() =>
+		generateCSS(
+			defineConfig({
+				colors: {
+					palette: { value: { white: { value: { x: { hex: "#ffffff" } } } } },
+					theme: {
+						light: {
+							value: scopedTheme(),
+							settings: {
+								atRule: "@media (prefers-color-scheme: dark)",
+								selector: ":root",
+							},
+						},
+						dark: {
+							value: scopedTheme(),
+							settings: { atRule: "@media (prefers-color-scheme: dark)" },
+						},
+					},
+				},
+			}),
+		),
+	);
+	assertEquals(
+		error.message,
+		'Token key collision: "theme.light.bg.primary" and "theme.dark.bg.primary" both generate "--primary". Rename one of the configuration paths.',
+	);
+});
+
+Deno.test("generator - gradients with different at-rules may share a key", () => {
+	// The gradient atRule mirror of the palette and selector cases, so all four
+	// wrapper combinations are covered.
+	const gradientVariant = () => ({
+		value: "linear-gradient(var(--w), var(--w))",
+		variables: { w: "palette.white.x" },
+	});
+
+	const config = defineConfig({
+		colors: {
+			palette: { value: { white: { value: { x: { hex: "#ffffff" } } } } },
+			gradients: {
+				value: {
+					"a-b": {
+						value: { c: gradientVariant() },
+						settings: { atRule: "@media (prefers-color-scheme: dark)" },
+					},
+					a: { value: { "b-c": gradientVariant() } },
+				},
+			},
+		},
+	});
+
+	assertDoesNotThrow(() => generateCSS(config));
+	const css = generateCSS(config);
+	assertEquals((css.match(/--gradients-a-b-c:/g) ?? []).length, 2);
+	assertEquals(css.includes("@media (prefers-color-scheme: dark) {"), true);
+});
+
+Deno.test("generator - the documented light/dark/pink theming example still works", async (t) => {
+	const themeColor = (variable: string) => ({
+		value: { primary: `var(--${variable})`, secondary: `var(--${variable})` },
+		variables: { [variable]: "palette.simple.white" },
+		settings: { variantNameOnly: true },
+	});
+
+	const config = defineConfig({
+		colors: {
+			palette: {
+				value: {
+					simple: {
+						value: {
+							white: { hex: "#ffffff" },
+							red: { hex: "#ff0000" },
+						},
+					},
+				},
+			},
+			theme: {
+				light: { value: { background: themeColor("one") } },
+				dark: {
+					value: { background: themeColor("one") },
+					settings: { atRule: "@media (prefers-color-scheme: dark)" },
+				},
+				pink: {
+					value: { background: themeColor("two") },
+					settings: { selector: ".ThemePink" },
+				},
+			},
+		},
+	});
+
+	assertDoesNotThrow(() => generateCSS(config));
+	const css = generateCSS(config);
+	assertEquals((css.match(/--primary:/g) ?? []).length, 3);
+	assertEquals(css.includes("@media (prefers-color-scheme: dark) {"), true);
+	assertEquals(css.includes(".ThemePink {"), true);
+	await assertSnapshot(t, css);
+});

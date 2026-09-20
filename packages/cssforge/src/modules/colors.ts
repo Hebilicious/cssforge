@@ -16,10 +16,20 @@ import {
  * `atRule` are both part of the identity, because two declarations only
  * overwrite each other when they share the same wrapper chain. With no wrapper
  * the declaration lands in `:root`.
+ *
+ * An explicit `selector: ":root"` is canonicalized to the root scope, because a
+ * `:root` selector block and the implicit `:root` block declare the same
+ * properties on the same element. `{ atRule, selector: ":root" }` therefore has
+ * the same scope as that atRule alone.
  */
-export const describeScope = (settings: WithCondition | undefined): string => {
-	const atRule = settings?.atRule ?? "";
-	const selector = settings?.selector ?? "";
+const describeScope = (settings: WithCondition | undefined): string => {
+	const atRule = settings?.atRule?.trim() ?? "";
+	const rawSelector = settings?.selector?.trim() ?? "";
+	// A `:root` selector block and the implicit `:root` block declare the same
+	// properties on the same element, with or without a shared at-rule wrapper,
+	// so an explicit `:root` selector drops out of the scope identity.
+	const selector = rawSelector === ROOT_SCOPE ? "" : rawSelector;
+
 	if (!atRule && !selector) return ROOT_SCOPE;
 	return `${atRule}|${selector}`;
 };
