@@ -1,4 +1,7 @@
 {
   "extends": "../../tsconfig.base.json",
-  "include": ["*.ts"]
+  "compilerOptions": {
+    "lib": ["ES2023", "DOM"]
+  },
+  "include": ["cssforge.config.ts"]
 }

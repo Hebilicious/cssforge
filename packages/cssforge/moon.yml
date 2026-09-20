@@ -114,6 +114,7 @@ tasks:
       - "scripts/**/*"
       - "tsconfig.json"
       - "/tsconfig.base.json"
+      - "/example/basic/**/*"
     options:
       runInCI: "always"
   test:
@@ -131,6 +132,7 @@ tasks:
       - "jsr.json"
       - "CHANGELOG.md"
       - "scripts/version.ts"
+      - "/example/basic/**/*"
     options:
       runInCI: "always"
   test-watch:
