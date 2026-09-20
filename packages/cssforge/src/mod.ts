@@ -10,6 +10,7 @@
 import type { CSSForgeConfig } from "./config.ts";
 import { defineConfig } from "./config.ts";
 import { generateCSS, generateStyleDictionaryJSON } from "./generator.ts";
+import { InvalidNameError } from "./helpers.ts";
 import { processColors } from "./modules/colors.ts";
 import { processPrimitives } from "./modules/primitive.ts";
 import { processSpacing } from "./modules/spacing.ts";
@@ -39,6 +40,22 @@ export {
 	 * @returns The generated Style Dictionary-readable JSON string.
 	 */
 	generateStyleDictionaryJSON,
+	/**
+	 * Thrown when a configuration name cannot produce a valid CSS custom property
+	 * name or reference. Catch it with `instanceof` to handle a name validation
+	 * failure by type instead of matching `error.name`.
+	 * @example
+	 * ```ts
+	 * try {
+	 *   generateCSS(config);
+	 * } catch (error) {
+	 *   if (error instanceof InvalidNameError) {
+	 *     // report the offending configuration path
+	 *   }
+	 * }
+	 * ```
+	 */
+	InvalidNameError,
 	/**
 	 * Processes the colors section of the configuration.
 	 * @param colors The colors configuration.
