@@ -1,0 +1,7 @@
+/* Relative to a consumer stylesheet placed at the project root. */
+@import "./.cssforge/output.css" layer(cssforge);
+
+.button {
+  background-color: var(--palette-coral-100);
+  padding: var(--spacing-size-2) var(--spacing-size-4);
+}
