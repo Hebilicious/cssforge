@@ -81,6 +81,18 @@ Deno.test("resolveValue - leaves malformed var() text unchanged", () => {
 	assertEquals(resolve("var(--bg, red"), "var(--bg, red");
 });
 
+Deno.test("resolveValue - leaves an unbalanced var() region completely unchanged", () => {
+	assertEquals(
+		resolve("var(--ext, var(--surface-muted)"),
+		"var(--ext, var(--surface-muted)",
+	);
+	assertEquals(
+		resolve("var(/* --ext */ var(--surface-muted)"),
+		"var(/* --ext */ var(--surface-muted)",
+	);
+	assertEquals(resolve("var(--surface-muted, var(--bg"), "var(--surface-muted, var(--bg");
+});
+
 Deno.test("replaceCssVariableReferences - reports the alias name for fallback values", () => {
 	const seen: string[] = [];
 	replaceCssVariableReferences("var( --surface-muted , red)", (cssVariable, match) => {

@@ -163,15 +163,17 @@ const skipTrivia = (value: string, start: number, end: number): number => {
  * Rewrites CSS custom-property references using the canonical CSSForge parser.
  *
  * The replacer receives the custom property name (`--surface-muted`), the
- * matched `var(...)` text with any nested references already resolved, and the
- * match index. It returns the replacement for the whole match, which lets
- * `resolveValue` substitute only the name token while a fallback survives
- * untouched.
+ * matched `var(...)` text, and the match index. `match` is already
+ * nested-resolved: any `var()` inside its fallback has been rewritten before
+ * the replacer is called, so the replacer owns the whole match and must return
+ * the complete replacement. That contract is what lets `resolveValue`
+ * substitute only the name token with `match.replace(...)` while the fallback
+ * survives byte for byte.
  *
- * Text that is malformed or unbalanced, has no usable custom-property name, or
- * appears inside a quoted string keeps its original text and is never reported
- * to the replacer. Unmapped names are still reported so the caller can leave
- * them unchanged.
+ * A malformed or unbalanced `var(`, a call with no usable custom-property name,
+ * and a `var(` inside a quoted string all keep their original text and are
+ * never reported to the replacer. Unmapped names are still reported so the
+ * caller can leave them unchanged.
  */
 export const replaceCssVariableReferences = (
 	value: string,
@@ -216,9 +218,10 @@ export const replaceCssVariableReferences = (
 			openParenIndex === -1 ? -1 : findClosingParen(value, openParenIndex);
 
 		if (closeParenIndex === -1) {
-			// Unbalanced `var(`: skip the keyword so any nested function is still
-			// visited and the raw text survives untouched.
-			index += 4;
+			// Unbalanced `var(`: the region from here on is malformed, so emit
+			// the rest of the value verbatim. Continuing the scan would rewrite
+			// references that belong to the malformed call.
+			index = value.length;
 			continue;
 		}
 
