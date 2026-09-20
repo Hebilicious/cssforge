@@ -32,8 +32,12 @@ jobs:
       # type analysis rejects a public API without explicit types. That defect
       # breaks `jsr publish` after npm has already been published, so it has to
       # gate the pull request. Moon resolves the build this target depends on.
+      #
+      # `moon exec --ignore-ci-checks` is required: `jsr-dry-run` is
+      # `runInCI: false` on purpose (it is a gate, not a `moon ci` task), and
+      # `moon run` refuses to execute such a task in a CI environment.
       - name: Check JSR publishability
-        run: moon run --force cssforge:jsr-dry-run
+        run: moon exec --ignore-ci-checks --force cssforge:jsr-dry-run
 
       - name: Run CI
         run: moon ci
@@ -60,13 +64,19 @@ jobs:
           moon-version: "2.0.0"
           auto-install: true
 
+      # The `--filter` is required: `@playwright/test` is a dependency of the
+      # example package, not of the workspace root, so `pnpm exec playwright`
+      # from the root cannot resolve the binary.
+      #
       # Chromium only: it is the single project in the example's Playwright
       # config.
       - name: Install Playwright browsers
-        run: pnpm exec playwright install --with-deps chromium
+        run: pnpm --filter vanilla-react-css exec playwright install --with-deps chromium
 
+      # `vanilla-react-css:e2e` is `runInCI: false` like every other example
+      # task, so `moon run` refuses it in a CI environment.
       - name: Run the browser suite
-        run: moon run --force vanilla-react-css:e2e
+        run: moon exec --ignore-ci-checks --force vanilla-react-css:e2e
 
   node-floor:
     name: Package smoke on Node 24.0.0

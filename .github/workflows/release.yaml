@@ -95,7 +95,7 @@ jobs:
       # violation only surfaces during JSR's type analysis, so without this gate
       # a broken release would already have shipped to npm.
       - name: Check JSR publishability
-        run: moon exec --ignore-ci-checks cssforge:jsr-dry-run
+        run: moon exec --ignore-ci-checks --force cssforge:jsr-dry-run
 
       - name: Smoke test the packaged artifact
         run: moon exec --ignore-ci-checks cssforge:smoke-test
@@ -136,7 +136,7 @@ jobs:
       # The npm job already gated this, and the metadata cannot change between
       # the two jobs, so this is a cheap re-check before the JSR publish path.
       - name: Check JSR publishability
-        run: moon exec --ignore-ci-checks cssforge:jsr-dry-run
+        run: moon exec --ignore-ci-checks --force cssforge:jsr-dry-run
 
       - name: Publish to JSR and verify the published entry points
         run: moon exec --ignore-ci-checks cssforge:jsr-publish
