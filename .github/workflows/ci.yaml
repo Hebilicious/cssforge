@@ -29,20 +29,15 @@ jobs:
       - name: Check release metadata consistency
         run: moon run --force cssforge:version-check
 
-      # The gate runs under `--force` for determinism, and `--force` also
-      # suppresses moon's InstallDependencies pipeline action, so the build the
-      # target depends on needs its dependencies installed explicitly here.
+      # `--force` suppresses moon's InstallDependencies action, which the build
+      # this gate depends on needs.
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # `cssforge:jsr-smoke` runs the JSR entry points, but only JSR's own slow
-      # type analysis rejects a public API without explicit types. That defect
-      # breaks `jsr publish` after npm has already been published, so it has to
-      # gate the pull request. Moon resolves the build this target depends on.
-      #
-      # `moon exec --ignore-ci-checks` is required: `jsr-dry-run` is
-      # `runInCI: false` on purpose (it is a gate, not a `moon ci` task), and
-      # `moon run` refuses to execute such a task in a CI environment.
+      # Only JSR's type analysis rejects a public API without explicit types,
+      # and that failure would otherwise surface during publish.
+      # `moon exec --ignore-ci-checks` is required because `jsr-dry-run` is
+      # `runInCI: false`, which `moon run` refuses in a CI environment.
       - name: Check JSR publishability
         run: moon exec --ignore-ci-checks --force cssforge:jsr-dry-run
 
@@ -53,16 +48,9 @@ jobs:
     name: Browser e2e (theme scoping)
     runs-on: ubuntu-latest
 
-    # Pull requests only. The suite exists to stop a token or scoping
-    # regression from reaching main, and `moon ci` does not select it (every
-    # example task stays `runInCI: false`), so this job is what runs it.
-    # Guarding on `pull_request` keeps the browser download off the
-    # push-to-main run, whose commit was already gated by its own PR.
-    #
-    # Cost: the browser install plus the suite take about a minute. The job is
-    # deliberately not path-filtered, because a filter that misses a relevant
-    # change turns the gate silently green; the separated job keeps that cost
-    # off the shared `quality` job and out of `moon ci` instead.
+    # `moon ci` does not select the example suites (`runInCI: false`), so this
+    # job is what runs them. Pull requests only: the browser download is not
+    # needed on the push to main, whose commit its PR already gated.
     if: github.event_name == 'pull_request'
 
     steps:
@@ -76,22 +64,18 @@ jobs:
           moon-version: "2.0.0"
           auto-install: true
 
-      # `--force` (used by the gates below) suppresses moon's
-      # InstallDependencies pipeline action, so dependencies are installed here.
+      # `--force` suppresses moon's InstallDependencies action.
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # The `--filter` is required: `@playwright/test` is a dependency of the
-      # example package, not of the workspace root, so `pnpm exec playwright`
-      # from the root cannot resolve the binary.
-      #
-      # Chromium only: it is the single project in the example's Playwright
-      # config.
+      # `--filter` is required: `@playwright/test` belongs to the example
+      # package, so the root cannot resolve the binary. Chromium is the only
+      # project in the example's Playwright config.
       - name: Install Playwright browsers
         run: pnpm --filter vanilla-react-css exec playwright install --with-deps chromium
 
-      # `vanilla-react-css:e2e` is `runInCI: false` like every other example
-      # task, so `moon run` refuses it in a CI environment.
+      # `vanilla-react-css:e2e` is `runInCI: false`, which `moon run` refuses in
+      # a CI environment.
       - name: Run the browser suite
         run: moon exec --ignore-ci-checks --force vanilla-react-css:e2e
 

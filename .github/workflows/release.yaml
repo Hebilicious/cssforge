@@ -92,15 +92,13 @@ jobs:
       - name: Check release metadata consistency
         run: moon run --force cssforge:version-check
 
-      # `--force` suppresses moon's InstallDependencies pipeline action, so the
-      # dependencies the gate's build needs must be installed here. Without this
-      # the gate aborts with `tsup: command not found` before anything publishes.
+      # `--force` suppresses moon's InstallDependencies action, without which the
+      # gate aborts with `tsup: command not found` before anything publishes.
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # Runs before either publish path. npm is published first, and a slow-type
-      # violation only surfaces during JSR's type analysis, so without this gate
-      # a broken release would already have shipped to npm.
+      # Before either publish path: npm goes first, so a slow-type violation
+      # found only by JSR would otherwise ship to npm already.
       - name: Check JSR publishability
         run: moon exec --ignore-ci-checks --force cssforge:jsr-dry-run
 
@@ -141,13 +139,11 @@ jobs:
       - name: Check release metadata consistency
         run: moon run --force cssforge:version-check
 
-      # Same reason as the npm job: the gate runs under `--force`, so nothing
-      # installs dependencies for its build unless it is done explicitly here.
+      # Same reason as the npm job.
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # The npm job already gated this, and the metadata cannot change between
-      # the two jobs, so this is a cheap re-check before the JSR publish path.
+      # Cheap re-check before the JSR publish path.
       - name: Check JSR publishability
         run: moon exec --ignore-ci-checks --force cssforge:jsr-dry-run
 
