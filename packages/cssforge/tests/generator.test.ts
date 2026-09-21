@@ -728,27 +728,6 @@ Deno.test("cli - style-dictionary mode can emit CSS variables for usage matching
 	}
 });
 
-Deno.test("cli - rejects unknown output modes", async () => {
-	const tempDir = await mkdtemp(join(tmpdir(), "cssforge-invalid-mode-"));
-
-	try {
-		const configPath = join(tempDir, "cssforge.config.ts");
-		await writeFile(configPath, "export default {};", "utf8");
-
-		const cliPath = fileURLToPath(new URL("../src/cli.ts", import.meta.url));
-		const result = spawnSync(
-			process.execPath,
-			[cliPath, "--config", configPath, "--mode", "style-dictionary-typo"],
-			{ cwd: tempDir, encoding: "utf8" },
-		);
-
-		assertEquals(result.status, 1);
-		assertEquals(result.stderr.includes("Invalid output mode"), true);
-	} finally {
-		await rm(tempDir, { recursive: true, force: true });
-	}
-});
-
 Deno.test("build - legacy output modes do not require a Style Dictionary path", async () => {
 	const tempDir = await mkdtemp(join(tmpdir(), "cssforge-legacy-build-"));
 

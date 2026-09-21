@@ -29,11 +29,15 @@ const writeFileRecursive = (path: string, data: string) =>
 
 const outputModes = ["css", "json", "ts", "style-dictionary", "all"] as const;
 type OutputMode = (typeof outputModes)[number];
+const outputModeList = outputModes.join(", ");
 const styleDictionaryValueModes = ["css-reference", "resolved"] as const;
 type StyleDictionaryValueMode = (typeof styleDictionaryValueModes)[number];
 
 const isOutputMode = (value: unknown): value is OutputMode =>
 	typeof value === "string" && outputModes.some((mode) => mode === value);
+
+const invalidOutputModeMessage = (mode: unknown) =>
+	`Invalid output mode: ${String(mode)}. Accepted modes: ${outputModeList}.`;
 
 const isStyleDictionaryValueMode = (value: unknown): value is StyleDictionaryValueMode =>
 	typeof value === "string" && styleDictionaryValueModes.some((mode) => mode === value);
@@ -74,7 +78,12 @@ export async function build({
 }: BuildOptions): Promise<{ success: boolean; error?: unknown }> {
 	try {
 		if (!isOutputMode(mode)) {
-			throw new Error(`Invalid output mode: ${mode}`);
+			// A TypeScript cast does not validate runtime input, so JavaScript
+			// callers reach this check.
+			throw new Error(invalidOutputModeMessage(mode));
+		}
+		if (!isStyleDictionaryValueMode(styleDictionaryValueMode)) {
+			throw new Error(`Invalid Style Dictionary value mode: ${styleDictionaryValueMode}`);
 		}
 		const absoluteconfig = resolve(process.cwd(), config);
 		const absoluteCssOutput = resolve(process.cwd(), cssOutput);
@@ -102,11 +111,6 @@ export async function build({
 		}
 
 		if (mode === "style-dictionary" || mode === "all") {
-			if (!isStyleDictionaryValueMode(styleDictionaryValueMode)) {
-				throw new Error(
-					`Invalid Style Dictionary value mode: ${styleDictionaryValueMode}`,
-				);
-			}
 			const outputPath = styleDictionaryOutput ?? "./.cssforge/tokens.sd.json";
 			const absoluteStyleDictionaryOutput = resolve(process.cwd(), outputPath);
 			await writeFileRecursive(
@@ -150,6 +154,10 @@ export async function watch({
 	onRebuild,
 	...buildOptions
 }: WatchOptions): Promise<() => void> {
+	if (!isOutputMode(buildOptions.mode)) {
+		throw new Error(invalidOutputModeMessage(buildOptions.mode));
+	}
+
 	console.log(`👀 Watching ${buildOptions.config} for changes...`);
 
 	// Initial build
@@ -190,7 +198,7 @@ const mainCommand = defineCommand({
 		},
 		mode: {
 			type: "string",
-			description: "Output mode (css, json, ts, style-dictionary, all)",
+			description: `Output mode (${outputModeList})`,
 			alias: "m",
 			default: "all",
 		},
@@ -231,7 +239,7 @@ const mainCommand = defineCommand({
 		const styleDictionary = args["style-dictionary"];
 		const styleDictionaryValueMode = args["style-dictionary-value-mode"];
 		if (!isOutputMode(mode)) {
-			console.error(`Error during build: Error: Invalid output mode: ${mode}`);
+			console.error(`Error during build: Error: ${invalidOutputModeMessage(mode)}`);
 			process.exit(1);
 			return;
 		}
