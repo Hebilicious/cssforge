@@ -55,8 +55,6 @@ tasks:
       - "./.cssforge/output.css"
     deps:
       - "^:build"
-    inputs:
-      - "cssforge.config.ts"
     outputs:
       - ".cssforge/output.css"
     options:

@@ -45,7 +45,9 @@ tasks:
     command: "nuxt"
     args: ["generate"]
     deps:
+      - "^:build"
       - "~:prepare"
+      - "~:cssforge-generate"
     options:
       runInCI: false
   preview:
@@ -71,8 +73,6 @@ tasks:
       - "./.cssforge/output.css"
     deps:
       - "^:build"
-    inputs:
-      - "cssforge.config.ts"
     outputs:
       - ".cssforge/output.css"
     options:
