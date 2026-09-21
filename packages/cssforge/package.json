@@ -1,6 +1,6 @@
 {
 	"name": "@hebilicious/cssforge",
-	"version": "0.6.0",
+	"version": "0.7.0",
 	"description": "0 runtime design tokens generator for modern style systems.",
 	"license": "MIT",
 	"type": "module",
