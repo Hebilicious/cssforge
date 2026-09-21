@@ -8,4 +8,10 @@ node: {}
 
 pnpm: {}
 
-typescript: {}
+typescript:
+  # The plugin rewrites project references into the tracked root and project
+  # `tsconfig.json` files, leaving the repository dirty after every task
+  # (issue #51). Those references are committed, so moon need not manage them.
+  # This also disables `createMissingConfig` from the same plugin guard; every
+  # project ships a `tsconfig.json`.
+  syncProjectReferences: false
