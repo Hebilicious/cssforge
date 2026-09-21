@@ -23,6 +23,14 @@ export interface TokenMetadata {
 	tier?: TokenTier;
 }
 
+/**
+ * The CSS scope a declaration is emitted into: the effective chain of wrappers
+ * (`selector` and `atRule`) that contains it, or `ROOT_SCOPE` when it is emitted
+ * directly into `:root`. Two declarations in the same scope with the same custom
+ * property name overwrite each other, so they are a collision.
+ */
+export const ROOT_SCOPE = ":root";
+
 export interface ResolvedToken extends TokenMetadata {
 	/** CSS custom property name, e.g. `--theme-light-content-primary`. */
 	key: string;
@@ -30,7 +38,44 @@ export interface ResolvedToken extends TokenMetadata {
 	value: string;
 	/** The full CSS declaration. */
 	variable: string;
+	/**
+	 * The effective wrapper chain this declaration is emitted into, recorded by
+	 * the module that emitted it. Declarations without a wrapper share
+	 * `ROOT_SCOPE`, so an unscoped theme and an unscoped module declaration are
+	 * compared as the same scope.
+	 *
+	 * This is non-enumerable: the resolve map is serialized into snapshots and
+	 * public JSON output, and the scope is generator bookkeeping rather than
+	 * part of the token's published shape. Read it with `getTokenScope`.
+	 */
+	readonly scope?: string;
 }
+
+/**
+ * Returns the effective CSS scope of a token, defaulting to `ROOT_SCOPE` for
+ * declarations emitted directly into `:root`.
+ */
+export const getTokenScope = (token: ResolvedToken): string => token.scope ?? ROOT_SCOPE;
+
+/**
+ * Attaches the emitting module's wrapper chain to a resolved token without
+ * making it enumerable, so the token's serialized shape is unchanged.
+ */
+export const withTokenScope = <T extends ResolvedToken>(
+	token: T,
+	scope: string | undefined,
+): T => {
+	if (!scope || scope === ROOT_SCOPE) return token;
+
+	Object.defineProperty(token, "scope", {
+		value: scope,
+		enumerable: false,
+		writable: true,
+		configurable: true,
+	});
+
+	return token;
+};
 
 /**
  * A map where keys are cssforge paths and values are objects containing the CSS

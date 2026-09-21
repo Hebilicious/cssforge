@@ -1,5 +1,7 @@
 import type { CSSForgeConfig } from "./config.ts";
 import {
+	getTokenScope,
+	type Output,
 	type ResolvedToken,
 	type ResolveMap,
 	replaceCssVariableReferences,
@@ -95,6 +97,58 @@ const deepMerge = <T extends Record<string, unknown>>(target: T, source: T): T =
 	return result as T;
 };
 
+/**
+ * Rejects a configuration whose distinct token paths generate the same CSS
+ * custom property name in the same scope. Generated names are built by joining
+ * path segments with hyphens, so `primitives.a-b.c.x` and `primitives.a.b-c.x`
+ * both produce `--a-b-c-x`. Silently emitting two declarations for one name
+ * makes the CSS, JSON and TypeScript outputs disagree, so the configuration is
+ * rejected with both contributing paths named.
+ *
+ * The scope comes from the token itself, recorded by the module that emitted
+ * the declaration, so the check compares what actually landed in the output
+ * rather than re-deriving wrappers from the configuration. Tokens emitted
+ * without a wrapper share `ROOT_SCOPE`. Tokens that share a name but target
+ * different scopes are not a collision: two `variantNameOnly` themes emitting
+ * `--primary` under different selectors is the documented way to build themes.
+ */
+const assertNoKeyCollisions = (resolveMap: ResolveMap): void => {
+	const sourcesByScopeAndKey = new Map<string, string>();
+
+	for (const token of resolveMap.values()) {
+		const scopedKey = `${getTokenScope(token)}\u0000${token.key}`;
+		const existingSourcePath = sourcesByScopeAndKey.get(scopedKey);
+
+		if (existingSourcePath !== undefined && existingSourcePath !== token.sourcePath) {
+			throw new Error(
+				`Token key collision: "${existingSourcePath}" and "${token.sourcePath}" both generate "${token.key}". Rename one of the configuration paths.`,
+			);
+		}
+
+		sourcesByScopeAndKey.set(scopedKey, token.sourcePath);
+	}
+};
+
+/**
+ * Merges the per-module resolve maps into the single map every output consumes.
+ * Later modules win when two produce the same path, which preserves the
+ * previous `collectResolveMap` behaviour.
+ */
+const mergeResolveMaps = (
+	outputs: ReadonlyArray<Output | null | undefined>,
+): ResolveMap => {
+	const resolveMap: ResolveMap = new Map();
+
+	for (const output of outputs) {
+		if (!output) continue;
+		for (const [path, token] of output.resolveMap.entries()) {
+			resolveMap.set(path, token);
+		}
+	}
+
+	return resolveMap;
+};
+
 const collectResolveMap = (config: Partial<CSSForgeConfig>): ResolveMap => {
 	const forge = {
 		colors: config.colors ? processColors(config.colors) : undefined,
@@ -110,13 +164,8 @@ const collectResolveMap = (config: Partial<CSSForgeConfig>): ResolveMap => {
 			: undefined,
 	};
 
-	const resolveMap: ResolveMap = new Map();
-	for (const value of Object.values(forge)) {
-		if (!value) continue;
-		for (const [path, token] of value.resolveMap.entries()) {
-			resolveMap.set(path, token);
-		}
-	}
+	const resolveMap = mergeResolveMaps(Object.values(forge));
+	assertNoKeyCollisions(resolveMap);
 	return resolveMap;
 };
 
@@ -494,6 +543,7 @@ export function generateCSS(config: Partial<CSSForgeConfig>): string {
 			typography: config.typography,
 			spacing: config.spacing,
 		});
+		processedConfig.primitives = primitiveVars;
 		if (primitiveVars) {
 			if (primitiveVars.css.root) {
 				chunks.push("/*____ Primitives ____*/");
@@ -504,6 +554,11 @@ export function generateCSS(config: Partial<CSSForgeConfig>): string {
 			}
 		}
 	}
+
+	// Reject colliding keys before returning any output. This reuses the module
+	// results gathered above and feeds the same `assertNoKeyCollisions` used by
+	// JSON, TypeScript and Style Dictionary output.
+	assertNoKeyCollisions(mergeResolveMaps(Object.values(processedConfig)));
 
 	chunks.push("}");
 
