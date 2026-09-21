@@ -229,3 +229,62 @@ Deno.test("processPrimitives - uses fluid spacing references", async (t) => {
 	await assertSnapshot(t, primitives.css);
 	await assertSnapshot(t, Array.from(primitives.resolveMap.entries()));
 });
+
+Deno.test("processPrimitives - resolves hyphenated aliases with fallbacks end to end", async (t) => {
+	const config = defineConfig({
+		colors: {
+			palette: {
+				value: {
+					gray: {
+						value: {
+							"100": { hex: "#F3F4F6" },
+						},
+					},
+				},
+			},
+			gradients: {
+				value: {
+					surface: {
+						value: {
+							default: {
+								value: "linear-gradient(to right, var(--surface-muted), var(--bg, red))",
+								variables: {
+									"surface-muted": "palette.gray.100",
+									bg: "palette.gray.100",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		primitives: {
+			panel: {
+				value: {
+					default: {
+						value: {
+							"background-color": "var(--surface-muted, var(--bg))",
+							"border-color": "var(--brand-color, #fff)",
+						},
+						variables: {
+							"surface-muted": "palette.gray.100",
+							bg: "palette.gray.100",
+						},
+						settings: { pxToRem: false },
+					},
+				},
+			},
+		},
+	});
+
+	const result = processPrimitives(config);
+	const expected = [
+		"/* panel */",
+		"--panel-default-background-color: var(--palette-gray-100, var(--palette-gray-100));",
+		"--panel-default-border-color: var(--brand-color, #fff);",
+	].join("\n");
+
+	assertEquals(result.css.root, expected);
+	await assertSnapshot(t, result.css);
+	await assertSnapshot(t, Array.from(result.resolveMap.entries()));
+});

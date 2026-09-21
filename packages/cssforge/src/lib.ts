@@ -49,22 +49,177 @@ export interface Output {
 	resolveMap: ResolveMap;
 }
 
+/**
+ * Aliases for a token's value: keys are the names referenced as `var(--key)`,
+ * written without the `--` prefix, and values are cssforge token paths. A key
+ * must be usable as a custom-property name once prefixed, so it cannot be empty
+ * or contain whitespace, `(`, `)`, `,`, `"`, or `'`.
+ */
 export interface Variables {
 	[key: string]: string;
 }
 
-const cssVariableReferencePattern = /var\(\s*(--[\w-]+)\s*\)/g;
+const cssVariableNamePattern = /^--[^\s(),"']+$/;
+
+/** Index of the `)` closing `var(`, or -1 when unbalanced. */
+const findClosingParen = (value: string, openParenIndex: number): number => {
+	let depth = 0;
+	let quote: string | undefined;
+
+	for (let index = openParenIndex; index < value.length; index += 1) {
+		const character = value[index];
+
+		if (quote) {
+			if (character === "\\") index += 1;
+			else if (character === quote) quote = undefined;
+			continue;
+		}
+
+		if (character === '"' || character === "'") {
+			quote = character;
+			continue;
+		}
+
+		if (character === "(") depth += 1;
+		else if (character === ")") {
+			depth -= 1;
+			if (depth === 0) return index;
+		}
+	}
+
+	return -1;
+};
+
+/**
+ * Index of the first `(` after `var(` at `varIndex`, skipping comments and
+ * whitespace, or -1 when this is not a `var()` function.
+ */
+const findVarOpenParen = (value: string, varIndex: number): number => {
+	let index = varIndex + 3;
+
+	while (index < value.length) {
+		if (value.startsWith("/*", index)) {
+			const end = value.indexOf("*/", index + 2);
+			if (end === -1) return -1;
+			index = end + 2;
+			continue;
+		}
+
+		const character = value[index];
+		if (character === "(") return index;
+		if (character !== undefined && /\s/.test(character)) {
+			index += 1;
+			continue;
+		}
+
+		return -1;
+	}
+
+	return -1;
+};
+
+/** Index of the first non-whitespace, non-comment character in `[start, end)`. */
+const skipTrivia = (value: string, start: number, end: number): number => {
+	let index = start;
+
+	while (index < end) {
+		if (value.startsWith("/*", index)) {
+			const commentEnd = value.indexOf("*/", index + 2);
+			if (commentEnd === -1 || commentEnd >= end) return end;
+			index = commentEnd + 2;
+			continue;
+		}
+
+		const character = value[index];
+		if (character === undefined || !/\s/.test(character)) return index;
+		index += 1;
+	}
+
+	return index;
+};
 
 /**
  * Rewrites CSS custom-property references using the canonical CSSForge parser.
+ *
+ * The replacer receives the custom property name, the full `var(...)` match,
+ * and its index, and must return the replacement for that whole match. `match`
+ * arrives nested-resolved, so `resolveValue` can substitute only the name token
+ * and keep a fallback intact. Malformed, unbalanced, unnamed, and quoted `var(`
+ * text keeps its original value and is never reported to the replacer; unmapped
+ * names are reported so the caller can leave them unchanged.
  */
 export const replaceCssVariableReferences = (
 	value: string,
-	replacer: (cssVariable: string, match: string) => string,
-): string =>
-	value.replace(cssVariableReferencePattern, (match, cssVariable: string) =>
-		replacer(cssVariable, match),
-	);
+	replacer: (cssVariable: string, match: string, index: number) => string,
+): string => {
+	let result = "";
+	let cursor = 0;
+	let index = 0;
+	let quote: string | undefined;
+
+	while (index < value.length) {
+		const character = value[index];
+
+		if (quote) {
+			if (character === "\\") index += 2;
+			else {
+				if (character === quote) quote = undefined;
+				index += 1;
+			}
+			continue;
+		}
+
+		if (character === '"' || character === "'") {
+			quote = character;
+			index += 1;
+			continue;
+		}
+
+		if (character === "/" && value.startsWith("/*", index)) {
+			const end = value.indexOf("*/", index + 2);
+			index = end === -1 ? value.length : end + 2;
+			continue;
+		}
+
+		if (character !== "v" || !value.startsWith("var(", index)) {
+			index += 1;
+			continue;
+		}
+
+		const openParenIndex = findVarOpenParen(value, index);
+		const closeParenIndex =
+			openParenIndex === -1 ? -1 : findClosingParen(value, openParenIndex);
+
+		if (closeParenIndex === -1) {
+			// Emit the rest verbatim; rewriting inside a malformed call would
+			// change references that belong to it.
+			index = value.length;
+			continue;
+		}
+
+		const nameOffset = openParenIndex + 1;
+		const nameStart = skipTrivia(value, nameOffset, closeParenIndex);
+		const nameMatch = /^(--[^\s(),"']+)/.exec(value.slice(nameStart, closeParenIndex));
+		const cssVariable = nameMatch?.[1];
+
+		if (cssVariable && cssVariableNamePattern.test(cssVariable)) {
+			const nameEnd = nameStart + cssVariable.length;
+			const closed = value.slice(nameEnd, closeParenIndex + 1);
+
+			result += value.slice(cursor, index);
+			result += replacer(
+				cssVariable,
+				value.slice(index, nameEnd) + replaceCssVariableReferences(closed, replacer),
+				index,
+			);
+			cursor = closeParenIndex + 1;
+		}
+
+		index = closeParenIndex + 1;
+	}
+
+	return result + value.slice(cursor);
+};
 
 const getCssVariableReferences = (value: string): string[] => {
 	const references: string[] = [];
@@ -237,9 +392,11 @@ export const getReferencePaths = ({
 };
 
 /**
- * Resolves a CSS variable value using a map of variable paths.
- * It replaces occurrences of `var(--key)` in the value with the corresponding
- * CSS variable from the map.
+ * Resolves a CSS variable value using a map of variable paths. It replaces the
+ * alias name inside each `var()` call with the referenced CSS custom property
+ * name, keeping any fallback and surrounding whitespace intact. Names that are
+ * absent from the map are left untouched, which is the native-CSS escape hatch
+ * for custom properties owned by the consumer.
  */
 export const resolveValue = ({
 	map,
@@ -248,7 +405,6 @@ export const resolveValue = ({
 	map: Map<string, string>;
 	value: string;
 }) =>
-	replaceCssVariableReferences(
-		value,
-		(cssVariable) => `var(${map.get(cssVariable) ?? cssVariable})`,
+	replaceCssVariableReferences(value, (cssVariable, match) =>
+		match.replace(cssVariable, map.get(cssVariable) ?? cssVariable),
 	);
