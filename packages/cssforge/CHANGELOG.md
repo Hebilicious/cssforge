@@ -1,5 +1,148 @@
 # @hebilicious/cssforge
 
+## 0.7.0
+
+### Minor Changes
+
+- c2d2a9f: Export `InvalidNameError` from the package entry.
+
+  Name validation throws `InvalidNameError`, and it was already reaching consumers
+  through `generateCSS`, `generateStyleDictionaryJSON`, `processColors`,
+  `processPrimitives`, `processSpacing` and `processTypography`, but the class was
+  not part of the package surface. The only way to recognize the failure was the
+  string comparison `error.name === "InvalidNameError"`, with no type safety and no
+  stable import path.
+
+  ```ts
+  import { generateCSS, InvalidNameError } from "@hebilicious/cssforge";
+
+  try {
+    generateCSS(config);
+  } catch (error) {
+    if (error instanceof InvalidNameError) {
+      // report the offending configuration path
+    }
+  }
+  ```
+
+  This is a new named export on the package entry, on both the npm and JSR
+  channels, so it is a minor release: `dist/mod.d.ts` now declares it and
+  `src/mod.ts` re-exports it, while no existing export, validation rule, error
+  message or generated output changed.
+
+### Patch Changes
+
+- 43005ea: Report the real release version from the CLI. The command metadata is now derived from
+  `package.json`, the single source of truth, instead of a hard-coded string, so `--version`
+  matches the installed package on both the npm and JSR channels. A new release consistency
+  check fails when `package.json`, `jsr.json`, the generated `src/version.ts`, or the matching
+  `CHANGELOG.md` entry disagree.
+- da4827b: Document theme class placement for descendant-scoped palettes in the Colors example.
+
+  The `another` palette is now declared with `settings: { selector: ":root.Another" }` and the
+  README documents that the theme class belongs on the root element (`<html class="Another">`).
+  Custom property references are substituted when the alias is computed, before inheritance, so
+  a palette token declared on a descendant cannot resolve a theme alias that is computed on
+  `:root`.
+
+- 464a339: Reject token names that cannot produce valid CSS custom property names.
+
+  `validateName()` accepted whitespace and CSS delimiter characters, and module
+  code interpolated those names directly into declaration keys. A configuration
+  such as:
+
+  ```ts
+  primitives: {
+    "card button": {
+      value: { default: { value: { gap: "1rem" } } },
+    },
+  }
+  ```
+
+  previously emitted `--card button-default-gap: 1rem;`, which is not a valid
+  custom property declaration. Generation now fails with a configuration-path
+  error instead:
+
+  ```text
+  Invalid name: card button at configuration path "primitives.card button".
+  Names must be valid CSS identifier segments: letters, digits, hyphens,
+  underscores and non-ASCII characters only.
+  ```
+
+  Compatibility implications:
+
+  - Breaking only for configurations that emitted invalid CSS. A name that already
+    produced valid CSS keeps working unchanged.
+  - Numeric keys (`palette.coral.50`), hyphens (`2xl`, `background-color`),
+    underscores (`sm_2`) and non-ASCII names (`größe`) are still accepted, because
+    segments are joined with hyphens and CSS identifiers allow those characters.
+    A segment may also begin with a digit or a hyphen, since the module prefix
+    starts the identifier.
+  - Rejected token key segments are whitespace and the ASCII characters
+    `` !"#$%&'()*+,./:;<=>?@[\]^`{|}~ ``. Accepted ASCII is limited to letters,
+    digits, hyphens and underscores; every code point from U+0080 upward is
+    accepted. A backslash escape is rejected even though raw CSS accepts it,
+    because the name would not survive round-tripping through configuration paths,
+    generated keys and `variables` lookups.
+  - This applies to every module that shares name validation: palette colors,
+    gradient and theme names, spacing scales, prefixes and tokens, typography
+    scales, prefixes and weights, and primitive names, variants and property names.
+  - Variable alias keys (`variables: { "my color": "..." }`) and typography
+    `settings.customLabel` values are validated too, because they are interpolated
+    into emitted `var(--...)` references and generated keys. These two fields are
+    display names rather than token keys, so only the CSS character rule applies:
+    an alias named `spacing` or a label named `value` keeps working, as it did
+    before. Aliases written as `--name` are accepted, and the leading `--` is
+    ignored during validation.
+  - A `customLabel` entry may resolve through the prototype chain because
+    generation reads it with bracket access. The label that is actually emitted is
+    validated, so an inherited mapping cannot leak an invalid key.
+  - Palette colors and themes log ordinary per-token failures and continue. Name
+    errors are raised as an `InvalidNameError` and are re-thrown through those
+    handlers, so a configuration mistake now fails loudly instead of being logged
+    and silently dropped from the output.
+
+  Escaping was rejected as an alternative policy: it cannot preserve a stable
+  one-to-one mapping between configuration paths, generated keys and `variables`
+  lookups, and silently normalising distinct names into one key is not acceptable.
+
+  Related to #24 (hyphenated alias support); this change does not depend on it.
+
+- 5669e7a: Reject unsupported output modes with an error naming the accepted alternatives instead of silently producing no output, and validate the mode before any output file is written or watch mode starts.
+- 188c6b8: Reject configurations whose distinct token paths generate the same CSS custom
+  property name.
+
+  Generated names are built by joining configuration path segments with hyphens,
+  so two different paths can produce one name. A configuration such as
+  `primitives: { "a-b": { value: { c: { value: { x: "1rem" } } } }, a: { value: { "b-c": { value: { x: "2rem" } } } } }`
+  previously emitted `--a-b-c-x` twice with different values, and the CSS, JSON
+  and TypeScript outputs disagreed about which value the token held.
+
+  Generation now fails with a diagnostic that names both contributing
+  configuration paths, for example:
+
+  ```
+  Token key collision: "primitives.a-b.c.x" and "primitives.a.b-c.x" both generate "--a-b-c-x". Rename one of the configuration paths.
+  ```
+
+  Compatibility: configurations that silently collided now fail instead of
+  producing ambiguous output. Configurations whose generated names are unique are
+  unaffected, including `variantNameOnly` themes that deliberately reuse a name
+  such as `--primary` across different selectors or at-rules, because tokens in
+  different scopes do not conflict.
+
+- 603aaea: Resolve aliases that contain a hyphen and keep `var()` fallbacks intact.
+
+  Values such as `var(--surface-muted)`, `var(--surface-muted, var(--bg))`, and
+  gradients that reference several aliases previously failed to resolve, because
+  a reference was only recognized when the closing parenthesis followed the name
+  immediately. References are now parsed as CSS `var()` functions, so hyphenated
+  names, nested fallbacks, whitespace, and quoted strings behave correctly.
+  Unmapped custom properties and malformed `var(` text still pass through
+  unchanged.
+
+- c3ae80d: Fix CLI output paths on Windows: resolve each output file's parent directory with the platform-aware `dirname` instead of a forward-slash-only expression, so Windows paths create the containing directory rather than a directory at the output file path.
+
 ## 0.6.0
 
 ### Minor Changes
