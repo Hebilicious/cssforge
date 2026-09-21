@@ -9,47 +9,47 @@
       /* Example usage of the generated variables */
       .color-test {
         display: grid;
-        gap: var(--size-2);
-        padding: var(--size-3);
+        gap: var(--spacing-size-2);
+        padding: var(--spacing-size-3);
       }
 
       .color-swatch {
         width: 100px;
         height: 100px;
         border-radius: 8px;
-        margin-bottom: var(--size-1);
+        margin-bottom: var(--spacing-size-1);
       }
 
       /* Example color swatches */
       .coral-100 {
-        background-color: var(--color-coral-100);
+        background-color: var(--palette-coral-100);
       }
 
       .mint-100 {
-        background-color: var(--color-mint-100);
+        background-color: var(--palette-mint-100);
       }
 
       /* Typography test */
       .type-scale {
         margin-top: 2rem;
         display: grid;
-        gap: var(--text-base);
+        gap: var(--typography_fluid-base-m);
       }
 
       .type-scale h1 {
-        font-size: var(--text-4xl);
+        font-size: var(--typography_fluid-base-4xl);
       }
 
       .type-scale h2 {
-        font-size: var(--text-3xl);
+        font-size: var(--typography_fluid-base-3xl);
       }
 
       .type-scale h3 {
-        font-size: var(--text-2xl);
+        font-size: var(--typography_fluid-base-2xl);
       }
 
       .type-scale p {
-        font-size: var(--text-lg);
+        font-size: var(--typography_fluid-base-l);
       }
     </style>
   </head>
@@ -80,9 +80,9 @@
 
     <div class="spacing-test">
       <h2>Spacing Scale Test</h2>
-      <div style="background: #eee; padding: var(--size-1)">Size 1 padding</div>
-      <div style="background: #ddd; padding: var(--size-2)">Size 2 padding</div>
-      <div style="background: #ccc; padding: var(--size-3)">Size 3 padding</div>
+      <div style="background: #eee; padding: var(--spacing-size-1)">Size 1 padding</div>
+      <div style="background: #ddd; padding: var(--spacing-size-2)">Size 2 padding</div>
+      <div style="background: #ccc; padding: var(--spacing-size-3)">Size 3 padding</div>
     </div>
 
     <script>
