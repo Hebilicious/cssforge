@@ -231,7 +231,7 @@ export default defineConfig({
             cyan: { hex: "#00FFFF" },
           },
           settings: {
-            selector: ".Another",
+            selector: ":root.Another",
           },
         },
       },
@@ -335,7 +335,7 @@ export default defineConfig({
             cyan: { hex: "#00FFFF" },
           },
           settings: {
-            selector: ".Another",
+            selector: ":root.Another",
           },
         },
       },
@@ -448,7 +448,7 @@ This will generate the following CSS :
 }
 }
 /* another */
-.Another {
+:root.Another {
   --palette-another-yellow: oklch(96.798% 0.21101 109.76924);
   --palette-another-cyan: oklch(90.54% 0.15455 194.76896);
 }
@@ -461,6 +461,20 @@ This will generate the following CSS :
 ```
 
 <!-- /md:generate -->
+
+The `another` palette is emitted under `:root.Another`, so the element carrying the theme
+class has to be the root element:
+
+```html
+<html class="Another">
+```
+
+Custom property references are substituted when the alias is computed, before inheritance.
+`--primary: var(--palette-another-yellow)` is computed on `:root`, so
+`--palette-another-yellow` has to be defined on `:root` as well. Scoping the palette to
+`:root.Another` keeps both declarations on the same element; a theme class on a descendant
+leaves `--primary` invalid at computed-value time, and every `var(--primary, fallback)`
+reference uses its fallback.
 
 #### Condition
 

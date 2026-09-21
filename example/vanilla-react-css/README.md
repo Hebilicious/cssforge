@@ -19,16 +19,20 @@ pnpm create vite@latest vanilla-react-css -- --template react-ts --no-interactiv
 ```bash
 pnpm install
 pnpm exec playwright install chromium
-pnpm run cssforge:build-local
-pnpm run cssforge:generate
-pnpm run dev
+moon run vanilla-react-css:cssforge-build-local
+moon run vanilla-react-css:cssforge-generate
+moon run vanilla-react-css:dev
 ```
 
 ## E2E Test
 
 ```bash
-pnpm run test:e2e
+moon run vanilla-react-css:e2e
 ```
 
-The Playwright test validates CSS Forge variables on `:root` and computed styles on
-`[data-testid="token-card"]`.
+The Playwright suite has two specs. `tests/e2e.spec.ts` validates CSS Forge variables on
+`:root` and computed styles on `[data-testid="token-card"]`. The
+`tests/theme-alias-scoping.spec.ts` spec covers theme alias scoping: with the `Another`
+theme class on the root element the probe resolves to the `:root.Another` palette color,
+while a descendant-only class leaves `--primary` invalid at computed-value time on `:root`
+and the probe uses its fallback.
