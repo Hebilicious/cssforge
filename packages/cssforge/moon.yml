@@ -133,6 +133,13 @@ tasks:
       - "CHANGELOG.md"
       - "scripts/version.ts"
       - "/example/basic/**/*"
+      # Read by the Quick Start guard and by the packed-artifact fixture.
+      - "/README.md"
+      - "README.md"
+      - "/package.json"
+      - "/pnpm-workspace.yaml"
+      - "/pnpm-lock.yaml"
+      - "/tsconfig.base.json"
     options:
       runInCI: "always"
   test-watch:
