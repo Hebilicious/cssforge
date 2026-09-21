@@ -133,6 +133,9 @@ tasks:
       - "CHANGELOG.md"
       - "scripts/version.ts"
       - "/example/basic/**/*"
+      # The Quick Start guard reads both copies of the README.
+      - "/README.md"
+      - "README.md"
     options:
       runInCI: "always"
   test-watch:

@@ -11,12 +11,14 @@ tasks:
     script: "tsc -b && vite build"
     deps:
       - "^:build"
+      - "~:cssforge-generate"
     options:
       runInCI: false
   dev:
     command: "vite"
     deps:
       - "^:build"
+      - "~:cssforge-generate"
     preset: "server"
     options:
       runInCI: false
@@ -25,6 +27,7 @@ tasks:
     args: ["--host", "127.0.0.1", "--port", "4177"]
     deps:
       - "^:build"
+      - "~:cssforge-generate"
     preset: "server"
     options:
       runInCI: false
@@ -55,6 +58,10 @@ tasks:
       - "./.cssforge/output.css"
     deps:
       - "^:build"
+    inputs:
+      - "cssforge.config.ts"
+    outputs:
+      - ".cssforge/output.css"
     options:
       runInCI: false
   e2e:

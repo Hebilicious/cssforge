@@ -12,6 +12,7 @@ tasks:
     args: ["build"]
     deps:
       - "^:build"
+      - "~:cssforge-generate"
     options:
       runInCI: false
   dev:
@@ -19,6 +20,7 @@ tasks:
     args: ["dev"]
     deps:
       - "^:build"
+      - "~:cssforge-generate"
     preset: "server"
     options:
       runInCI: false
@@ -27,6 +29,7 @@ tasks:
     args: ["dev", "--hostname", "127.0.0.1", "--port", "4173"]
     deps:
       - "^:build"
+      - "~:cssforge-generate"
     preset: "server"
     options:
       runInCI: false
@@ -57,6 +60,10 @@ tasks:
       - "./.cssforge/output.css"
     deps:
       - "^:build"
+    inputs:
+      - "cssforge.config.ts"
+    outputs:
+      - ".cssforge/output.css"
     options:
       runInCI: false
   e2e:
