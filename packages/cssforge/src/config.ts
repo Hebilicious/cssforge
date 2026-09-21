@@ -4,6 +4,19 @@ import type { SpacingConfig } from "./modules/spacing.ts";
 import type { TypographyConfig } from "./modules/typography.ts";
 
 /**
+ * Reporting options for the diagnostics CSS Forge emits alongside generation.
+ */
+export interface DiagnosticsConfig {
+	/**
+	 * Configuration paths whose scope diagnostics are not reported. A consumer
+	 * path silences every scope diagnostic for that token; `"*"` silences all of
+	 * them. Use it for a reference that is deliberately resolved outside the
+	 * generated stylesheet.
+	 */
+	suppress?: string[];
+}
+
+/**
  * The main configuration object for CSSForge.
  */
 export interface CSSForgeConfig {
@@ -23,6 +36,10 @@ export interface CSSForgeConfig {
 	 * Primitive configuration for creating custom design tokens.
 	 */
 	primitives: PrimitiveConfig;
+	/**
+	 * Diagnostics reporting options.
+	 */
+	diagnostics?: DiagnosticsConfig;
 }
 
 /**

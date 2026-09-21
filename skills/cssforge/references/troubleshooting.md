@@ -17,6 +17,9 @@
 - Verify reference syntax from README `## Referencing Variables`:
   - No `.value` in references
   - Fluid scales require `@label`
+- For an alias that resolves to nothing, read README `## Diagnostics`: a custom property is
+  substituted where the alias is declared, so a `:root` alias cannot read a token emitted only
+  under a narrower selector or at-rule. `getScopeDiagnostics(config)` lists those references.
 
 ## Unexpected variable names
 

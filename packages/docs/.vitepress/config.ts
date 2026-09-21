@@ -55,6 +55,10 @@ export default defineConfig({
           { text: "Configuration", link: "/guide/configuration" },
           { text: "CLI and API", link: "/guide/usage" },
           {
+            text: "Diagnostics",
+            link: "/guide/diagnostics",
+          },
+          {
             text: "Style Dictionary JSON",
             link: "/guide/style-dictionary",
           },

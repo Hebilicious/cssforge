@@ -6,33 +6,9 @@ import {
 	getResolvedVariablesMap,
 	type Output,
 	type ResolveMap,
-	ROOT_SCOPE,
 	resolveValue,
 	withTokenScope,
 } from "../lib.ts";
-
-/**
- * Describes the wrapper chain a declaration is emitted into. `selector` and
- * `atRule` are both part of the identity, because two declarations only
- * overwrite each other when they share the same wrapper chain. With no wrapper
- * the declaration lands in `:root`.
- *
- * An explicit `selector: ":root"` is canonicalized to the root scope, because a
- * `:root` selector block and the implicit `:root` block declare the same
- * properties on the same element. `{ atRule, selector: ":root" }` therefore has
- * the same scope as that atRule alone.
- */
-const describeScope = (settings: WithCondition | undefined): string => {
-	const atRule = settings?.atRule?.trim() ?? "";
-	const rawSelector = settings?.selector?.trim() ?? "";
-	// A `:root` selector block and the implicit `:root` block declare the same
-	// properties on the same element, with or without a shared at-rule wrapper,
-	// so an explicit `:root` selector drops out of the scope identity.
-	const selector = rawSelector === ROOT_SCOPE ? "" : rawSelector;
-
-	if (!atRule && !selector) return ROOT_SCOPE;
-	return `${atRule}|${selector}`;
-};
 
 type ExactlyOne<T> = {
 	[K in keyof T]: {
@@ -309,11 +285,11 @@ export function processColors(colors: ColorConfig): Output {
 
 		return {
 			/**
-			 * The effective wrapper chain these declarations are emitted into, so
-			 * callers can record which scope a token belongs to. Declarations
-			 * without a wrapper land in `:root`.
+			 * The wrapper chain these declarations are emitted into, so callers can
+			 * record which scope a token belongs to. `withTokenScope` normalizes it,
+			 * and declarations without a wrapper land in `:root`.
 			 */
-			scope: describeScope(settings),
+			scope: settings,
 			addComment(c: string) {
 				if (hasSelector || hasAtRule) innerComments.push(c);
 				else rootOutput.push(c);

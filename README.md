@@ -1053,6 +1053,59 @@ follow the following convention :
 - 2xl
 - 3xl
 
+## Diagnostics
+
+CSS Forge reports a scope diagnostic when a generated alias references a custom property that
+is not available on the element where the alias is computed. A custom property is substituted
+where the declaration containing the `var()` call is computed, so an alias emitted at `:root`
+cannot read a value declared only under a narrower selector or a condition.
+
+With a palette emitted under `.Another` and a theme alias emitted at `:root`, the CLI prints:
+
+```text
+cssforge: warning: Token theme.dark.background.primary (--primary) is emitted at :root under @media (prefers-color-scheme: dark), but its referenced token --palette-another-yellow is only emitted by palette.another.yellow under .Another. A var() reference is substituted where the alias is declared, so .Another must match the root element, or an external declaration must provide --palette-another-yellow there.
+```
+
+Scope the source to the element the alias is computed on, or provide the value outside the
+generated stylesheet. The [Colors](#colors) section shows the documented arrangement, where the
+palette and the aliases are emitted on `:root`.
+
+Diagnostics are warnings, so generation succeeds and every output is written. Two controls are
+available:
+
+- `--strict` fails the build before writing any output when a diagnostic is reported.
+- `diagnostics.suppress` silences specific configuration paths.
+
+```typescript
+export default defineConfig({
+  diagnostics: {
+    // Silence every scope diagnostic for this token.
+    suppress: ["theme.dark.background.primary"],
+    // "*" silences all of them.
+  },
+  colors: {
+    // ...
+  },
+});
+```
+
+The same diagnostics are available programmatically:
+
+```typescript
+import { getScopeDiagnostics } from "@hebilicious/cssforge";
+
+const diagnostics = getScopeDiagnostics(config);
+// diagnostics[0].consumer.path   => "theme.dark.background.primary"
+// diagnostics[0].consumer.atRule => "@media (prefers-color-scheme: dark)"
+// diagnostics[0].sources[0].path => "palette.another.yellow"
+// diagnostics[0].sources[0].selector => ".Another"
+// diagnostics[0].issues          => ["selector"] or ["at-rule"]
+```
+
+Not reported: references to custom properties CSS Forge does not generate, references inside a
+`var()` fallback, declarations that share the consumer's scope, and relationships between two
+different selectors or two different at-rules that the configuration alone cannot decide.
+
 ## CLI Usage
 
 ```bash
@@ -1070,6 +1123,9 @@ cssforge --mode style-dictionary --style-dictionary ./dist/design-tokens.sd.json
 
 # Keep CSS variables as values for usage matching
 cssforge --mode style-dictionary --style-dictionary ./dist/design-tokens.sd.json --style-dictionary-value-mode css-reference
+
+# Fail the build when scope diagnostics are reported
+cssforge --strict
 ```
 
 ## Programmatic Usage

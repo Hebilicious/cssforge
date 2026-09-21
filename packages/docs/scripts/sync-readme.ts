@@ -29,6 +29,14 @@ const readmePath = resolve(root, "README.md");
 const sourcePath = "README.md";
 const githubBase = "https://github.com/Hebilicious/cssforge/tree/main";
 
+/** README anchors whose target section is extracted into its own docs page. */
+const tokenPageAnchors: Record<string, string> = {
+  "#colors": "/tokens/colors",
+  "#spacing": "/tokens/spacing",
+  "#typography": "/tokens/typography",
+  "#primitives": "/tokens/primitives",
+};
+
 function parseSections(markdown: string, level: number): ParsedMarkdown {
   const marker = "#".repeat(level);
   const matches = [
@@ -93,10 +101,17 @@ function transformMarkdown(markdown: string): string {
     },
   );
 
-  return content.replace(
+  content = content.replace(
     /\]\(\.\/([\w/.-]+)\)/g,
     `](${githubBase}/$1)`,
   );
+
+  // A README anchor that names a section extracted into its own page would be
+  // dead in the generated page, so it becomes a link to that page.
+  return content.replace(/\]\((#[a-z-]+)\)/g, (match, anchor: string) => {
+    const page = tokenPageAnchors[anchor];
+    return page ? `](${page})` : match;
+  });
 }
 
 function renderPage(page: GeneratedPage): string {
@@ -157,6 +172,15 @@ const pages: GeneratedPage[] = [
       ),
       renderSection(requireSection(readmeSections.sections, "Best Practices")),
     ].join("\n\n"),
+  },
+  {
+    path: "guide/diagnostics.md",
+    title: "Diagnostics",
+    description:
+      "Understand and control the scope diagnostics CSS Forge reports.",
+    content: renderSection(
+      requireSection(readmeSections.sections, "Diagnostics"),
+    ),
   },
   {
     path: "guide/style-dictionary.md",

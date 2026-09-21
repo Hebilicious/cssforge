@@ -10,6 +10,7 @@ When README examples are not enough, use source types.
   - `typography: TypographyConfig`
   - `spacing: SpacingConfig`
   - `primitives: PrimitiveConfig`
+  - `diagnostics?: DiagnosticsConfig` (`suppress` silences scope diagnostics by configuration path, or `"*"` for all)
 
 ## Module type sources
 
@@ -20,7 +21,7 @@ When README examples are not enough, use source types.
 
 ## Exposed API entrypoint
 
-- `packages/cssforge/src/mod.ts` exports `defineConfig`, `generateCSS`, and processing helpers.
+- `packages/cssforge/src/mod.ts` exports `defineConfig`, `generateCSS`, `getScopeDiagnostics`, and processing helpers. `getScopeDiagnostics(config)` reports token references that are not available where the alias is computed; the CLI prints them and `--strict` makes them fatal.
 
 ## Guidance
 

@@ -9,16 +9,23 @@
 
 import type { CSSForgeConfig } from "./config.ts";
 import { defineConfig } from "./config.ts";
+import { getScopeDiagnostics } from "./diagnostics.ts";
 import { generateCSS, generateStyleDictionaryJSON } from "./generator.ts";
 import { InvalidNameError } from "./helpers.ts";
 import { processColors } from "./modules/colors.ts";
 import { processPrimitives } from "./modules/primitive.ts";
 import { processSpacing } from "./modules/spacing.ts";
 import { processTypography } from "./modules/typography.ts";
+
 /**
  * The main configuration object for CSSForge.
  */
-export type { CSSForgeConfig };
+export type { CSSForgeConfig, DiagnosticsConfig } from "./config.ts";
+export type {
+	ScopeDiagnostic,
+	ScopeDiagnosticDeclaration,
+	ScopeDiagnosticIssue,
+} from "./diagnostics.ts";
 export type { StyleDictionaryJSONOptions } from "./generator.ts";
 
 export {
@@ -40,6 +47,13 @@ export {
 	 * @returns The generated Style Dictionary-readable JSON string.
 	 */
 	generateStyleDictionaryJSON,
+	/**
+	 * Reports `var()` references whose only configured source is emitted into a
+	 * scope that does not cover the declaration computing the reference.
+	 * @param config The CSSForge configuration.
+	 * @returns The scope diagnostics, ordered by declaration.
+	 */
+	getScopeDiagnostics,
 	/**
 	 * Thrown when a configuration name cannot produce a valid CSS custom property
 	 * name or reference. Catch it with `instanceof` to handle a name validation
