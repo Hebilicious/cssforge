@@ -80,9 +80,9 @@ export function processSpacing(spacing: SpacingConfig): Output {
 	if (spacing.fluid) {
 		const moduleKey = "spacing_fluid";
 		for (const [scaleName, { value }] of Object.entries(spacing.fluid)) {
-			validateName(scaleName);
+			validateName(scaleName, `${moduleKey}.${scaleName}`);
 			const { prefix, ...utopiaConfig } = value;
-			if (prefix) validateName(prefix);
+			if (prefix) validateName(prefix, `${moduleKey}.${scaleName}.prefix`);
 
 			const { sizes, customPairs, oneUpPairs } = calculateSpaceScale(utopiaConfig);
 
@@ -109,9 +109,9 @@ export function processSpacing(spacing: SpacingConfig): Output {
 			scaleName,
 			{ value, settings = { pxToRem: true, rem: 16 } },
 		] of Object.entries(spacing.custom)) {
-			validateName(scaleName);
+			validateName(scaleName, `${moduleKey}.custom.${scaleName}`);
 			for (const [scaleKey, scaleValue] of Object.entries(value)) {
-				validateName(scaleKey);
+				validateName(scaleKey, `${moduleKey}.custom.${scaleName}.${scaleKey}`);
 				const convertedValue = settings.pxToRem
 					? pxToRem({ value: scaleValue, rem: settings.rem })
 					: scaleValue;

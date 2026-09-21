@@ -1,5 +1,5 @@
 import { calculateTypeScale, type UtopiaTypeConfig } from "utopia-core";
-import { validateName } from "../helpers.ts";
+import { validateCustomLabel, validateName } from "../helpers.ts";
 import type { Output, ResolveMap } from "../lib.ts";
 
 export interface FluidTypeScaleDefinition {
@@ -73,10 +73,10 @@ export function processTypography(config: TypographyConfig): Output {
 	if (config.fluid) {
 		const moduleKey = "typography_fluid";
 		for (const [scaleName, definition] of Object.entries(config.fluid)) {
-			validateName(scaleName);
+			validateName(scaleName, `${moduleKey}.${scaleName}`);
 			const { value, settings } = definition;
 			const { prefix, ...utopiaConfig } = value;
-			if (prefix) validateName(prefix);
+			if (prefix) validateName(prefix, `${moduleKey}.${scaleName}.prefix`);
 
 			const scale = calculateTypeScale({
 				labelStyle: settings?.customLabel ? "utopia" : "tshirt",
@@ -88,6 +88,13 @@ export function processTypography(config: TypographyConfig): Output {
 				const resolvedLabel = settings?.customLabel
 					? (settings.customLabel[label] ?? label)
 					: label;
+				// Validate the label that is actually emitted. A `customLabel` may
+				// resolve through the prototype chain, so iterating own values would
+				// miss a label that still reaches the generated key.
+				validateCustomLabel(
+					resolvedLabel,
+					`${moduleKey}.${scaleName}.settings.customLabel.${label}`,
+				);
 				const key = `--${moduleKey}-${resolvedPrefix}-${resolvedLabel}`;
 				const variable = `${key}: ${clamp};`;
 				cssOutput.push(variable);
@@ -107,9 +114,9 @@ export function processTypography(config: TypographyConfig): Output {
 	if (config.weight) {
 		const moduleKey = "typography";
 		for (const [weightName, { value }] of Object.entries(config.weight)) {
-			validateName(weightName);
+			validateName(weightName, `${moduleKey}.weight.${weightName}`);
 			for (const [token, weightValue] of Object.entries(value)) {
-				validateName(token);
+				validateName(token, `${moduleKey}.weight.${weightName}.${token}`);
 				const key = `--${moduleKey}-weight-${weightName}-${token}`;
 				const variable = `${key}: ${weightValue};`;
 				cssOutput.push(variable);
