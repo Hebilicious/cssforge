@@ -8,6 +8,7 @@ CLI implementation: `packages/cssforge/src/cli.ts`
 - `--config`: config path (default `./cssforge.config.ts`)
 - `--mode`, `-m`: `css | json | ts | all` (default `all`)
 - `--prefix`: prefix prepended to all paths
+- `--strict`: fail the build when scope diagnostics are reported (default: warn and generate)
 - `--css`: css output path (default `./.cssforge/output.css`)
 - `--json`: json output path (default `./.cssforge/output.json`)
 - `--ts`: ts output path (default `./.cssforge/output.ts`)

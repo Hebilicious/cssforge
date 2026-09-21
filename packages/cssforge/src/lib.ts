@@ -24,12 +24,43 @@ export interface TokenMetadata {
 }
 
 /**
- * The CSS scope a declaration is emitted into: the effective chain of wrappers
- * (`selector` and `atRule`) that contains it, or `ROOT_SCOPE` when it is emitted
- * directly into `:root`. Two declarations in the same scope with the same custom
- * property name overwrite each other, so they are a collision.
+ * The CSS scope a declaration is emitted into: the chain of wrappers
+ * (`selector` and `atRule`) that contains it. Two declarations in the same
+ * scope with the same custom property name overwrite each other, so they are a
+ * collision. A declaration without wrappers lands in `:root`.
  */
+export interface TokenScope {
+	/** Selector wrapper the declaration is emitted into, e.g. `.Another`. */
+	selector?: string;
+	/** At-rule wrapper the declaration is emitted into, e.g. `@media (width > 30em)`. */
+	atRule?: string;
+}
+
+/** The scope of a declaration emitted directly into `:root`. */
 export const ROOT_SCOPE = ":root";
+
+/**
+ * Drops the wrapper parts that do not change which element a declaration
+ * applies to. An explicit `:root` selector block and the implicit `:root` block
+ * declare the same properties on the same element, with or without a shared
+ * at-rule wrapper, so an explicit `:root` selector is not part of the identity.
+ */
+const normalizeTokenScope = (scope: TokenScope | undefined): TokenScope => {
+	const atRule = scope?.atRule?.trim() ?? "";
+	const rawSelector = scope?.selector?.trim() ?? "";
+	const selector = rawSelector === ROOT_SCOPE ? "" : rawSelector;
+
+	return {
+		...(atRule ? { atRule } : {}),
+		...(selector ? { selector } : {}),
+	};
+};
+
+/** The identity two declarations must share to overwrite each other. */
+const scopeIdentity = (scope: TokenScope): string =>
+	!scope.atRule && !scope.selector
+		? ROOT_SCOPE
+		: `${scope.atRule ?? ""}|${scope.selector ?? ""}`;
 
 export interface ResolvedToken extends TokenMetadata {
 	/** CSS custom property name, e.g. `--theme-light-content-primary`. */
@@ -39,36 +70,51 @@ export interface ResolvedToken extends TokenMetadata {
 	/** The full CSS declaration. */
 	variable: string;
 	/**
-	 * The effective wrapper chain this declaration is emitted into, recorded by
-	 * the module that emitted it. Declarations without a wrapper share
-	 * `ROOT_SCOPE`, so an unscoped theme and an unscoped module declaration are
-	 * compared as the same scope.
+	 * The wrapper chain this declaration is emitted into, recorded by the module
+	 * that emitted it. Declarations without a wrapper share `ROOT_SCOPE`, so an
+	 * unscoped theme and an unscoped module declaration are compared as the same
+	 * scope.
 	 *
 	 * This is non-enumerable: the resolve map is serialized into snapshots and
 	 * public JSON output, and the scope is generator bookkeeping rather than
-	 * part of the token's published shape. Read it with `getTokenScope`.
+	 * part of the token's published shape. Read it with `getTokenScope` or
+	 * `getTokenScopeContext`.
 	 */
-	readonly scope?: string;
+	readonly scope?: TokenScope;
 }
 
 /**
- * Returns the effective CSS scope of a token, defaulting to `ROOT_SCOPE` for
- * declarations emitted directly into `:root`.
+ * Returns the effective CSS scope identity of a token, defaulting to
+ * `ROOT_SCOPE` for declarations emitted directly into `:root`. The scope is
+ * normalized on read as well as on write, so a directly assigned scope cannot
+ * bypass the identity rule.
  */
-export const getTokenScope = (token: ResolvedToken): string => token.scope ?? ROOT_SCOPE;
+export const getTokenScope = (token: ResolvedToken): string =>
+	scopeIdentity(normalizeTokenScope(token.scope));
+
+/**
+ * Returns the recorded wrapper chain of a token, normalized, or `undefined`
+ * when it is emitted directly into `:root` with no wrapper.
+ */
+export const getTokenScopeContext = (token: ResolvedToken): TokenScope | undefined => {
+	const normalized = normalizeTokenScope(token.scope);
+	return normalized.selector || normalized.atRule ? normalized : undefined;
+};
 
 /**
  * Attaches the emitting module's wrapper chain to a resolved token without
- * making it enumerable, so the token's serialized shape is unchanged.
+ * making it enumerable, so the token's serialized shape is unchanged. A scope
+ * that normalizes to `:root` is not recorded, because it is the default.
  */
 export const withTokenScope = <T extends ResolvedToken>(
 	token: T,
-	scope: string | undefined,
+	scope: TokenScope | undefined,
 ): T => {
-	if (!scope || scope === ROOT_SCOPE) return token;
+	const normalized = normalizeTokenScope(scope);
+	if (scopeIdentity(normalized) === ROOT_SCOPE) return token;
 
 	Object.defineProperty(token, "scope", {
-		value: scope,
+		value: normalized,
 		enumerable: false,
 		writable: true,
 		configurable: true,
@@ -187,15 +233,18 @@ const skipTrivia = (value: string, start: number, end: number): number => {
  * Rewrites CSS custom-property references using the canonical CSSForge parser.
  *
  * The replacer receives the custom property name, the full `var(...)` match,
- * and its index, and must return the replacement for that whole match. `match`
- * arrives nested-resolved, so `resolveValue` can substitute only the name token
- * and keep a fallback intact. Malformed, unbalanced, unnamed, and quoted `var(`
- * text keeps its original value and is never reported to the replacer; unmapped
- * names are reported so the caller can leave them unchanged.
+ * its index, and its nesting depth, and must return the replacement for that
+ * whole match. `match` arrives nested-resolved, so `resolveValue` can
+ * substitute only the name token and keep a fallback intact. Depth `0` marks a
+ * reference the declaration uses directly; a deeper reference sits inside the
+ * fallback of an enclosing `var(...)`. Malformed, unbalanced, unnamed, and
+ * quoted `var(` text keeps its original value and is never reported to the
+ * replacer; unmapped names are reported so the caller can leave them unchanged.
  */
 export const replaceCssVariableReferences = (
 	value: string,
-	replacer: (cssVariable: string, match: string, index: number) => string,
+	replacer: (cssVariable: string, match: string, index: number, depth: number) => string,
+	depth = 0,
 ): string => {
 	let result = "";
 	let cursor = 0;
@@ -254,8 +303,10 @@ export const replaceCssVariableReferences = (
 			result += value.slice(cursor, index);
 			result += replacer(
 				cssVariable,
-				value.slice(index, nameEnd) + replaceCssVariableReferences(closed, replacer),
+				value.slice(index, nameEnd) +
+					replaceCssVariableReferences(closed, replacer, depth + 1),
 				index,
+				depth,
 			);
 			cursor = closeParenIndex + 1;
 		}

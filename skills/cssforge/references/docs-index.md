@@ -19,6 +19,8 @@ This file maps user requests to official CSS Forge documentation.
   - `### Primitives`
 - Variable references inside config:
   - `README.md` -> `## Referencing Variables`
+- Scope diagnostics for references that do not resolve where the alias is computed:
+  - `README.md` -> `## Diagnostics`
 - CLI options and outputs:
   - `README.md` -> `## CLI Usage`
   - `references/cli-reference.md`

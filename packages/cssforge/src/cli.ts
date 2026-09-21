@@ -15,6 +15,7 @@ import type { CommandDef } from "citty";
  */
 import { defineCommand, runMain } from "citty";
 import type { CSSForgeConfig } from "./config.ts";
+import { getScopeDiagnostics } from "./diagnostics.ts";
 import {
 	generateCSS,
 	generateJSON,
@@ -76,6 +77,8 @@ export interface BuildOptions {
 	styleDictionaryValueMode?: StyleDictionaryValueMode;
 	/** Path for the TypeScript output file. */
 	tsOutput: string;
+	/** Treat scope diagnostics as build failures instead of warnings. */
+	strict?: boolean;
 }
 
 /**
@@ -90,6 +93,7 @@ export async function build({
 	jsonOutput,
 	styleDictionaryOutput,
 	styleDictionaryValueMode = "resolved",
+	strict = false,
 	mode,
 }: BuildOptions): Promise<{ success: boolean; error?: unknown }> {
 	try {
@@ -109,6 +113,20 @@ export async function build({
 		// Import config with cache busting
 		const configUrl = pathToFileURL(absoluteconfig).href;
 		const userConfig = await import(`${configUrl}?t=${Date.now()}`);
+
+		// Diagnostics run before any output is written, so strict mode leaves the
+		// previous artifacts untouched instead of failing after a partial build.
+		// They process the configuration once more, as each requested output does
+		// for itself.
+		const diagnostics = getScopeDiagnostics(userConfig.default as CSSForgeConfig);
+		for (const diagnostic of diagnostics) {
+			console.warn(`cssforge: warning: ${diagnostic.message}`);
+		}
+		if (strict && diagnostics.length > 0) {
+			throw new Error(
+				`Refusing to generate in strict mode with ${diagnostics.length} scope diagnostic${diagnostics.length === 1 ? "" : "s"}.`,
+			);
+		}
 
 		if (mode === "css" || mode === "all") {
 			await writeFileRecursive(
@@ -223,6 +241,11 @@ const mainCommand = defineCommand({
 			description: "A prefix applied before all path",
 			default: "",
 		},
+		strict: {
+			type: "boolean",
+			description: "Fail the build when scope diagnostics are reported",
+			default: false,
+		},
 		json: {
 			type: "string",
 			description: "Optional path for an output JSON file",
@@ -251,7 +274,7 @@ const mainCommand = defineCommand({
 		},
 	},
 	async run({ args }) {
-		const { watch: shouldWatch, config, css, json, ts, mode, prefix } = args;
+		const { watch: shouldWatch, config, css, json, ts, mode, prefix, strict } = args;
 		const styleDictionary = args["style-dictionary"];
 		const styleDictionaryValueMode = args["style-dictionary-value-mode"];
 		if (!isOutputMode(mode)) {
@@ -275,6 +298,7 @@ const mainCommand = defineCommand({
 			jsonOutput: realPath(json),
 			styleDictionaryOutput: realPath(styleDictionary),
 			styleDictionaryValueMode,
+			strict,
 		};
 		if (shouldWatch) {
 			const cleanup = await watch(settings);

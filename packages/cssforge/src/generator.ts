@@ -149,7 +149,12 @@ const mergeResolveMaps = (
 	return resolveMap;
 };
 
-const collectResolveMap = (config: Partial<CSSForgeConfig>): ResolveMap => {
+/**
+ * Merges the per-module resolve maps for every output. Exported so diagnostics
+ * read exactly the declarations the generators emit, instead of re-deriving
+ * them from the configuration.
+ */
+export const collectResolveMap = (config: Partial<CSSForgeConfig>): ResolveMap => {
 	const forge = {
 		colors: config.colors ? processColors(config.colors) : undefined,
 		spacing: config.spacing ? processSpacing(config.spacing) : undefined,
