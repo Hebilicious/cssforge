@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { realpathSync } from "node:fs";
 import fs from "node:fs/promises";
-import { resolve } from "node:path";
+import { dirname, resolve } from "node:path";
 import process from "node:process";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import chokidar from "chokidar";
@@ -23,9 +23,21 @@ import {
 } from "./generator.ts";
 import { version } from "./version.ts";
 
-const writeFileRecursive = (path: string, data: string) =>
+/**
+ * Writes a file, creating its parent directory first. The parent comes from the
+ * platform-aware `dirname` of `node:path`, so `C:\project\.cssforge\output.css`
+ * creates `C:\project\.cssforge` rather than a directory at the output file path.
+ *
+ * `parentDirectory` is injectable so the Windows path shape can be exercised on
+ * any platform.
+ */
+export const writeFileRecursive = (
+	path: string,
+	data: string,
+	parentDirectory: (outputPath: string) => string = dirname,
+): Promise<void> =>
 	fs
-		.mkdir(path.replace(/\/[^/]*$/, ""), { recursive: true })
+		.mkdir(parentDirectory(path), { recursive: true })
 		.then(() => fs.writeFile(path, data));
 
 const outputModes = ["css", "json", "ts", "style-dictionary", "all"] as const;
