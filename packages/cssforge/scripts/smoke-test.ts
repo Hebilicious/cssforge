@@ -16,7 +16,7 @@
  */
 import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
-import { mkdir, mkdtemp, rm, stat, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, rm, stat, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { delimiter, dirname, join, resolve } from "node:path";
 import process from "node:process";
@@ -116,6 +116,16 @@ const parsePackResult = (output: string, description: string): PackResult => {
 
 	return { filename: first.filename, files };
 };
+
+/**
+ * npm needs `--` to separate its flags from the script's; pnpm forwards that
+ * `--` to the binary, where citty treats it as end-of-options and drops every
+ * flag after it.
+ */
+const scriptInvocation = (manager: "npm" | "pnpm", cliArgs: string[]): string[] =>
+	manager === "npm"
+		? ["run", "cssforge", "--", ...cliArgs]
+		: ["run", "cssforge", ...cliArgs];
 
 const run = (
 	command: string,
@@ -229,6 +239,32 @@ export default defineConfig({
 });
 `;
 
+/** Reads a fenced code block from the `## Quick Start` section of the README. */
+const readQuickStartBlock = (readme: string, language: string): string => {
+	const heading = readme.indexOf("\n## Quick Start");
+	check(heading !== -1, "the README has no `## Quick Start` section");
+	const section = readme.slice(heading + 1);
+	const nextHeading = section.indexOf("\n## ", 1);
+	const quickStart = nextHeading === -1 ? section : section.slice(0, nextHeading);
+
+	const pattern = new RegExp("```" + language + "\\n([\\s\\S]*?)```");
+	const match = pattern.exec(quickStart);
+	check(
+		match?.[1] !== undefined,
+		`the Quick Start section has no \`\`\`${language} code block`,
+	);
+
+	return match[1];
+};
+
+const consumedCustomProperties = (css: string): string[] => [
+	...new Set([...css.matchAll(/var\((--[A-Za-z0-9_-]+)/g)].map((match) => match[1]!)),
+];
+
+const declaredCustomProperties = (css: string): string[] => [
+	...new Set([...css.matchAll(/^\s*(--[A-Za-z0-9_-]+)\s*:/gm)].map((match) => match[1]!)),
+];
+
 const programmaticCheck = `import { defineConfig, generateCSS } from "${packageName}";
 
 const css = generateCSS(
@@ -312,6 +348,211 @@ const verifyTarball = (manifest: PackageManifest, packed: PackResult): void => {
 	}
 };
 
+/**
+ * Properties the Quick Start CSS example reads that the documented
+ * configuration cannot declare. Issue #23 corrects the example. The list is
+ * self-cleaning: an entry that becomes declared or stops being consumed fails
+ * the run below.
+ */
+const quickStartUndeclaredProperties = new Set([
+	"--color-primary-500", // no `primary` token family exists in the documented config
+	"--size-2", // the documented config generates `--spacing-size-2`
+	"--size-4", // the documented config generates `--spacing-size-4`
+]);
+
+/** Runs the documented Quick Start flow against the packed artifact. */
+const verifyQuickStart = async (consumer: Consumer): Promise<void> => {
+	const { manager, projectDir, tarball, env } = consumer;
+	const readme = readFileSync(
+		join(projectDir, "node_modules", packageName, "README.md"),
+		"utf8",
+	);
+	const config = readQuickStartBlock(readme, "typescript");
+	const cssExample = readQuickStartBlock(readme, "css");
+
+	const quickStartDir = join(projectDir, "quick-start");
+	await mkdir(quickStartDir, { recursive: true });
+	await writeFile(
+		join(quickStartDir, "package.json"),
+		consumerManifest(manager, tarball),
+		"utf8",
+	);
+	await writeFile(join(quickStartDir, "cssforge.config.ts"), config, "utf8");
+	// Reuse the parent consumer's install rather than paying for a second one.
+	await symlink(
+		join(projectDir, "node_modules"),
+		join(quickStartDir, "node_modules"),
+		"junction",
+	);
+
+	// The documented command with no arguments.
+	run(manager, scriptInvocation(manager, []), { cwd: quickStartDir, env });
+
+	const outputDir = join(quickStartDir, ".cssforge");
+	const css = readFileSync(join(outputDir, "output.css"), "utf8");
+	const declared = declaredCustomProperties(css);
+	check(declared.length > 0, `${manager} Quick Start CSS declared no custom properties`);
+
+	// Read rather than import: the generated `.ts` has no declared module type
+	// in a pnpm consumer, which would emit a warning for no extra coverage.
+	const generatedTs = readFileSync(join(outputDir, "output.ts"), "utf8");
+	check(
+		generatedTs.includes("export const cssForge"),
+		"the Quick Start TypeScript output does not export a cssForge object",
+	);
+
+	const consumed = consumedCustomProperties(cssExample);
+	check(
+		consumed.length > 0,
+		"the Quick Start CSS example does not consume any custom properties",
+	);
+
+	const undeclared = consumed.filter((property) => !declared.includes(property));
+	const unexpected = undeclared.filter(
+		(property) => !quickStartUndeclaredProperties.has(property),
+	);
+	check(
+		unexpected.length === 0,
+		`the Quick Start CSS example consumes ${unexpected.join(", ")}, which the ` +
+			`documented configuration does not declare. Either the README and the ` +
+			`configuration drifted apart, or the property belongs in ` +
+			`quickStartUndeclaredProperties with a reference to issue #23.`,
+	);
+
+	// Keyed on the entry, not on current consumption, so a corrected README
+	// cannot leave dead entries passing silently.
+	const stale = [...quickStartUndeclaredProperties].filter(
+		(property) => declared.includes(property) || !consumed.includes(property),
+	);
+	check(
+		stale.length === 0,
+		`quickStartUndeclaredProperties lists ${stale.join(", ")}, which the ` +
+			`documented configuration now declares or the documented CSS example no ` +
+			`longer consumes. The allowlist entry is stale because issue #23 has ` +
+			`landed; remove it from quickStartUndeclaredProperties.`,
+	);
+
+	if (undeclared.length > 0) {
+		console.log(
+			`smoke test: ${manager} Quick Start CSS example consumes ` +
+				`${undeclared.join(", ")}, allowlisted as undeclared until issue #23 lands`,
+		);
+	}
+};
+
+/** Every output kind the CLI can write, with the flag that selects its path. */
+const outputKinds = [
+	{ name: "css", flag: "--css", content: (text: string) => text.includes(":root") },
+	{
+		name: "json",
+		flag: "--json",
+		content: (text: string) => text.trimStart().startsWith("{"),
+	},
+	{
+		name: "ts",
+		flag: "--ts",
+		content: (text: string) => text.includes("export const"),
+	},
+	{
+		name: "style-dictionary",
+		flag: "--style-dictionary",
+		content: (text: string) => text.trimStart().startsWith("{"),
+	},
+] as const;
+
+/**
+ * Runs the packed artifact once per output shape and asserts each declared path
+ * is a file with the expected content, never a directory named after the output.
+ * Relative shapes are passed as genuinely relative arguments, and only the
+ * project directory is pre-created so the CLI must create every output parent.
+ */
+const verifyOutputPaths = async (consumer: Consumer): Promise<void> => {
+	const { manager, projectDir, tarball, env } = consumer;
+	const installArgs =
+		manager === "npm" ? ["install", "--no-audit", "--no-fund"] : ["install"];
+
+	// One install shared by every shape: re-installing per shape would quadruple
+	// the dominant cost of this harness.
+	const baseDir = join(projectDir, "path-shapes");
+	await mkdir(baseDir, { recursive: true });
+	await writeFile(
+		join(baseDir, "package.json"),
+		consumerManifest(manager, tarball),
+		"utf8",
+	);
+	await writeFile(join(baseDir, "cssforge.config.ts"), fixtureConfig, "utf8");
+	run(manager, installArgs, { cwd: baseDir, env });
+
+	const shapes: { name: string; prefix: string }[] = [
+		{ name: "filename in the current directory", prefix: "" },
+		{ name: "nested relative path", prefix: "nested/deep" },
+		{ name: "absolute path", prefix: join(projectDir, "absolute-outputs") },
+		{ name: "path containing spaces", prefix: "spaces here" },
+	];
+
+	for (const [index, shape] of shapes.entries()) {
+		const shapeDir = join(baseDir, `shape-${index}`);
+
+		await mkdir(shapeDir, { recursive: true });
+		await symlink(
+			join(baseDir, "node_modules"),
+			join(shapeDir, "node_modules"),
+			"junction",
+		);
+		await writeFile(
+			join(shapeDir, "package.json"),
+			consumerManifest(manager, tarball),
+			"utf8",
+		);
+		await writeFile(join(shapeDir, "cssforge.config.ts"), fixtureConfig, "utf8");
+
+		const args = ["--mode", "all", "--config", "./cssforge.config.ts"];
+		const expected = new Map<string, string>();
+
+		for (const kind of outputKinds) {
+			const argument = shape.prefix
+				? join(shape.prefix, `${kind.name}.out`)
+				: `${kind.name}.out`;
+			args.push(kind.flag, argument);
+			expected.set(resolve(shapeDir, argument), kind.name);
+		}
+
+		// A pre-created parent here would mask a parent-creation regression.
+		for (const [target] of expected) {
+			const parent = dirname(target);
+			check(
+				parent === shapeDir || !existsSync(parent),
+				`${manager} harness pre-created ${parent}, which would mask a ` +
+					`parent-creation regression in the CLI (shape: ${shape.name})`,
+			);
+		}
+
+		run(manager, scriptInvocation(manager, args), { cwd: shapeDir, env });
+
+		for (const [target, kind] of expected) {
+			const info = await stat(target).catch(() => undefined);
+			check(
+				info !== undefined,
+				`${manager} did not write the ${kind} output at ${target} (shape: ${shape.name})`,
+			);
+			check(
+				info.isFile(),
+				`${manager} produced a ${kind} output at ${target} that is not a file ` +
+					`(shape: ${shape.name})`,
+			);
+
+			const kindDefinition = outputKinds.find((entry) => entry.name === kind);
+			check(kindDefinition !== undefined, `unknown output kind ${kind}`);
+			const text = readFileSync(target, "utf8");
+			check(
+				text.length > 0 && kindDefinition.content(text),
+				`${manager} ${kind} output at ${target} has unexpected content ` +
+					`(shape: ${shape.name})`,
+			);
+		}
+	}
+};
+
 const verifyConsumer = async (consumer: Consumer): Promise<void> => {
 	const { manager, projectDir, tarball, node, env, expectedVersion } = consumer;
 
@@ -366,13 +607,14 @@ const verifyConsumer = async (consumer: Consumer): Promise<void> => {
 	}
 
 	// The package script documented in the README.
-	const help = run(manager, ["run", "cssforge", "--", "--help"], {
+	const helpArgs = scriptInvocation(manager, ["--help"]);
+	const help = run(manager, helpArgs, {
 		cwd: projectDir,
 		env,
 	});
 	check(
 		help.includes("USAGE") && help.includes("cssforge"),
-		`${manager} run cssforge -- --help did not print the CLI usage`,
+		`${manager} ${helpArgs.join(" ")} did not print the CLI usage`,
 	);
 
 	// The executable symlink (npm) or shim (pnpm), invoked directly.
@@ -390,8 +632,11 @@ const verifyConsumer = async (consumer: Consumer): Promise<void> => {
 
 	run(
 		manager,
-		["run", "cssforge", "--", "--mode", "all", "--config", "./cssforge.config.ts"],
-		{ cwd: projectDir, env },
+		scriptInvocation(manager, ["--mode", "all", "--config", "./cssforge.config.ts"]),
+		{
+			cwd: projectDir,
+			env,
+		},
 	);
 
 	const outputDir = join(projectDir, ".cssforge");
@@ -477,6 +722,8 @@ const main = async (): Promise<void> => {
 				expectedVersion: manifest.version,
 			};
 			await verifyConsumer(consumer);
+			await verifyQuickStart(consumer);
+			await verifyOutputPaths(consumer);
 			if (manager === "npm") {
 				await verifyDeclarations(consumer);
 			}
