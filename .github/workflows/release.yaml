@@ -87,6 +87,11 @@ jobs:
           moon-version: "2.0.0"
           auto-install: true
 
+      # The gate runs on its own before anything can rewrite release metadata,
+      # so a drifting release checkout fails instead of being published.
+      - name: Check release metadata consistency
+        run: moon run --force cssforge:version-check
+
       - name: Smoke test the packaged artifact
         run: moon exec --ignore-ci-checks cssforge:smoke-test
 
@@ -120,6 +125,9 @@ jobs:
         uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
+
+      - name: Check release metadata consistency
+        run: moon run --force cssforge:version-check
 
       - name: Publish to JSR and verify the published entry points
         run: moon exec --ignore-ci-checks cssforge:jsr-publish

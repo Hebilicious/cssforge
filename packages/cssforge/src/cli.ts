@@ -21,6 +21,7 @@ import {
 	generateStyleDictionaryJSON,
 	generateTS,
 } from "./generator.ts";
+import { version } from "./version.ts";
 
 const writeFileRecursive = (path: string, data: string) =>
 	fs
@@ -30,6 +31,9 @@ const writeFileRecursive = (path: string, data: string) =>
 const outputModes = ["css", "json", "ts", "style-dictionary", "all"] as const;
 type OutputMode = (typeof outputModes)[number];
 const outputModeList = outputModes.join(", ");
+
+/** The version flag form the CLI answers directly, without citty's consola. */
+const versionFlag = "--version";
 const styleDictionaryValueModes = ["css-reference", "resolved"] as const;
 type StyleDictionaryValueMode = (typeof styleDictionaryValueModes)[number];
 
@@ -182,7 +186,7 @@ export async function watch({
 const mainCommand = defineCommand({
 	meta: {
 		name: "cssforge",
-		version: "0.1.0",
+		version,
 		description: "Generate CSS variables from a configuration file",
 	},
 	args: {
@@ -301,7 +305,16 @@ const isDirectRun = (): boolean => {
 
 // Run if called directly
 if (isDirectRun()) {
-	runMain(mainCommand);
+	// citty prints the version through consola, whose reporter decorates log
+	// output in a CI environment. Scripts parse this output, so it has to be
+	// bare. Answer the single flag the CLI supports, under citty's own
+	// condition: only when it is the sole argument.
+	const rawArgs = process.argv.slice(2);
+	if (rawArgs.length === 1 && rawArgs[0] === versionFlag) {
+		console.log(version);
+	} else {
+		runMain(mainCommand);
+	}
 }
 
 /**

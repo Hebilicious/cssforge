@@ -7,6 +7,36 @@ tags:
   - "cssforge"
 
 tasks:
+  version-sync:
+    command: "node"
+    args: ["./scripts/version.ts", "--if-present"]
+    inputs:
+      - "package.json"
+      - "jsr.json"
+      - "scripts/version.ts"
+      - "src/version.ts"
+    outputs:
+      - "src/version.ts"
+      - "jsr.json"
+    options:
+      # Never runs in CI: this task writes release metadata, and the CI gate
+      # must observe the committed files rather than a tree this task repaired.
+      # `moon ci` would otherwise race it against `version-check` in the same
+      # pipeline, and a drifting commit would be silently fixed instead of
+      # rejected. Local repair stays available as `moon run cssforge:version-sync`.
+      runInCI: false
+  version-check:
+    command: "node"
+    args: ["./scripts/version.ts", "--check"]
+    inputs:
+      - "package.json"
+      - "jsr.json"
+      - "scripts/version.ts"
+      - "src/version.ts"
+      - "CHANGELOG.md"
+      - "/CHANGELOG.md"
+    options:
+      runInCI: "always"
   format:
     command: "biome"
     args:
@@ -31,6 +61,7 @@ tasks:
       - "vitest.config.ts"
       - "tsup.config.ts"
       - "jsr.json"
+      - "src/version.ts"
       - "/biome.json"
     options:
       runInCI: "always"
@@ -92,6 +123,10 @@ tasks:
       - "src/**/*"
       - "tests/**/*"
       - "vitest.config.ts"
+      - "package.json"
+      - "jsr.json"
+      - "CHANGELOG.md"
+      - "scripts/version.ts"
     options:
       runInCI: "always"
   test-watch:
@@ -102,11 +137,14 @@ tasks:
       cache: false
       outputStyle: "stream"
   build:
-    command: "tsup"
+    command: "node"
+    args: ["./scripts/build.ts"]
     inputs:
       - "src/**/*"
       - "tsup.config.ts"
       - "tsconfig.json"
+      - "package.json"
+      - "scripts/build.ts"
     outputs:
       - "dist"
     options:
@@ -118,6 +156,7 @@ tasks:
       - "~:build"
     inputs:
       - "src/**/*"
+      - "src/version.ts"
       - "package.json"
       - "tsconfig.json"
       - "tsup.config.ts"
@@ -132,9 +171,13 @@ tasks:
     command: "node"
     args: ["./scripts/smoke-test.ts"]
     deps:
+      # The gate runs before the build: build regenerates src/version.ts and
+      # jsr.json, so checking after it would never observe drift.
+      - "~:version-check"
       - "~:build"
     inputs:
       - "src/**/*"
+      - "src/version.ts"
       - "scripts/smoke-test.ts"
       - "package.json"
       - "tsconfig.json"
@@ -148,8 +191,12 @@ tasks:
   jsr-smoke:
     command: "node"
     args: ["./scripts/jsr-smoke.ts"]
+    deps:
+      - "~:version-check"
+      - "~:build"
     inputs:
       - "src/**/*"
+      - "src/version.ts"
       - "scripts/jsr-smoke.ts"
       - "jsr.json"
       - "package.json"
@@ -175,6 +222,7 @@ tasks:
       - "~:build"
     inputs:
       - "src/**/*"
+      - "src/version.ts"
       - "scripts/publish.ts"
       - "package.json"
       - "README.md"
@@ -189,6 +237,7 @@ tasks:
       - "~:build"
     inputs:
       - "src/**/*"
+      - "src/version.ts"
       - "scripts/publish.ts"
       - "jsr.json"
       - "package.json"

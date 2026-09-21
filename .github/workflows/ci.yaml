@@ -23,6 +23,12 @@ jobs:
           moon-version: "2.0.0"
           auto-install: true
 
+      # Runs before `moon ci` so the gate reads the committed metadata and not a
+      # tree repaired by another task in the same pipeline. `cssforge:version-sync`
+      # is excluded from CI for the same reason.
+      - name: Check release metadata consistency
+        run: moon run --force cssforge:version-check
+
       - name: Run CI
         run: moon ci
 

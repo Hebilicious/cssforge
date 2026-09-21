@@ -10,3 +10,4 @@ convert.ts
 TODO.md
 .worktrees
 .jsr-smoke-*
+.artifact-build-*

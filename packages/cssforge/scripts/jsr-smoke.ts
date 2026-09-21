@@ -198,6 +198,14 @@ export default defineConfig({
 				`the JSR CLI entry did not generate the expected CSS with ${runtime.name}`,
 			);
 
+			// JSR ships sources, so the CLI metadata there comes from the
+			// generated `src/version.ts` rather than from the build.
+			const reported = runEntry(runtime, cliEntry, ["--version"], workDir).trim();
+			check(
+				reported === manifest.version,
+				`the JSR CLI entry reports ${reported} but package.json is at ${manifest.version}`,
+			);
+
 			const moduleCheck = join(workDir, `module-check.${runtime.name}.mjs`);
 			await writeFile(
 				moduleCheck,
