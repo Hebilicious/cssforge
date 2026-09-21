@@ -169,14 +169,16 @@ cssforge --watch # To watch for changes
 
 3. Use the generated variables in your CSS:
 
-For example, you can import as a layer :
+The CLI writes `./.cssforge/output.css` by default. From a consumer stylesheet placed at
+the project root, import that file as a layer :
 
 ```css
-@import "cssforge.output.css" layer(cssforge);
+/* Relative to a consumer stylesheet placed at the project root. */
+@import "./.cssforge/output.css" layer(cssforge);
 
 .button {
-  background-color: var(--color-primary-500);
-  padding: var(--size-2) var(--size-4);
+  background-color: var(--palette-coral-100);
+  padding: var(--spacing-size-2) var(--spacing-size-4);
 }
 ```
 
@@ -185,14 +187,21 @@ For example, you can import as a layer :
 
 4. Use the generated css in your JS/TS :
 
+The CLI also writes `./.cssforge/output.ts`, which exports every token as a fully typed
+`cssForge` object :
+
 ```typescript
 import { cssForge } from "./.cssforge/output.ts";
 
-// Use like this anywhere :
-//`cssForge.colors.palette.basic.white` is fully typed { key: --myKey, value: white, variable: --key: white }
+// Fully typed token : cssForge.spacing.custom.size["2"] is
+// { key: "--spacing-size-2", value: "0.5rem", variable: "--spacing-size-2: 0.5rem;" }
+export const spacing2 = cssForge.spacing.custom.size["2"];
 
 export { cssForge };
 ```
+
+The generated file is a `.ts` module, so importing it needs
+`"allowImportingTsExtensions": true` (with `"noEmit": true`) in your `tsconfig.json`.
 
 ## Configuration
 

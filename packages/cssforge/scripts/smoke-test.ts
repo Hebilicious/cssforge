@@ -350,15 +350,10 @@ const verifyTarball = (manifest: PackageManifest, packed: PackResult): void => {
 
 /**
  * Properties the Quick Start CSS example reads that the documented
- * configuration cannot declare. Issue #23 corrects the example. The list is
- * self-cleaning: an entry that becomes declared or stops being consumed fails
- * the run below.
+ * configuration cannot declare. Empty now that the README example is correct;
+ * the set stays because it is self-cleaning and catches new drift.
  */
-const quickStartUndeclaredProperties = new Set([
-	"--color-primary-500", // no `primary` token family exists in the documented config
-	"--size-2", // the documented config generates `--spacing-size-2`
-	"--size-4", // the documented config generates `--spacing-size-4`
-]);
+const quickStartUndeclaredProperties = new Set<string>([]);
 
 /** Runs the documented Quick Start flow against the packed artifact. */
 const verifyQuickStart = async (consumer: Consumer): Promise<void> => {

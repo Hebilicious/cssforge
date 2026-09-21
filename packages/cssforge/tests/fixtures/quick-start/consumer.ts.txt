@@ -1,0 +1,7 @@
+import { cssForge } from "./.cssforge/output.ts";
+
+// Fully typed token : cssForge.spacing.custom.size["2"] is
+// { key: "--spacing-size-2", value: "0.5rem", variable: "--spacing-size-2: 0.5rem;" }
+export const spacing2 = cssForge.spacing.custom.size["2"];
+
+export { cssForge };
