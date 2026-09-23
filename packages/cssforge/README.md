@@ -203,6 +203,77 @@ export { cssForge };
 The generated file is a `.ts` module, so importing it needs
 `"allowImportingTsExtensions": true` (with `"noEmit": true`) in your `tsconfig.json`.
 
+## Bundler Plugin
+
+Generate tokens inside the build instead of running the CLI first. The plugin is powered by
+[unplugin](https://unplugin.unjs.io) and covers Vite, Rollup, Rolldown, webpack, Rspack, Rsbuild,
+esbuild, Farm, and Bun.
+
+```bash
+pnpm add -D @hebilicious/cssforge-unplugin
+```
+
+```typescript
+// vite.config.ts
+import cssforge from "@hebilicious/cssforge-unplugin/vite";
+import { defineConfig } from "vite";
+
+export default defineConfig({
+  plugins: [cssforge()],
+});
+```
+
+```typescript
+// src/main.ts
+import "virtual:cssforge.css";
+```
+
+TypeScript needs the ambient declaration for that import :
+
+```typescript
+// src/vite-env.d.ts
+/// <reference types="@hebilicious/cssforge-unplugin/client" />
+```
+
+The stylesheet is generated on demand from `cssforge.config.ts`. The plugin registers the config and
+every local module it imports as watch files, so editing a token regenerates it, and a Vite dev
+server updates the styles without reloading the page.
+
+Each bundler has its own entry point :
+
+| Bundler | Import |
+| --- | --- |
+| Vite | `@hebilicious/cssforge-unplugin/vite` |
+| Rollup | `@hebilicious/cssforge-unplugin/rollup` |
+| Rolldown | `@hebilicious/cssforge-unplugin/rolldown` |
+| webpack | `@hebilicious/cssforge-unplugin/webpack` |
+| Rspack | `@hebilicious/cssforge-unplugin/rspack` |
+| Rsbuild | `@hebilicious/cssforge-unplugin/rsbuild` |
+| esbuild | `@hebilicious/cssforge-unplugin/esbuild` |
+| Farm | `@hebilicious/cssforge-unplugin/farm` |
+| Bun | `@hebilicious/cssforge-unplugin/bun` |
+
+The plugin options are :
+
+```typescript
+cssforge({
+  // Resolved against the build's working directory. Default: ./cssforge.config.ts
+  config: "./cssforge.config.ts",
+  // Also write the stylesheet to disk. Default: false
+  write: { css: "./.cssforge/output.css" },
+});
+```
+
+`write: true` uses `./.cssforge/output.css`, the CLI's default path. Use it when another tool needs a
+real file, or when a bundler has no CSS handling for virtual modules.
+
+The plugin calls the same `generateCSS` implementation as the CLI, so `virtual:cssforge.css` matches
+`cssforge --mode css` output byte for byte. The served stylesheet is unlayered, and
+`@import "virtual:cssforge.css" layer(cssforge)` does not work because a CSS import resolves to a
+file; set `write` and import the written file with `layer(cssforge)` to keep the tokens in a layer.
+The CLI stays the integration path for everything else: Deno and JSR, Style Dictionary, CI steps, and
+tools without a bundler.
+
 ## Configuration
 
 ### Colors

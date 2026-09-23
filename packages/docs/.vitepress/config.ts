@@ -52,6 +52,7 @@ export default defineConfig({
         text: "Guide",
         items: [
           { text: "Getting started", link: "/guide/getting-started" },
+          { text: "Bundler plugin", link: "/guide/bundlers" },
           { text: "Configuration", link: "/guide/configuration" },
           { text: "CLI and API", link: "/guide/usage" },
           {
