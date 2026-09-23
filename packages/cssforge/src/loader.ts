@@ -74,6 +74,11 @@ const loadConfigFile = async (absolutePath: string): Promise<LoadedConfig> => {
 			}
 
 			dependencies.add(fileURLToPath(url));
+			// The entry is imported with the key already applied.
+			if (resolved.url.includes(cacheKey)) {
+				return resolved;
+			}
+
 			return { ...resolved, url: withCacheKey(resolved.url, cacheKey) };
 		},
 	});

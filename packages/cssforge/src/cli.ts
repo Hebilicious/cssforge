@@ -186,10 +186,13 @@ export async function watch({
 		initial.dependencies ?? [resolve(process.cwd(), buildOptions.config)],
 	);
 
-	// Watch the config and the local modules it loaded
+	// Watch the config and the local modules it loaded. A tool that rewrites a
+	// file in place truncates it first, so a rebuild that starts on the first
+	// event would read an empty module; wait for the write to settle instead.
 	const watcher = chokidar.watch(Array.from(watched), {
 		persistent: true,
 		ignoreInitial: true,
+		awaitWriteFinish: { stabilityThreshold: 100, pollInterval: 25 },
 	});
 
 	// Resolve only once the watcher finished its first scan. A caller that edits
@@ -197,7 +200,10 @@ export async function watch({
 	// and lose the change event.
 	await new Promise<void>((ready) => watcher.once("ready", () => ready()));
 
-	const rebuild = async () => {
+	let rebuilding = false;
+	let rebuildQueued = false;
+
+	const runBuild = async () => {
 		console.log(`🔄 Config changed, regenerating...`);
 		const result = await build(buildOptions);
 		// A failed build reports no dependencies, and unwatching on failure would
@@ -217,6 +223,30 @@ export async function watch({
 		}
 
 		onRebuild?.();
+	};
+
+	/**
+	 * Rebuilds one build at a time. Two editors writing in quick succession would
+	 * otherwise run two builds at once, and the older one could finish last and
+	 * write stale output. A change that lands during a build queues exactly one
+	 * more build, so the last output always reflects the last change.
+	 */
+	const rebuild = async () => {
+		if (rebuilding) {
+			rebuildQueued = true;
+			return;
+		}
+
+		rebuilding = true;
+
+		try {
+			do {
+				rebuildQueued = false;
+				await runBuild();
+			} while (rebuildQueued);
+		} finally {
+			rebuilding = false;
+		}
 	};
 
 	watcher.on("change", rebuild);

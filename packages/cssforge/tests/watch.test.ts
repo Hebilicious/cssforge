@@ -30,16 +30,21 @@ const watchScript = `
 const { readFile, writeFile } = await import("node:fs/promises");
 const { watch } = await import(${JSON.stringify(cliEntry)});
 
+let rebuilds = 0;
+
 await watch({
 	config: process.env.CSSFORGE_CONFIG,
 	mode: "css",
 	cssOutput: process.env.CSSFORGE_CSS,
 	jsonOutput: process.env.CSSFORGE_JSON,
 	tsOutput: process.env.CSSFORGE_TS,
+	onRebuild: () => {
+		rebuilds += 1;
+	},
 });
 
 const waitFor = async (needle) => {
-	for (let attempt = 0; attempt < 100; attempt += 1) {
+	for (let attempt = 0; attempt < 200; attempt += 1) {
 		await new Promise((resolve) => setTimeout(resolve, 100));
 		try {
 			const css = await readFile(process.env.CSSFORGE_CSS, "utf8");
@@ -49,6 +54,14 @@ const waitFor = async (needle) => {
 		}
 	}
 	return "";
+};
+
+const waitForRebuild = async (count) => {
+	for (let attempt = 0; attempt < 200; attempt += 1) {
+		if (rebuilds >= count) return true;
+		await new Promise((resolve) => setTimeout(resolve, 100));
+	}
+	return false;
 };
 
 await writeFile(process.env.CSSFORGE_TOKENS, 'export const size = "2rem";\\n', "utf8");
@@ -71,14 +84,15 @@ export default {
 `)}, "utf8");
 const afterConfigChange = await waitFor("--spacing-size-4: 1rem");
 
-// A config that fails to load must not stop the watcher: repair it with a new
-// value and expect another rebuild.
+// A config that fails to load must not stop the watcher: wait for the failing
+// rebuild, repair the config, and expect another rebuild.
+const rebuildsBeforeFailure = rebuilds;
 await writeFile(process.env.CSSFORGE_CONFIG, 'export default { spacing: { custom: { size: { value: { 2: "9rem" } } } }', "utf8");
-await new Promise((resolve) => setTimeout(resolve, 500));
+const failureSeen = await waitForRebuild(rebuildsBeforeFailure + 1);
 await writeFile(process.env.CSSFORGE_CONFIG, 'export default { spacing: { custom: { size: { value: { 2: "9rem" } } } } };', "utf8");
 const afterRecovery = await waitFor("--spacing-size-2: 9rem");
 
-console.log(JSON.stringify({ afterTokenChange, afterConfigChange, afterRecovery }));
+console.log(JSON.stringify({ afterTokenChange, afterConfigChange, failureSeen, afterRecovery }));
 process.exit(0);
 `;
 
@@ -126,11 +140,13 @@ Deno.test("cli - watch mode regenerates the output when a token module or the co
 			throw new Error(`the watch scenario printed no result: ${stdout}`);
 		}
 
-		const { afterTokenChange, afterConfigChange, afterRecovery } = JSON.parse(output) as {
-			afterTokenChange: string;
-			afterConfigChange: string;
-			afterRecovery: string;
-		};
+		const { afterTokenChange, afterConfigChange, failureSeen, afterRecovery } =
+			JSON.parse(output) as {
+				afterTokenChange: string;
+				afterConfigChange: string;
+				failureSeen: boolean;
+				afterRecovery: string;
+			};
 
 		assert(
 			afterTokenChange.includes("--spacing-size-2: 2rem"),
@@ -148,6 +164,7 @@ Deno.test("cli - watch mode regenerates the output when a token module or the co
 			afterConfigChange.includes("--spacing-size-2: 2rem"),
 			`the second rebuild must keep the token module value: ${afterConfigChange}`,
 		);
+		assert(failureSeen, "the invalid config must trigger a rebuild");
 		assert(
 			afterRecovery.includes("--spacing-size-2: 9rem"),
 			`a failed rebuild must not stop watching: ${afterRecovery}`,
@@ -155,4 +172,4 @@ Deno.test("cli - watch mode regenerates the output when a token module or the co
 	} finally {
 		await rm(dir, { recursive: true, force: true });
 	}
-}, 60000);
+}, 90000);
