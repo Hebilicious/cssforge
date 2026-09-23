@@ -79,6 +79,11 @@ jobs:
       - name: Run the browser suite
         run: moon exec --ignore-ci-checks --force vanilla-react-css:e2e
 
+      # The Playwright suite runs against the dev server. This is what proves a
+      # production build emits the plugin's generated stylesheet.
+      - name: Build the example for production
+        run: moon exec --ignore-ci-checks --force vanilla-react-css:build
+
   node-floor:
     name: Package smoke on Node 24.0.0
     runs-on: ubuntu-latest
