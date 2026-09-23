@@ -11,6 +11,7 @@ import type { CSSForgeConfig } from "./config.ts";
 import { defineConfig } from "./config.ts";
 import { generateCSS, generateStyleDictionaryJSON } from "./generator.ts";
 import { InvalidNameError } from "./helpers.ts";
+import { loadConfig } from "./loader.ts";
 import { processColors } from "./modules/colors.ts";
 import { processPrimitives } from "./modules/primitive.ts";
 import { processSpacing } from "./modules/spacing.ts";
@@ -20,6 +21,7 @@ import { processTypography } from "./modules/typography.ts";
  */
 export type { CSSForgeConfig };
 export type { StyleDictionaryJSONOptions } from "./generator.ts";
+export type { LoadedConfig } from "./loader.ts";
 
 export {
 	/**
@@ -56,6 +58,13 @@ export {
 	 * ```
 	 */
 	InvalidNameError,
+	/**
+	 * Loads a CSS Forge configuration file and reports the local files it
+	 * loaded, so CLI watch mode and bundler plugins can watch them.
+	 * @param configPath Path to the configuration file.
+	 * @returns The configuration and its local dependencies.
+	 */
+	loadConfig,
 	/**
 	 * Processes the colors section of the configuration.
 	 * @param colors The colors configuration.

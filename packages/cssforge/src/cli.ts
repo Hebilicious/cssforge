@@ -3,7 +3,7 @@ import { realpathSync } from "node:fs";
 import fs from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import process from "node:process";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { fileURLToPath } from "node:url";
 import chokidar from "chokidar";
 import type { CommandDef } from "citty";
 /**
@@ -14,13 +14,13 @@ import type { CommandDef } from "citty";
  * @module
  */
 import { defineCommand, runMain } from "citty";
-import type { CSSForgeConfig } from "./config.ts";
 import {
 	generateCSS,
 	generateJSON,
 	generateStyleDictionaryJSON,
 	generateTS,
 } from "./generator.ts";
+import { loadConfig } from "./loader.ts";
 import { version } from "./version.ts";
 
 /**
@@ -79,6 +79,19 @@ export interface BuildOptions {
 }
 
 /**
+ * The result of a build. `dependencies` is present when the config loaded, and
+ * names the config file plus every local module it imported.
+ */
+export interface BuildResult {
+	/** Whether every requested output was written. */
+	success: boolean;
+	/** The failure the build caught, when it did not succeed. */
+	error?: unknown;
+	/** Absolute paths of the config and the local modules it loaded. */
+	dependencies?: string[];
+}
+
+/**
  * Builds the CSS, JSON, and/or TypeScript files based on the configuration.
  * @param options The build options.
  * @returns A promise that resolves to an object indicating success or failure.
@@ -91,7 +104,7 @@ export async function build({
 	styleDictionaryOutput,
 	styleDictionaryValueMode = "resolved",
 	mode,
-}: BuildOptions): Promise<{ success: boolean; error?: unknown }> {
+}: BuildOptions): Promise<BuildResult> {
 	try {
 		if (!isOutputMode(mode)) {
 			// A TypeScript cast does not validate runtime input, so JavaScript
@@ -101,28 +114,19 @@ export async function build({
 		if (!isStyleDictionaryValueMode(styleDictionaryValueMode)) {
 			throw new Error(`Invalid Style Dictionary value mode: ${styleDictionaryValueMode}`);
 		}
-		const absoluteconfig = resolve(process.cwd(), config);
 		const absoluteCssOutput = resolve(process.cwd(), cssOutput);
 		const absoluteJsonOutput = resolve(process.cwd(), jsonOutput);
 		const absoluteTsOutput = resolve(process.cwd(), tsOutput);
 
-		// Import config with cache busting
-		const configUrl = pathToFileURL(absoluteconfig).href;
-		const userConfig = await import(`${configUrl}?t=${Date.now()}`);
+		const { config: userConfig, dependencies } = await loadConfig(config);
 
 		if (mode === "css" || mode === "all") {
-			await writeFileRecursive(
-				absoluteCssOutput,
-				generateCSS(userConfig.default as CSSForgeConfig),
-			);
+			await writeFileRecursive(absoluteCssOutput, generateCSS(userConfig));
 			console.log(`✔ Generated CSS written to ${cssOutput}`);
 		}
 
 		if (mode === "json" || mode === "all") {
-			await writeFileRecursive(
-				absoluteJsonOutput,
-				generateJSON(userConfig.default as CSSForgeConfig),
-			);
+			await writeFileRecursive(absoluteJsonOutput, generateJSON(userConfig));
 			console.log(`✔ Generated JSON written to ${jsonOutput}`);
 		}
 
@@ -131,7 +135,7 @@ export async function build({
 			const absoluteStyleDictionaryOutput = resolve(process.cwd(), outputPath);
 			await writeFileRecursive(
 				absoluteStyleDictionaryOutput,
-				generateStyleDictionaryJSON(userConfig.default as CSSForgeConfig, {
+				generateStyleDictionaryJSON(userConfig, {
 					valueMode: styleDictionaryValueMode,
 				}),
 			);
@@ -139,14 +143,11 @@ export async function build({
 		}
 
 		if (mode === "ts" || mode === "all") {
-			await writeFileRecursive(
-				absoluteTsOutput,
-				generateTS(userConfig.default as CSSForgeConfig),
-			);
+			await writeFileRecursive(absoluteTsOutput, generateTS(userConfig));
 			console.log(`✔ Generated TypeScript written to ${tsOutput}`);
 		}
 
-		return { success: true };
+		return { success: true, dependencies };
 	} catch (error) {
 		console.error(`Error during build:`, error);
 		return { success: false, error };
@@ -162,7 +163,10 @@ export interface WatchOptions extends BuildOptions {
 }
 
 /**
- * Watches the configuration file for changes and rebuilds on modification.
+ * Watches the configuration file and every local module it loads, and rebuilds
+ * on modification. The watched set follows the config's dependency graph, so a
+ * token module the config starts or stops importing is picked up on the next
+ * rebuild.
  * @param options The watch options.
  * @returns A promise that resolves to a function to stop watching.
  */
@@ -177,19 +181,49 @@ export async function watch({
 	console.log(`👀 Watching ${buildOptions.config} for changes...`);
 
 	// Initial build
-	await build(buildOptions);
+	const initial = await build(buildOptions);
+	const watched = new Set(
+		initial.dependencies ?? [resolve(process.cwd(), buildOptions.config)],
+	);
 
-	// Watch for changes
-	const watcher = chokidar.watch(buildOptions.config, {
+	// Watch the config and the local modules it loaded
+	const watcher = chokidar.watch(Array.from(watched), {
 		persistent: true,
 		ignoreInitial: true,
 	});
 
-	watcher.on("change", async () => {
+	// Resolve only once the watcher finished its first scan. A caller that edits
+	// a token module as soon as `watch()` resolves would otherwise race the scan
+	// and lose the change event.
+	await new Promise<void>((ready) => watcher.once("ready", () => ready()));
+
+	const rebuild = async () => {
 		console.log(`🔄 Config changed, regenerating...`);
-		await build(buildOptions);
+		const result = await build(buildOptions);
+		// A failed build reports no dependencies, and unwatching on failure would
+		// stop watching the config that has to be repaired.
+		const next = new Set(result.dependencies ?? watched);
+
+		for (const path of next) {
+			if (watched.has(path)) continue;
+			watched.add(path);
+			watcher.add(path);
+		}
+
+		for (const path of watched) {
+			if (next.has(path)) continue;
+			watched.delete(path);
+			watcher.unwatch(path);
+		}
+
 		onRebuild?.();
-	});
+	};
+
+	watcher.on("change", rebuild);
+	// A module the config newly imports arrives as an add, and a deleted one as
+	// an unlink; both change what the next build generates.
+	watcher.on("add", rebuild);
+	watcher.on("unlink", rebuild);
 
 	// Return cleanup function
 	return () => watcher.close();
