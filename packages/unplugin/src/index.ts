@@ -166,22 +166,6 @@ export const unpluginFactory: UnpluginFactory<CssForgeOptions | undefined> = (
 				generated = undefined;
 			}
 		},
-		vite: {
-			// A config or token module is not in the module graph, so Vite would
-			// report the change and update nothing. Invalidating the stylesheet and
-			// returning it lets Vite send a style update instead.
-			async handleHotUpdate(context) {
-				if (!isDependency(context.file)) return;
-				generated = undefined;
-
-				const moduleGraph = context.server.moduleGraph;
-				const stylesheet = moduleGraph.getModuleById(resolvedVirtualCssModuleId);
-				if (!stylesheet) return;
-
-				moduleGraph.invalidateModule(stylesheet);
-				return [...context.modules, stylesheet];
-			},
-		},
 	};
 };
 
