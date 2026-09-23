@@ -12,6 +12,10 @@ dependsOn:
 tasks:
   build:
     command: "tsup"
+    # The declaration build resolves the core types through the package exports,
+    # which point at the core's dist.
+    deps:
+      - "^:build"
     inputs:
       - "src/**/*"
       - "client.d.ts"
