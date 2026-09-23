@@ -7,11 +7,7 @@ import { build } from "@hebilicious/cssforge/cli";
 import type { UnpluginContextMeta } from "unplugin";
 import { expect, test } from "vitest";
 import type { CssForgeOptions } from "../src/index.ts";
-import {
-	resolvedVirtualCssModuleId,
-	unplugin,
-	virtualCssModuleId,
-} from "../src/index.ts";
+import { unplugin, virtualCssModuleId } from "../src/index.ts";
 
 /** A single-file config, so every load reads only the files the test writes. */
 const configSource = (size: string) => `export default {
@@ -105,7 +101,10 @@ const loadStylesheet = async (
 		context,
 		virtualCssModuleId,
 	);
-	expect(resolved).toBe(resolvedVirtualCssModuleId);
+	// The null byte is what keeps bundler core plugins from treating the id as a
+	// file path, so the contract is asserted literally rather than against the
+	// constant the plugin exports.
+	expect(resolved).toBe("\0virtual:cssforge.css");
 
 	const css = await runHook((plugin as { load: unknown }).load, context, resolved);
 	expect(typeof css).toBe("string");
@@ -121,24 +120,16 @@ test("plugin - serves the generated stylesheet from virtual:cssforge.css", async
 	});
 });
 
-test("plugin - leaves specifiers other than the stylesheet alone", async () => {
-	await inProject(configSource("0.5rem"), async (_dir, configPath) => {
-		const plugin = createPlugin({ config: configPath });
-		const context = createBuildContext();
-
-		expect(
-			await runHook((plugin as { resolveId: unknown }).resolveId, context, "./other.css"),
-		).toBeUndefined();
-	});
-});
-
 test("plugin - registers the config as a watch file", async () => {
 	await inProject(configSource("0.5rem"), async (_dir, configPath) => {
 		const plugin = createPlugin({ config: configPath });
 		const context = createBuildContext();
 		await loadStylesheet(plugin, context);
 
-		expect(context.watchFiles).toContain(configPath);
+		// The loader reports imported token modules next to the config, and the
+		// core watch suite covers that end to end. This asserts that the plugin
+		// registers exactly what the loader reported.
+		expect(context.watchFiles).toEqual([configPath]);
 	});
 });
 

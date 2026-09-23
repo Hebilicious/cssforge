@@ -129,10 +129,34 @@ Deno.test("loadConfig - reports the config path when the file does not exist", a
 		);
 
 		assert(
-			error.message.includes(missing),
+			error.message.startsWith(`Could not load the CSS Forge config at ${missing}`),
 			`error must name ${missing}: ${error.message}`,
 		);
 	});
+});
+
+Deno.test("loadConfig - names the config path when the module throws while loading", async () => {
+	await inConfigDir(
+		{ "cssforge.config.ts": `throw new Error("the token data is corrupt");\n` },
+		async (dir) => {
+			const path = join(dir, "cssforge.config.ts");
+			const error = await rejectWith(
+				() => loadConfig(path),
+				"loadConfig must reject when the config module throws",
+			);
+
+			assert(
+				error.message.startsWith(`Could not load the CSS Forge config at ${path}`),
+				`error must name ${path}: ${error.message}`,
+			);
+			assert(
+				(error.cause as Error | undefined)?.message.includes(
+					"the token data is corrupt",
+				) === true,
+				`the module error must be the cause: ${String(error.cause)}`,
+			);
+		},
+	);
 });
 
 Deno.test("loadConfig - rejects a module whose default export is not a config object", async () => {
