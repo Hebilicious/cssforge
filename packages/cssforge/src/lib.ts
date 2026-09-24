@@ -39,6 +39,11 @@ export interface ResolvedToken extends TokenMetadata {
 	/** The full CSS declaration. */
 	variable: string;
 	/**
+	 * The sRGB declaration value a browser without `oklch()` support falls back
+	 * to, when the color opted into a fallback.
+	 */
+	fallback?: string;
+	/**
 	 * The effective wrapper chain this declaration is emitted into, recorded by
 	 * the module that emitted it. Declarations without a wrapper share
 	 * `ROOT_SCOPE`, so an unscoped theme and an unscoped module declaration are

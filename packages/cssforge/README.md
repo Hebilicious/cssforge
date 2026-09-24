@@ -314,6 +314,7 @@ The TypeScript and JSON outputs hold the same nested tree. Every leaf is one tok
 | `key` | The CSS custom property, such as `--palette-coral-100` | Building a `var()` string, or looking a token up by name |
 | `value` | The CSS value, such as `oklch(...)`, `0.5rem`, or `clamp(...)` | Passing a color, a length, or a font size to anything that accepts CSS |
 | `variable` | The full declaration, such as `--palette-coral-100: oklch(...);` | Injecting a declaration into a style tag or a shadow root |
+| `fallback` | The sRGB value a browser without `oklch()` support falls back to, such as `#ff7f50` | Rendering a palette color where modern color syntax is unavailable. Present only when the palette sets `fallback` |
 
 A level with one child is collapsed, so `palette: { value: { coral: ... } }` becomes
 `cssForge.palette.coral`. Numeric and `@` keys stay strings:
@@ -657,6 +658,91 @@ Custom property references are substituted when the alias is computed, before in
 `:root.Another` keeps both declarations on the same element; a theme class on a descendant
 leaves `--primary` invalid at computed-value time, and every `var(--primary, fallback)`
 reference uses its fallback.
+
+#### Fallback for browsers without oklch
+
+Palette colors are generated in OKLCH. A custom property accepts any token stream, so a
+browser without `oklch()` support still parses `--palette-coral-100: oklch(...)` and only
+fails when the value is used as a color. Set `fallback` to also emit an sRGB declaration
+for every color, gated by `@supports not (color: oklch(0% 0 0))`, so the unsupported
+browser keeps a usable color:
+
+<!-- md:generate defineConfig
+export default defineConfig({
+  colors: {
+    palette: {
+      value: {
+        coral: { 100: { hex: "#FF7F50" } },
+        coralDark: {
+          value: { 100: { hex: "#FF6347" } },
+          settings: { atRule: "@media (prefers-color-scheme: dark)" },
+        },
+      },
+      settings: { fallback: "hex" },
+    },
+  },
+});
+-->
+
+```typescript
+export default defineConfig({
+  colors: {
+    palette: {
+      value: {
+        coral: { 100: { hex: "#FF7F50" } },
+        coralDark: {
+          value: { 100: { hex: "#FF6347" } },
+          settings: { atRule: "@media (prefers-color-scheme: dark)" },
+        },
+      },
+      settings: { fallback: "hex" },
+    },
+  },
+});
+```
+
+This will generate the following CSS :
+
+```css
+/*____ CSSForge ____*/
+:root {
+/*____ Colors ____*/
+/* Palette */
+/* coral */
+--palette-coral-100: oklch(73.511% 0.16799 40.24666);
+/* coralDark */
+@media (prefers-color-scheme: dark) {
+  --palette-coralDark-100: oklch(69.622% 0.19552 32.32143);
+}
+}
+@supports not (color: oklch(0% 0 0)) {
+  :root {
+    /* coral */
+    --palette-coral-100: #ff7f50;
+  }
+}
+@media (prefers-color-scheme: dark) {
+  @supports not (color: oklch(0% 0 0)) {
+    :root {
+      /* coralDark */
+      --palette-coralDark-100: #ff6347;
+    }
+  }
+}
+```
+
+<!-- /md:generate -->
+
+The `fallback` setting is inherited by every color, and a color overrides it in its own
+`settings`. Use `"hex"` for `#rrggbb` (or `#rrggbbaa` with alpha) and `"rgb"` for
+`rgb(r g b)` (or `rgb(r g b / a)`), or `false` to opt a color out. The fallback declaration
+is emitted after the root block and mirrors the color's `atRule` and `selector`, so it only
+overrides the declaration it stands in for. Setting it at the palette level needs the
+`settings` key next to `value`; a color that carries settings is written with the `value`
+wrapper.
+
+The JSON, TypeScript and Style Dictionary outputs carry the same sRGB value as `fallback`,
+so a non-CSS consumer can read it without converting the color itself.
 
 #### Condition
 
@@ -1326,7 +1412,9 @@ the keys in the generated file, so consumers can connect a semantic token to its
 | `attributes.cssVariable` | The token's CSS custom property, such as `--palette-neutral-900` | Declaring or overriding the token in CSS |
 | `attributes.tailwindVariable` | The same custom property name, without the `var()` wrapper | Tools that match authored `var(--token)` usage to tokens |
 | `attributes.resolvedValue` | The final value, even in `css-reference` mode | Showing a value without following references |
+| `attributes.fallback` | The sRGB value a browser without `oklch()` support falls back to, when the palette sets `fallback` | Emitting a legacy-safe color for a token |
 | `$resolvedValue` | The same final value as a top-level DTCG-style field | Tools that read `$resolvedValue` before falling back to `value` |
+| `$fallback` | The same sRGB value as a top-level field | Tools that read `$fallback` before converting the color themselves |
 
 `type` narrows `fontSize`, `lineHeight`, `fontWeight`, `fontFamily`, `borderRadius`,
 `letterSpacing`, `shadow`, `opacity`, `zIndex`, and `number` when the token's name and value

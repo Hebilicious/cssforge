@@ -68,9 +68,44 @@ export interface WithCondition {
 	atRule?: string;
 }
 /**
+ * Syntax used for the fallback declaration emitted for browsers without
+ * `oklch()` support. `"hex"` writes `#rrggbb`, or `#rrggbbaa` for a color with
+ * alpha. `"rgb"` writes `rgb(r g b)`, or `rgb(r g b / a)` for a color with alpha.
+ */
+export type ColorFallbackFormat = "hex" | "rgb";
+
+/**
+ * Settings for the sRGB fallback that keeps a color usable where `oklch()` is
+ * not supported.
+ */
+export interface ColorFallbackSettings {
+	/**
+	 * Emit an sRGB fallback declaration for every color, so a browser without
+	 * `oklch()` support still renders the palette. The fallback is gated by
+	 * `@supports not (color: oklch(0% 0 0))` and emitted after the generated
+	 * root block, because a custom property accepts any token stream and the
+	 * later declaration wins wherever the modern value is unsupported.
+	 *
+	 * Set it on the palette to cover every color, and on a single color to
+	 * override it or opt out with `false`.
+	 *
+	 * @example
+	 * ```ts
+	 * colors: {
+	 *   palette: {
+	 *     value: { coral: { 100: { hex: "#FF7F50" } } },
+	 *     settings: { fallback: "hex" },
+	 *   },
+	 * }
+	 * ```
+	 */
+	fallback?: ColorFallbackFormat | false;
+}
+
+/**
  * Settings for palette colors, including optional conditions like media queries.
  */
-export interface PaletteColorSettings extends WithCondition {}
+export interface PaletteColorSettings extends WithCondition, ColorFallbackSettings {}
 
 /**
  * Settings for gradients, including optional conditions like media queries.
@@ -160,7 +195,11 @@ export interface ColorConfig {
 	 */
 	palette: {
 		value: ColorPalette;
-		settings?: unknown;
+		/**
+		 * Settings shared by every palette color. A color's own settings take
+		 * precedence.
+		 */
+		settings?: ColorFallbackSettings;
 	};
 	/**
 	 * A collection of gradients.
@@ -270,6 +309,122 @@ function colorValueToOklch(value: ColorValueOrString): string {
 }
 
 /**
+ * The condition every fallback declaration is gated by. A browser without
+ * `oklch()` support parses the feature as unsupported, so the negation matches
+ * there and only there.
+ */
+const OKLCH_SUPPORT_CONDITION = "@supports not (color: oklch(0% 0 0))";
+
+const toChannelByte = (coord: number) =>
+	Math.round(Math.min(Math.max(Number.isNaN(coord) ? 0 : coord, 0), 1) * 255);
+
+const toHexByte = (byte: number) => byte.toString(16).padStart(2, "0");
+
+/**
+ * Converts a color value to the sRGB syntax a browser without `oklch()` support
+ * can render.
+ *
+ * The conversion uses the CSS gamut mapping algorithm, which is how a browser
+ * maps an out-of-gamut `oklch()` color, so a saturated fallback stays as close
+ * to the modern value as sRGB allows.
+ *
+ * @example
+ * ```ts
+ * colorValueToFallback({ hex: "#ff7f50" }, "hex"); // "#ff7f50"
+ * colorValueToFallback({ hex: "#ff7f50" }, "rgb"); // "rgb(255 127 80)"
+ * ```
+ */
+function colorValueToFallback(
+	value: ColorValueOrString,
+	format: ColorFallbackFormat,
+): string {
+	const colorString = typeof value === "string" ? value : getColorString(value);
+	const mapped = new Color(colorString).to("srgb").toGamut();
+	const alpha = Math.min(Math.max(Number.isNaN(mapped.alpha) ? 1 : mapped.alpha, 0), 1);
+	const [red, green, blue] = mapped.coords.map(toChannelByte);
+
+	if (format === "rgb") {
+		const alphaSuffix = alpha === 1 ? "" : ` / ${Number(alpha.toFixed(3))}`;
+		return `rgb(${red} ${green} ${blue}${alphaSuffix})`;
+	}
+
+	const alphaSuffix = alpha === 1 ? "" : toHexByte(Math.round(alpha * 255));
+	return `#${toHexByte(red)}${toHexByte(green)}${toHexByte(blue)}${alphaSuffix}`;
+}
+
+const fallbackFormats = ["hex", "rgb"] as const;
+
+const isFallbackFormat = (value: unknown): value is ColorFallbackFormat =>
+	typeof value === "string" && fallbackFormats.some((format) => format === value);
+
+/**
+ * Rejects a fallback setting that is neither a supported format nor `false`.
+ * The value comes from a JavaScript object at runtime, so a typo would
+ * otherwise generate no fallback and fail silently.
+ */
+function validateFallbackSetting(value: unknown, path: string): void {
+	if (value === undefined || value === false || isFallbackFormat(value)) return;
+
+	throw new Error(
+		`Invalid fallback format at configuration path "${path}": ${JSON.stringify(
+			value,
+		)}. Use "hex", "rgb", or false.`,
+	);
+}
+
+/**
+ * Resolves the fallback format for one palette color. A color's own setting wins
+ * over the palette setting, and `false` opts out of an inherited fallback.
+ */
+const resolveFallbackFormat = (
+	settings: ColorFallbackSettings | undefined,
+	paletteSettings: ColorFallbackSettings | undefined,
+): ColorFallbackFormat | undefined => {
+	const fallback = settings?.fallback ?? paletteSettings?.fallback;
+	return isFallbackFormat(fallback) ? fallback : undefined;
+};
+
+/**
+ * The wrapper chain a fallback declaration is emitted into. The `@supports`
+ * condition sits between the color's own at-rule and its selector, mirroring the
+ * chain of the declaration it overrides, and an unnamed selector falls back to
+ * `:root`, which is where the overridden declaration lives.
+ */
+const fallbackWrappers = (settings: WithCondition | undefined): string[] => {
+	const atRule = settings?.atRule?.trim();
+	const selector = settings?.selector?.trim();
+	return [
+		...(atRule ? [atRule] : []),
+		OKLCH_SUPPORT_CONDITION,
+		selector && selector !== ROOT_SCOPE ? selector : ROOT_SCOPE,
+	];
+};
+
+/**
+ * Renders one `@supports` block for every fallback declaration that shares a
+ * wrapper chain. The block is emitted at the top level rather than inside the
+ * root block, because a browser without `oklch()` support predates CSS nesting
+ * and would drop a nested at-rule together with its fallback.
+ */
+const renderFallbackBlock = (wrappers: string[], declarations: string[]): string[] => {
+	// A palette color without variants contributes only its comment, and a block
+	// holding no declaration would be empty output.
+	if (!declarations.some((line) => line.startsWith("--"))) return [];
+
+	const lines: string[] = [];
+
+	wrappers.forEach((wrapper, index) => {
+		lines.push(`${"  ".repeat(index)}${wrapper} {`);
+	});
+	lines.push(...declarations.map((line) => `${"  ".repeat(wrappers.length)}${line}`));
+	for (let index = wrappers.length - 1; index >= 0; index -= 1) {
+		lines.push(`${"  ".repeat(index)}}`);
+	}
+
+	return lines;
+};
+
+/**
  * Processes the color configuration to generate CSS variables.
  * This includes palettes, gradients, and themes.
  * @example
@@ -293,6 +448,23 @@ export function processColors(colors: ColorConfig): Output {
 	const resolveMap: ResolveMap = new Map();
 	rootOutput.push(`/* Palette */`);
 	const moduleKey = "palette";
+	// Fallback declarations are collected per wrapper chain, so colors under the
+	// same condition share one `@supports` block. The key is the rendered chain.
+	const fallbackGroups = new Map<
+		string,
+		{ wrappers: string[]; declarations: string[] }
+	>();
+
+	const getFallbackGroup = (settings: WithCondition | undefined) => {
+		const wrappers = fallbackWrappers(settings);
+		const key = wrappers.join("\u0000");
+		const existing = fallbackGroups.get(key);
+		if (existing) return existing;
+
+		const group = { wrappers, declarations: [] as string[] };
+		fallbackGroups.set(key, group);
+		return group;
+	};
 
 	function conditionalBuilder(
 		settings: WithCondition | undefined,
@@ -358,11 +530,31 @@ export function processColors(colors: ColorConfig): Output {
 		};
 	}
 
+	validateFallbackSetting(colors.palette.settings?.fallback, "palette.settings");
+
 	for (const [colorName, colorConfig] of Object.entries(colors.palette.value)) {
 		validateName(colorName, `palette.${colorName}`);
 
+		const normalizedColorConfig = getPaletteColorConfig(colorConfig);
+		// Validated before the try block: a configuration mistake has to fail
+		// loudly instead of being logged and skipped per color.
+		validateFallbackSetting(
+			normalizedColorConfig.settings?.fallback,
+			`palette.${colorName}.settings`,
+		);
+		const fallbackFormat = resolveFallbackFormat(
+			normalizedColorConfig.settings,
+			colors.palette.settings,
+		);
+		const fallback = fallbackFormat
+			? {
+					format: fallbackFormat,
+					group: getFallbackGroup(normalizedColorConfig.settings),
+				}
+			: undefined;
+		if (fallback) fallback.group.declarations.push(`/* ${colorName} */`);
+
 		try {
-			const normalizedColorConfig = getPaletteColorConfig(colorConfig);
 			const handler = conditionalBuilder(
 				normalizedColorConfig.settings,
 				`/* ${colorName} */`,
@@ -373,6 +565,10 @@ export function processColors(colors: ColorConfig): Output {
 				const key = `--${moduleKey}-${colorName}-${variantId}`;
 				const value = colorValueToOklch(colorValue);
 				const variable = `${key}: ${value};`;
+				const fallbackValue = fallback
+					? colorValueToFallback(colorValue, fallback.format)
+					: undefined;
+				if (fallbackValue) fallback?.group.declarations.push(`${key}: ${fallbackValue};`);
 
 				handler.pushVariable(variable);
 
@@ -383,6 +579,7 @@ export function processColors(colors: ColorConfig): Output {
 							key,
 							value,
 							variable,
+							...(fallbackValue ? { fallback: fallbackValue } : {}),
 							sourcePath: `${moduleKey}.${colorName}.${variantId}`,
 							type: "color",
 							tier: "primitive",
@@ -536,6 +733,12 @@ export function processColors(colors: ColorConfig): Output {
 				console.error(`Error processing theme ${themeName}:`, error);
 			}
 		}
+	}
+
+	// Emitted last so the fallback overrides the modern declaration it mirrors
+	// wherever `oklch()` is unsupported.
+	for (const { wrappers, declarations } of fallbackGroups.values()) {
+		outsideOutput.push(...renderFallbackBlock(wrappers, declarations));
 	}
 
 	const output = {

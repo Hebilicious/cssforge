@@ -17,6 +17,8 @@ type CssValue = {
 	value: string;
 	key: string;
 	variable: string;
+	/** The sRGB fallback for a color, when the config asked for one. */
+	fallback?: string;
 };
 
 type ForgeValue = {
@@ -56,12 +58,15 @@ type StyleDictionaryToken = {
 		 */
 		tailwindVariable: string;
 		resolvedValue: string;
+		/** The sRGB value a browser without `oklch()` support falls back to. */
+		fallback?: string;
 		sourcePath: string;
 		referencePaths?: string[];
 	};
 	$tier: TokenTier;
 	$reference?: string;
 	$resolvedValue: string;
+	$fallback?: string;
 };
 
 type StyleDictionaryValue = {
@@ -230,7 +235,12 @@ export function createForgeValues(config: Partial<CSSForgeConfig>) {
 		([path, token]) =>
 			[
 				path,
-				{ key: token.key, value: token.value, variable: token.variable },
+				{
+					key: token.key,
+					value: token.value,
+					variable: token.variable,
+					...(token.fallback ? { fallback: token.fallback } : {}),
+				},
 			] satisfies Input,
 	);
 	const forgeValues = createForgeValuesFromKeys(jsonKeys);
@@ -427,12 +437,14 @@ export function generateStyleDictionaryJSON(
 				cssVariableReference,
 				tailwindVariable: token.key,
 				resolvedValue,
+				...(token.fallback ? { fallback: token.fallback } : {}),
 				sourcePath: toStyleDictionaryPath(token.sourcePath),
 				...(referencePaths ? { referencePaths } : {}),
 			},
 			$tier: tier,
 			...(referencePaths?.[0] ? { $reference: referencePaths[0] } : {}),
 			$resolvedValue: resolvedValue,
+			...(token.fallback ? { $fallback: token.fallback } : {}),
 		};
 		const nestedObject = createNestedStyleDictionaryObject(
 			outputPath.split("."),
