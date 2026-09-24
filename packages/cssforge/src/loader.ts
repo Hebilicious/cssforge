@@ -8,9 +8,9 @@
  * @module
  */
 
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { registerHooks } from "node:module";
-import { resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import type { CSSForgeConfig } from "./config.ts";
 
@@ -43,7 +43,46 @@ const isLocalFileUrl = (url: URL) =>
 
 /** Whether a URL is a TypeScript module in the project, config or token file. */
 const isProjectTypeScriptUrl = (url: URL) =>
-	isLocalFileUrl(url) && (url.pathname.endsWith(".ts") || url.pathname.endsWith(".mts"));
+	isLocalFileUrl(url) && url.pathname.endsWith(".ts");
+
+/** The `type` field of the nearest package.json, cached per directory. */
+const packageTypeCache = new Map<string, string | undefined>();
+
+const packageTypeOf = (path: string): string | undefined => {
+	const cached = packageTypeCache.get(path);
+	if (cached !== undefined) return cached;
+
+	let directory = dirname(path);
+
+	while (true) {
+		const manifestPath = join(directory, "package.json");
+		if (existsSync(manifestPath)) {
+			try {
+				const parsed: unknown = JSON.parse(readFileSync(manifestPath, "utf8"));
+				const type =
+					typeof parsed === "object" && parsed !== null && "type" in parsed
+						? (parsed as { type?: unknown }).type
+						: undefined;
+				const value = typeof type === "string" ? type : undefined;
+				packageTypeCache.set(path, value);
+				return value;
+			} catch {
+				packageTypeCache.set(path, undefined);
+				return undefined;
+			}
+		}
+
+		const parent = dirname(directory);
+		if (parent === directory) {
+			packageTypeCache.set(path, undefined);
+			return undefined;
+		}
+		directory = parent;
+	}
+};
+
+/** Whether a module's source is written as ESM rather than CommonJS. */
+const usesEsmSyntax = (source: string) => /^\s*(?:export|import)\b/m.test(source);
 
 /** Describes a rejected default export for the error message. */
 const describeValue = (value: unknown): string => {
@@ -87,21 +126,27 @@ const loadConfigFile = async (absolutePath: string): Promise<LoadedConfig> => {
 			return { ...resolved, url: withCacheKey(resolved.url, cacheKey) };
 		},
 		load(url, context, nextLoad) {
-			// A config and the token modules it imports are written as ESM, so they
-			// must not depend on the consumer's package.json `type` field. Node reads
-			// a `.ts` file in a CommonJS package as CommonJS and rejects
-			// `export default`, which is the documented config shape.
 			const parsed = new URL(url);
 
 			if (!isProjectTypeScriptUrl(parsed)) {
 				return nextLoad(url, context);
 			}
 
-			return {
-				format: "module-typescript",
-				source: readFileSync(fileURLToPath(parsed), "utf8"),
-				shortCircuit: true,
-			};
+			// A package that declares CommonJS turns module syntax detection off, so
+			// a config or token module written as ESM fails to parse. Force the ESM
+			// TypeScript format for those files, and leave CommonJS-authored ones to
+			// Node so a working setup keeps working.
+			const path = fileURLToPath(parsed);
+			if (packageTypeOf(path) !== "commonjs") {
+				return nextLoad(url, context);
+			}
+
+			const source = readFileSync(path, "utf8");
+			if (!usesEsmSyntax(source)) {
+				return nextLoad(url, context);
+			}
+
+			return { format: "module-typescript", source, shortCircuit: true };
 		},
 	});
 
