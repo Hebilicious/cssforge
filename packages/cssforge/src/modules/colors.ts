@@ -12,21 +12,16 @@ import {
 } from "../lib.ts";
 
 /**
- * The wrapper chain a declaration is emitted into, canonicalized: the color's
- * at-rule and selector with surrounding whitespace removed, and an explicit
- * `:root` selector dropped because a `:root` selector block and the implicit
- * `:root` block declare the same properties on the same element.
- *
- * This is the single reading of `WithCondition` in this module: the scope
- * identity that feeds collision detection and the fallback wrapper chain both
- * consume it, so a fallback always mirrors a declaration from the same scope.
+ * The color's own `atRule` and `selector`, with surrounding whitespace removed.
+ * This is the module's single reading of `WithCondition`: the declaration
+ * emitter, the scope identity that feeds collision detection, and the fallback
+ * emitter all consume it, so a fallback always mirrors a declaration emitted
+ * into the same chain. An empty chain means the declaration lands in `:root`.
  */
-const resolveWrapperChain = (settings: WithCondition | undefined) => {
-	const atRule = settings?.atRule?.trim() ?? "";
-	const rawSelector = settings?.selector?.trim() ?? "";
-
-	return { atRule, selector: rawSelector === ROOT_SCOPE ? "" : rawSelector };
-};
+const readCondition = (settings: WithCondition | undefined) => ({
+	atRule: settings?.atRule?.trim() ?? "",
+	selector: settings?.selector?.trim() ?? "",
+});
 
 /**
  * Describes the wrapper chain a declaration is emitted into. `selector` and
@@ -40,10 +35,11 @@ const resolveWrapperChain = (settings: WithCondition | undefined) => {
  * the same scope as that atRule alone.
  */
 const describeScope = (settings: WithCondition | undefined): string => {
-	const { atRule, selector } = resolveWrapperChain(settings);
+	const { atRule, selector } = readCondition(settings);
+	const scopedSelector = selector === ROOT_SCOPE ? "" : selector;
 
-	if (!atRule && !selector) return ROOT_SCOPE;
-	return `${atRule}|${selector}`;
+	if (!atRule && !scopedSelector) return ROOT_SCOPE;
+	return `${atRule}|${scopedSelector}`;
 };
 
 type ExactlyOne<T> = {
@@ -241,13 +237,15 @@ const isColorValueObject = (value: unknown): value is ColorValue =>
 	isRecord(value) &&
 	("hex" in value || "rgb" in value || "hsl" in value || "oklch" in value);
 
-const getPaletteColorConfig = (entry: PaletteColorEntry): PaletteColorConfig => {
-	if (isRecord(entry) && isRecord(entry.value) && !isColorValueObject(entry.value)) {
-		return entry as unknown as PaletteColorConfig;
-	}
+/**
+ * Whether a palette entry is written in the explicit form, with a `value` map
+ * and optional `settings`, rather than as a bare map of variants.
+ */
+const isPaletteColorConfig = (entry: PaletteColorEntry): entry is PaletteColorConfig =>
+	isRecord(entry) && isRecord(entry.value) && !isColorValueObject(entry.value);
 
-	return { value: entry as unknown as ColorVariants };
-};
+const getPaletteColorConfig = (entry: PaletteColorEntry): PaletteColorConfig =>
+	isPaletteColorConfig(entry) ? entry : { value: entry as unknown as ColorVariants };
 
 const getThemeConfig = (theme: ColorConfig["theme"]): ColorTheme | undefined => {
 	if (!theme) return undefined;
@@ -378,18 +376,39 @@ function colorValueToFallback(
 	return fallbackSerializers[format](red, green, blue, alpha);
 }
 
+/** The accepted formats as the error message lists them, read from the table. */
+const fallbackFormatList = Object.keys(fallbackSerializers)
+	.map((format) => `"${format}"`)
+	.join(", ");
+
 /**
- * Rejects a fallback setting that is neither a supported format nor `false`.
- * The value comes from a JavaScript object at runtime, so a typo would
- * otherwise generate no fallback and fail silently.
+ * Validates the fallback configuration of one palette level. The values come
+ * from a JavaScript object at runtime, so a setting that generation would ignore
+ * has to fail loudly instead of silently emitting no fallback.
+ *
+ * `entry` is the palette or the palette color itself, and `settings` its
+ * `settings` value, which is where a fallback belongs.
  */
-function validateFallbackSetting(value: unknown, path: string): void {
-	if (value === undefined || value === false || isFallbackFormat(value)) return;
+function validateFallbackConfig(entry: object, settings: unknown, path: string): void {
+	if (settings !== undefined && !isRecord(settings)) {
+		throw new Error(
+			`Invalid configuration at "${path}.settings": settings must be an object.`,
+		);
+	}
+
+	if ("fallback" in entry) {
+		throw new Error(
+			`Invalid configuration at "${path}": "fallback" belongs inside "${path}.settings".`,
+		);
+	}
+
+	const fallback = isRecord(settings) ? settings.fallback : undefined;
+	if (fallback === undefined || fallback === false || isFallbackFormat(fallback)) return;
 
 	throw new Error(
-		`Invalid fallback format at configuration path "${path}": ${JSON.stringify(
-			value,
-		)}. Use "hex", "rgb", or false.`,
+		`Invalid fallback format at configuration path "${path}.settings": ${JSON.stringify(
+			fallback,
+		)}. Use ${fallbackFormatList}, or false.`,
 	);
 }
 
@@ -412,7 +431,7 @@ const resolveFallbackFormat = (
  * `:root`, which is where the overridden declaration lives.
  */
 const fallbackWrappers = (settings: WithCondition | undefined): string[] => {
-	const { atRule, selector } = resolveWrapperChain(settings);
+	const { atRule, selector } = readCondition(settings);
 
 	return [...(atRule ? [atRule] : []), OKLCH_SUPPORT_CONDITION, selector || ROOT_SCOPE];
 };
@@ -490,8 +509,9 @@ export function processColors(colors: ColorConfig): Output {
 		const innerComments: string[] = [];
 		const vars: string[] = [];
 
-		const hasSelector = Boolean(settings?.selector);
-		const hasAtRule = Boolean(settings?.atRule);
+		const { atRule, selector } = readCondition(settings);
+		const hasSelector = Boolean(selector);
+		const hasAtRule = Boolean(atRule);
 
 		// If no settings provided, emit comment immediately into root output
 		if (!hasSelector && !hasAtRule) rootOutput.push(initialComment);
@@ -514,11 +534,10 @@ export function processColors(colors: ColorConfig): Output {
 			finalize() {
 				if (!hasSelector && !hasAtRule) return;
 				if (vars.length === 0 && innerComments.length === 0) return;
-				if (!settings) return;
 				if (hasSelector && hasAtRule) {
 					outsideOutput.push(initialComment);
-					outsideOutput.push(`${settings.atRule} {`);
-					outsideOutput.push(`  ${settings.selector} {`);
+					outsideOutput.push(`${atRule} {`);
+					outsideOutput.push(`  ${selector} {`);
 					outsideOutput.push(...innerComments.map((c) => `    ${c}`));
 					outsideOutput.push(...vars.map((v) => `    ${v}`));
 					outsideOutput.push(`  }`);
@@ -528,7 +547,7 @@ export function processColors(colors: ColorConfig): Output {
 
 				if (hasSelector) {
 					outsideOutput.push(initialComment);
-					outsideOutput.push(`${settings.selector} {`);
+					outsideOutput.push(`${selector} {`);
 					outsideOutput.push(...innerComments.map((c) => `  ${c}`));
 					outsideOutput.push(...vars.map((v) => `  ${v}`));
 					outsideOutput.push(`}`);
@@ -537,7 +556,7 @@ export function processColors(colors: ColorConfig): Output {
 
 				if (hasAtRule) {
 					rootOutput.push(initialComment);
-					rootOutput.push(`${settings.atRule} {`);
+					rootOutput.push(`${atRule} {`);
 					rootOutput.push(...innerComments.map((c) => `  ${c}`));
 					rootOutput.push(...vars.map((v) => `  ${v}`));
 					rootOutput.push(`}`);
@@ -547,18 +566,23 @@ export function processColors(colors: ColorConfig): Output {
 		};
 	}
 
-	validateFallbackSetting(colors.palette.settings?.fallback, "palette.settings");
+	validateFallbackConfig(colors.palette, colors.palette.settings, "palette");
 
 	for (const [colorName, colorConfig] of Object.entries(colors.palette.value)) {
 		validateName(colorName, `palette.${colorName}`);
 
 		const normalizedColorConfig = getPaletteColorConfig(colorConfig);
 		// Validated before the try block: a configuration mistake has to fail
-		// loudly instead of being logged and skipped per color.
-		validateFallbackSetting(
-			normalizedColorConfig.settings?.fallback,
-			`palette.${colorName}.settings`,
-		);
+		// loudly instead of being logged and skipped per color. A color entry
+		// written in the shorthand form has no settings to validate, and its
+		// keys are variant names that may legitimately include "fallback".
+		if (isPaletteColorConfig(colorConfig)) {
+			validateFallbackConfig(
+				colorConfig,
+				normalizedColorConfig.settings,
+				`palette.${colorName}`,
+			);
+		}
 		const fallbackFormat = resolveFallbackFormat(
 			normalizedColorConfig.settings,
 			colors.palette.settings,

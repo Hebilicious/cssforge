@@ -307,3 +307,89 @@ Deno.test("generateCSS - rejects an unsupported fallback format", () => {
 		`Expected the error to name "palette.coral.settings". Received: ${colorError.message}`,
 	);
 });
+
+Deno.test("generateCSS - rejects a fallback that is not inside settings", () => {
+	const palette = { value: { coral: { 100: { hex: "#FF7F50" } } } };
+	const misplacedPalette = {
+		colors: { palette: { ...palette, fallback: "hex" } },
+	} as unknown as CSSForgeConfig;
+	const misplacedColor = {
+		colors: {
+			palette: {
+				value: {
+					coral: { value: { 100: { hex: "#FF7F50" } }, fallback: "hex" },
+				},
+			},
+		},
+	} as unknown as CSSForgeConfig;
+	const settingsNotAnObject = {
+		colors: { palette: { ...palette, settings: "hex" } },
+	} as unknown as CSSForgeConfig;
+
+	const paletteError = assertThrows(() => generateCSS(misplacedPalette));
+	const colorError = assertThrows(() => generateCSS(misplacedColor));
+	const settingsError = assertThrows(() => generateCSS(settingsNotAnObject));
+
+	assert(
+		paletteError.message.includes('"palette"'),
+		`Expected the error to name "palette". Received: ${paletteError.message}`,
+	);
+	assert(
+		colorError.message.includes('"palette.coral"'),
+		`Expected the error to name "palette.coral". Received: ${colorError.message}`,
+	);
+	assert(
+		settingsError.message.includes('"palette.settings"'),
+		`Expected the error to name "palette.settings". Received: ${settingsError.message}`,
+	);
+});
+
+Deno.test("generateCSS - a whitespace-only selector is read as the root scope", () => {
+	const config = defineConfig({
+		colors: {
+			palette: {
+				value: {
+					coral: {
+						value: { 100: { hex: "#FF7F50" } },
+						settings: { selector: "   " },
+					},
+				},
+				settings: { fallback: "hex" },
+			},
+		},
+	});
+
+	assertEquals(
+		generateCSS(config),
+		[
+			"/*____ CSSForge ____*/",
+			":root {",
+			"/*____ Colors ____*/",
+			"/* Palette */",
+			"/* coral */",
+			"--palette-coral-100: oklch(73.511% 0.16799 40.24666);",
+			"}",
+			"@supports not (color: oklch(0% 0 0)) {",
+			"  :root {",
+			"    /* coral */",
+			"    --palette-coral-100: #ff7f50;",
+			"  }",
+			"}",
+		].join("\n"),
+	);
+});
+
+Deno.test("generateCSS - a shorthand color may keep a variant named fallback", () => {
+	const config = defineConfig({
+		colors: {
+			palette: {
+				value: { coral: { fallback: { hex: "#FFFFFF" } } },
+			},
+		},
+	});
+
+	assertEquals(
+		generateCSS(config).includes("--palette-coral-fallback: oklch(100% 0 0);"),
+		true,
+	);
+});
