@@ -12,6 +12,23 @@ import {
 } from "../lib.ts";
 
 /**
+ * The wrapper chain a declaration is emitted into, canonicalized: the color's
+ * at-rule and selector with surrounding whitespace removed, and an explicit
+ * `:root` selector dropped because a `:root` selector block and the implicit
+ * `:root` block declare the same properties on the same element.
+ *
+ * This is the single reading of `WithCondition` in this module: the scope
+ * identity that feeds collision detection and the fallback wrapper chain both
+ * consume it, so a fallback always mirrors a declaration from the same scope.
+ */
+const resolveWrapperChain = (settings: WithCondition | undefined) => {
+	const atRule = settings?.atRule?.trim() ?? "";
+	const rawSelector = settings?.selector?.trim() ?? "";
+
+	return { atRule, selector: rawSelector === ROOT_SCOPE ? "" : rawSelector };
+};
+
+/**
  * Describes the wrapper chain a declaration is emitted into. `selector` and
  * `atRule` are both part of the identity, because two declarations only
  * overwrite each other when they share the same wrapper chain. With no wrapper
@@ -23,12 +40,7 @@ import {
  * the same scope as that atRule alone.
  */
 const describeScope = (settings: WithCondition | undefined): string => {
-	const atRule = settings?.atRule?.trim() ?? "";
-	const rawSelector = settings?.selector?.trim() ?? "";
-	// A `:root` selector block and the implicit `:root` block declare the same
-	// properties on the same element, with or without a shared at-rule wrapper,
-	// so an explicit `:root` selector drops out of the scope identity.
-	const selector = rawSelector === ROOT_SCOPE ? "" : rawSelector;
+	const { atRule, selector } = resolveWrapperChain(settings);
 
 	if (!atRule && !selector) return ROOT_SCOPE;
 	return `${atRule}|${selector}`;
@@ -321,6 +333,26 @@ const toChannelByte = (coord: number) =>
 const toHexByte = (byte: number) => byte.toString(16).padStart(2, "0");
 
 /**
+ * Serializers for the supported fallback formats. The accepted formats and the
+ * syntax they emit come from this one table, so a format cannot be validated
+ * without also being implemented.
+ */
+const fallbackSerializers: Record<
+	ColorFallbackFormat,
+	(red: number, green: number, blue: number, alpha: number) => string
+> = {
+	hex: (red, green, blue, alpha) =>
+		`#${toHexByte(red)}${toHexByte(green)}${toHexByte(blue)}${
+			alpha === 1 ? "" : toHexByte(Math.round(alpha * 255))
+		}`,
+	rgb: (red, green, blue, alpha) =>
+		`rgb(${red} ${green} ${blue}${alpha === 1 ? "" : ` / ${Number(alpha.toFixed(3))}`})`,
+};
+
+const isFallbackFormat = (value: unknown): value is ColorFallbackFormat =>
+	typeof value === "string" && Object.hasOwn(fallbackSerializers, value);
+
+/**
  * Converts a color value to the sRGB syntax a browser without `oklch()` support
  * can render.
  *
@@ -343,19 +375,8 @@ function colorValueToFallback(
 	const alpha = Math.min(Math.max(Number.isNaN(mapped.alpha) ? 1 : mapped.alpha, 0), 1);
 	const [red, green, blue] = mapped.coords.map(toChannelByte);
 
-	if (format === "rgb") {
-		const alphaSuffix = alpha === 1 ? "" : ` / ${Number(alpha.toFixed(3))}`;
-		return `rgb(${red} ${green} ${blue}${alphaSuffix})`;
-	}
-
-	const alphaSuffix = alpha === 1 ? "" : toHexByte(Math.round(alpha * 255));
-	return `#${toHexByte(red)}${toHexByte(green)}${toHexByte(blue)}${alphaSuffix}`;
+	return fallbackSerializers[format](red, green, blue, alpha);
 }
-
-const fallbackFormats = ["hex", "rgb"] as const;
-
-const isFallbackFormat = (value: unknown): value is ColorFallbackFormat =>
-	typeof value === "string" && fallbackFormats.some((format) => format === value);
 
 /**
  * Rejects a fallback setting that is neither a supported format nor `false`.
@@ -391,13 +412,9 @@ const resolveFallbackFormat = (
  * `:root`, which is where the overridden declaration lives.
  */
 const fallbackWrappers = (settings: WithCondition | undefined): string[] => {
-	const atRule = settings?.atRule?.trim();
-	const selector = settings?.selector?.trim();
-	return [
-		...(atRule ? [atRule] : []),
-		OKLCH_SUPPORT_CONDITION,
-		selector && selector !== ROOT_SCOPE ? selector : ROOT_SCOPE,
-	];
+	const { atRule, selector } = resolveWrapperChain(settings);
+
+	return [...(atRule ? [atRule] : []), OKLCH_SUPPORT_CONDITION, selector || ROOT_SCOPE];
 };
 
 /**

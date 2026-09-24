@@ -314,7 +314,7 @@ The TypeScript and JSON outputs hold the same nested tree. Every leaf is one tok
 | `key` | The CSS custom property, such as `--palette-coral-100` | Building a `var()` string, or looking a token up by name |
 | `value` | The CSS value, such as `oklch(...)`, `0.5rem`, or `clamp(...)` | Passing a color, a length, or a font size to anything that accepts CSS |
 | `variable` | The full declaration, such as `--palette-coral-100: oklch(...);` | Injecting a declaration into a style tag or a shadow root |
-| `fallback` | The sRGB value a browser without `oklch()` support falls back to, such as `#ff7f50` | Rendering a palette color where modern color syntax is unavailable. Present only when the palette sets `fallback` |
+| `fallback` | The sRGB value a browser without `oklch()` support falls back to, such as `#ff7f50` | Rendering a palette color where modern color syntax is unavailable. Present only when `fallback` is configured, on the palette or on the color |
 
 A level with one child is collapsed, so `palette: { value: { coral: ... } }` becomes
 `cssForge.palette.coral`. Numeric and `@` keys stay strings:
@@ -1417,7 +1417,7 @@ the keys in the generated file, so consumers can connect a semantic token to its
 | `attributes.cssVariable` | The token's CSS custom property, such as `--palette-neutral-900` | Declaring or overriding the token in CSS |
 | `attributes.tailwindVariable` | The same custom property name, without the `var()` wrapper | Tools that match authored `var(--token)` usage to tokens |
 | `attributes.resolvedValue` | The final value, even in `css-reference` mode | Showing a value without following references |
-| `attributes.fallback` | The sRGB value a browser without `oklch()` support falls back to, when the palette sets `fallback` | Emitting a legacy-safe color for a token |
+| `attributes.fallback` | The sRGB value a browser without `oklch()` support falls back to, when `fallback` is configured on the palette or on the color | Emitting a legacy-safe color for a token |
 | `$resolvedValue` | The same final value as a top-level DTCG-style field | Tools that read `$resolvedValue` before falling back to `value` |
 | `$fallback` | The same sRGB value as a top-level field | Tools that read `$fallback` before converting the color themselves |
 
