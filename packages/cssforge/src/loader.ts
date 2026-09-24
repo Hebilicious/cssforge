@@ -8,6 +8,7 @@
  * @module
  */
 
+import { readFileSync } from "node:fs";
 import { registerHooks } from "node:module";
 import { resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -39,6 +40,10 @@ let loadQueue: Promise<unknown> = Promise.resolve();
 /** Whether a resolved URL is a project file rather than an installed dependency. */
 const isLocalFileUrl = (url: URL) =>
 	url.protocol === "file:" && !url.pathname.includes("/node_modules/");
+
+/** Whether a URL is a TypeScript module in the project, config or token file. */
+const isProjectTypeScriptUrl = (url: URL) =>
+	isLocalFileUrl(url) && (url.pathname.endsWith(".ts") || url.pathname.endsWith(".mts"));
 
 /** Describes a rejected default export for the error message. */
 const describeValue = (value: unknown): string => {
@@ -81,6 +86,23 @@ const loadConfigFile = async (absolutePath: string): Promise<LoadedConfig> => {
 
 			return { ...resolved, url: withCacheKey(resolved.url, cacheKey) };
 		},
+		load(url, context, nextLoad) {
+			// A config and the token modules it imports are written as ESM, so they
+			// must not depend on the consumer's package.json `type` field. Node reads
+			// a `.ts` file in a CommonJS package as CommonJS and rejects
+			// `export default`, which is the documented config shape.
+			const parsed = new URL(url);
+
+			if (!isProjectTypeScriptUrl(parsed)) {
+				return nextLoad(url, context);
+			}
+
+			return {
+				format: "module-typescript",
+				source: readFileSync(fileURLToPath(parsed), "utf8"),
+				shortCircuit: true,
+			};
+		},
 	});
 
 	try {
@@ -93,9 +115,13 @@ const loadConfigFile = async (absolutePath: string): Promise<LoadedConfig> => {
 				default?: unknown;
 			};
 		} catch (error) {
-			throw new Error(`Could not load the CSS Forge config at ${absolutePath}.`, {
-				cause: error,
-			});
+			// Bundlers show only this message, so the failure behind it has to be
+			// readable without expanding `cause`.
+			const detail = error instanceof Error ? ` ${error.message}` : "";
+			throw new Error(
+				`Could not load the CSS Forge config at ${absolutePath}.${detail}`,
+				{ cause: error },
+			);
 		}
 
 		const config = imported.default;
