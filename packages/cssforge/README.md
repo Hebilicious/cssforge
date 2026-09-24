@@ -744,6 +744,11 @@ wrapper.
 The JSON, TypeScript and Style Dictionary outputs carry the same sRGB value as `fallback`,
 so a non-CSS consumer can read it without converting the color itself.
 
+The palette is the only family that converts the colors it is given, so it is the only one
+that carries a fallback. Themes, gradients and primitives keep their authored values, and
+they use the palette fallback through the `var(--palette-...)` references they already
+compose with. An `oklch()` written directly into a theme or gradient value stays as it is.
+
 #### Condition
 
 You can conditionnally apply colors, gradients or themes by setting the `atRule` or the
