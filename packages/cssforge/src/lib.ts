@@ -9,6 +9,19 @@ export type TokenType =
 export type TokenTier = "primitive" | "semantic";
 
 /**
+ * A color value format generated alongside the `oklch()` value. `"hex"` writes
+ * `#rrggbb`, or `#rrggbbaa` for a color with alpha. `"rgb"` writes
+ * `rgb(r g b)`, or `rgb(r g b / a)` for a color with alpha.
+ */
+export type ColorFormat = "hex" | "rgb";
+
+/**
+ * The extra color values a token carries, keyed by the format that produced
+ * them, for example `{ hex: "#ff7f50", rgb: "rgb(255 127 80)" }`.
+ */
+export type TokenColorFormats = Partial<Record<ColorFormat, string>>;
+
+/**
  * Metadata carried through generation so alternate outputs can preserve token
  * provenance without changing the generated CSS.
  */
@@ -39,10 +52,10 @@ export interface ResolvedToken extends TokenMetadata {
 	/** The full CSS declaration. */
 	variable: string;
 	/**
-	 * The sRGB declaration value a browser without `oklch()` support falls back
-	 * to, when the color opted into a fallback.
+	 * The sRGB values generated for this token alongside `oklch()`, keyed by
+	 * format, when the color asked for them.
 	 */
-	fallback?: string;
+	color?: TokenColorFormats;
 	/**
 	 * The effective wrapper chain this declaration is emitted into, recorded by
 	 * the module that emitted it. Declarations without a wrapper share

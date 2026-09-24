@@ -24,11 +24,11 @@ export default defineConfig({
         },
       },
       settings: {
-        // Generate an sRGB fallback for every palette color, gated by
+        // Generate a hex value for every palette color, gated by
         // `@supports not (color: oklch(0% 0 0))`, so the example keeps working in
         // a browser without `oklch()` support. `tests/oklch-fallback.spec.ts`
         // asserts the gate from the browser.
-        fallback: "hex",
+        color: { formats: ["hex"] },
       },
     },
     theme: {

@@ -14,13 +14,16 @@ import type { CommandDef } from "citty";
  * @module
  */
 import { defineCommand, runMain } from "citty";
+import type { GenerateOptions } from "./generator.ts";
 import {
 	generateCSS,
 	generateJSON,
 	generateStyleDictionaryJSON,
 	generateTS,
 } from "./generator.ts";
+import type { ColorFormat } from "./lib.ts";
 import { loadConfig } from "./loader.ts";
+import { isColorFormat, supportedColorFormats } from "./modules/colors.ts";
 import { version } from "./version.ts";
 
 /**
@@ -58,6 +61,31 @@ const invalidOutputModeMessage = (mode: unknown) =>
 const isStyleDictionaryValueMode = (value: unknown): value is StyleDictionaryValueMode =>
 	typeof value === "string" && styleDictionaryValueModes.some((mode) => mode === value);
 
+/** The color formats the CLI accepts, as its help and errors list them. */
+const colorFormatList = supportedColorFormats.join(", ");
+
+const invalidColorFormatMessage = (format: unknown) =>
+	`Invalid color format: ${String(format)}. Accepted formats: ${colorFormatList}.`;
+
+/**
+ * Reads the extra color formats from the comma separated `--color-formats`
+ * value, such as `hex,rgb`. Duplicates are dropped, and an unknown format is
+ * rejected with the accepted ones.
+ */
+export function parseColorFormats(value: unknown): ColorFormat[] | undefined {
+	if (value === undefined) return undefined;
+
+	const formats: ColorFormat[] = [];
+	for (const entry of String(value).split(",")) {
+		const format = entry.trim();
+		if (format === "") continue;
+		if (!isColorFormat(format)) throw new Error(invalidColorFormatMessage(format));
+		if (!formats.includes(format)) formats.push(format);
+	}
+
+	return formats;
+}
+
 /**
  * Defines the options for the build command.
  */
@@ -76,6 +104,11 @@ export interface BuildOptions {
 	styleDictionaryValueMode?: StyleDictionaryValueMode;
 	/** Path for the TypeScript output file. */
 	tsOutput: string;
+	/**
+	 * Extra color formats generated alongside `oklch()`, added to the formats
+	 * the configuration declares. The `--color-formats` flag sets it.
+	 */
+	colorFormats?: readonly ColorFormat[];
 }
 
 /**
@@ -103,6 +136,7 @@ export async function build({
 	jsonOutput,
 	styleDictionaryOutput,
 	styleDictionaryValueMode = "resolved",
+	colorFormats = [],
 	mode,
 }: BuildOptions): Promise<BuildResult> {
 	try {
@@ -114,19 +148,31 @@ export async function build({
 		if (!isStyleDictionaryValueMode(styleDictionaryValueMode)) {
 			throw new Error(`Invalid Style Dictionary value mode: ${styleDictionaryValueMode}`);
 		}
+		for (const format of colorFormats) {
+			// A TypeScript cast does not validate runtime input, so JavaScript
+			// callers reach this check.
+			if (!isColorFormat(format)) throw new Error(invalidColorFormatMessage(format));
+		}
 		const absoluteCssOutput = resolve(process.cwd(), cssOutput);
 		const absoluteJsonOutput = resolve(process.cwd(), jsonOutput);
 		const absoluteTsOutput = resolve(process.cwd(), tsOutput);
 
 		const { config: userConfig, dependencies } = await loadConfig(config);
+		const generateOptions: GenerateOptions = { colorFormats };
 
 		if (mode === "css" || mode === "all") {
-			await writeFileRecursive(absoluteCssOutput, generateCSS(userConfig));
+			await writeFileRecursive(
+				absoluteCssOutput,
+				generateCSS(userConfig, generateOptions),
+			);
 			console.log(`✔ Generated CSS written to ${cssOutput}`);
 		}
 
 		if (mode === "json" || mode === "all") {
-			await writeFileRecursive(absoluteJsonOutput, generateJSON(userConfig));
+			await writeFileRecursive(
+				absoluteJsonOutput,
+				generateJSON(userConfig, generateOptions),
+			);
 			console.log(`✔ Generated JSON written to ${jsonOutput}`);
 		}
 
@@ -137,13 +183,14 @@ export async function build({
 				absoluteStyleDictionaryOutput,
 				generateStyleDictionaryJSON(userConfig, {
 					valueMode: styleDictionaryValueMode,
+					...generateOptions,
 				}),
 			);
 			console.log(`✔ Generated Style Dictionary JSON written to ${outputPath}`);
 		}
 
 		if (mode === "ts" || mode === "all") {
-			await writeFileRecursive(absoluteTsOutput, generateTS(userConfig));
+			await writeFileRecursive(absoluteTsOutput, generateTS(userConfig, generateOptions));
 			console.log(`✔ Generated TypeScript written to ${tsOutput}`);
 		}
 
@@ -313,11 +360,16 @@ const mainCommand = defineCommand({
 			description: "Path for the output TypeScript file",
 			default: "./.cssforge/output.ts",
 		},
+		"color-formats": {
+			type: "string",
+			description: `Extra color formats generated alongside oklch, comma separated (${colorFormatList})`,
+		},
 	},
 	async run({ args }) {
 		const { watch: shouldWatch, config, css, json, ts, mode, prefix } = args;
 		const styleDictionary = args["style-dictionary"];
 		const styleDictionaryValueMode = args["style-dictionary-value-mode"];
+		const rawColorFormats = args["color-formats"];
 		if (!isOutputMode(mode)) {
 			console.error(`Error during build: Error: ${invalidOutputModeMessage(mode)}`);
 			process.exit(1);
@@ -330,6 +382,15 @@ const mainCommand = defineCommand({
 			process.exit(1);
 			return;
 		}
+		let colorFormats: ColorFormat[] | undefined;
+		try {
+			colorFormats = parseColorFormats(rawColorFormats);
+		} catch (error) {
+			const message = error instanceof Error ? error.message : String(error);
+			console.error(`Error during build: Error: ${message}`);
+			process.exit(1);
+			return;
+		}
 		const realPath = (p: string) => resolve(prefix, p);
 		const settings: BuildOptions = {
 			mode,
@@ -339,6 +400,7 @@ const mainCommand = defineCommand({
 			jsonOutput: realPath(json),
 			styleDictionaryOutput: realPath(styleDictionary),
 			styleDictionaryValueMode,
+			colorFormats,
 		};
 		if (shouldWatch) {
 			const cleanup = await watch(settings);

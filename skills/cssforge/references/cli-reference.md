@@ -11,6 +11,10 @@ CLI implementation: `packages/cssforge/src/cli.ts`
 - `--css`: css output path (default `./.cssforge/output.css`)
 - `--json`: json output path (default `./.cssforge/output.json`)
 - `--ts`: ts output path (default `./.cssforge/output.ts`)
+- `--style-dictionary`: Style Dictionary token JSON path (default `./.cssforge/tokens.sd.json`)
+- `--style-dictionary-value-mode`: `resolved | css-reference` (default `resolved`)
+- `--color-formats`: comma separated sRGB formats generated alongside oklch (`hex`, `rgb`),
+  appended to the formats `settings.color.formats` declares
 
 ## Typical commands from docs
 
@@ -21,6 +25,8 @@ with npm, `pnpm cssforge` with pnpm):
 - Watch: `npx cssforge --watch`
 - Custom paths:
   - `npx cssforge --config ./path/cssforge.config.ts --css ./dist/tokens.css --ts ./dist/tokens.ts --json ./dist/tokens.json --mode all`
+- Extra color formats:
+  - `npx cssforge --mode all --color-formats hex,rgb`
 
 Deno projects run the same CLI from the secondary JSR channel:
 
@@ -32,3 +38,5 @@ From `README.md`:
 
 - `import { generateCSS } from "@hebilicious/cssforge";`
 - `const css = generateCSS(config);`
+- `generateCSS(config, { colorFormats: ["hex", "rgb"] })` adds the extra color formats to
+  the ones the config declares

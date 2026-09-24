@@ -5,19 +5,20 @@ import { defineConfig, generateCSS, generateStyleDictionaryJSON } from "../src/m
 import { assert, assertEquals, assertThrows, Deno } from "./vitest-compat.ts";
 
 /**
- * The fallback value declared for `key` inside the generated `@supports` block,
- * read from the block rather than the root declaration above it.
+ * The value declared for `key` inside the generated `@supports` block, read from
+ * the block rather than the root declaration above it.
  */
-const fallbackValue = (css: string, key: string): string => {
+const declaredValue = (css: string, key: string): string => {
 	const block = css.slice(css.indexOf("@supports"));
 	const match = new RegExp(`${key}: ([^;]+);`).exec(block);
 
-	if (!match) throw new Error(`Expected a fallback declaration for ${key} in:\n${css}`);
+	if (!match)
+		throw new Error(`Expected a color format declaration for ${key} in:\n${css}`);
 
 	return match[1];
 };
 
-Deno.test("generateCSS - palette fallback emits an sRGB hex declaration under @supports", () => {
+Deno.test("generateCSS - configured formats emit an sRGB declaration under @supports", () => {
 	const config = defineConfig({
 		colors: {
 			palette: {
@@ -26,7 +27,7 @@ Deno.test("generateCSS - palette fallback emits an sRGB hex declaration under @s
 						100: { hex: "#FF7F50" },
 					},
 				},
-				settings: { fallback: "hex" },
+				settings: { color: { formats: ["hex"] } },
 			},
 		},
 	});
@@ -51,12 +52,31 @@ Deno.test("generateCSS - palette fallback emits an sRGB hex declaration under @s
 	);
 });
 
+Deno.test("generateCSS - the first format is the CSS declaration and all formats reach the token", () => {
+	const config = defineConfig({
+		colors: {
+			palette: {
+				value: { coral: { 100: { hex: "#FF7F50" } } },
+				settings: { color: { formats: ["rgb", "hex"] } },
+			},
+		},
+	});
+
+	const css = generateCSS(config);
+
+	assertEquals(declaredValue(css, "--palette-coral-100"), "rgb(255 127 80)");
+	assertEquals(JSON.parse(generateJSON(config)).palette.coral["100"].color, {
+		rgb: "rgb(255 127 80)",
+		hex: "#ff7f50",
+	});
+});
+
 Deno.test("generateCSS - a palette color without variants emits no fallback block", () => {
 	const config = defineConfig({
 		colors: {
 			palette: {
 				value: { empty: { value: {} } },
-				settings: { fallback: "hex" },
+				settings: { color: { formats: ["hex"] } },
 			},
 		},
 	});
@@ -64,7 +84,7 @@ Deno.test("generateCSS - a palette color without variants emits no fallback bloc
 	assertEquals(generateCSS(config).includes("@supports"), false);
 });
 
-Deno.test("generateCSS - applies the palette format with per-color overrides", () => {
+Deno.test("generateCSS - applies the palette formats with per-color overrides", () => {
 	const config = defineConfig({
 		colors: {
 			palette: {
@@ -73,14 +93,14 @@ Deno.test("generateCSS - applies the palette format with per-color overrides", (
 					soft: { 100: "rgb(0 0 0 / 12%)" },
 					brand: {
 						value: { 100: { hex: "#FF0000" } },
-						settings: { fallback: "hex" },
+						settings: { color: { formats: ["hex"] } },
 					},
 					opted: {
 						value: { 100: { hex: "#00FF00" } },
-						settings: { fallback: false },
+						settings: { color: { formats: [] } },
 					},
 				},
-				settings: { fallback: "rgb" },
+				settings: { color: { formats: ["rgb"] } },
 			},
 		},
 	});
@@ -112,7 +132,7 @@ Deno.test("generateCSS - a hex fallback keeps alpha as an eight digit hex", () =
 				value: {
 					soft: { 100: "rgb(0 0 0 / 12%)" },
 				},
-				settings: { fallback: "hex" },
+				settings: { color: { formats: ["hex"] } },
 			},
 		},
 	});
@@ -140,24 +160,24 @@ Deno.test("generateCSS - a hex fallback keeps alpha as an eight digit hex", () =
 Deno.test("generateCSS - a wide gamut color falls back to the CSS gamut mapped sRGB value", () => {
 	// `oklch(70% 0.4 20)` cannot be shown in sRGB: its conversion is
 	// `rgb(336 -117 10)`, and clipping each channel would give `#ff000a`. The
-	// fallback keeps the authored hue instead, which is how a browser maps the
-	// color it cannot display.
+	// declaration keeps the authored hue instead, which is how a browser maps
+	// the color it cannot display.
 	const config = defineConfig({
 		colors: {
 			palette: {
 				value: { vivid: { 100: { oklch: "oklch(70% 0.4 20)" } } },
-				settings: { fallback: "hex" },
+				settings: { color: { formats: ["hex"] } },
 			},
 		},
 	});
 
-	const fallback = fallbackValue(generateCSS(config), "--palette-vivid-100");
+	const declared = declaredValue(generateCSS(config), "--palette-vivid-100");
 
-	assertEquals(fallback === "#ff000a", false);
-	assertEquals(new Color(fallback).inGamut("srgb", { epsilon: 0 }), true);
+	assertEquals(declared === "#ff000a", false);
+	assertEquals(new Color(declared).inGamut("srgb", { epsilon: 0 }), true);
 });
 
-Deno.test("generateCSS - fallback mirrors the color selector and at-rule", () => {
+Deno.test("generateCSS - the declaration mirrors the color selector and at-rule", () => {
 	const config = defineConfig({
 		colors: {
 			palette: {
@@ -175,7 +195,7 @@ Deno.test("generateCSS - fallback mirrors the color selector and at-rule", () =>
 						settings: { atRule: "@container (min-width: 40rem)", selector: ".card" },
 					},
 				},
-				settings: { fallback: "hex" },
+				settings: { color: { formats: ["hex"] } },
 			},
 		},
 	});
@@ -213,12 +233,66 @@ Deno.test("generateCSS - fallback mirrors the color selector and at-rule", () =>
 	);
 });
 
-Deno.test("generateJSON and generateTS - fallback is part of the token object", () => {
+Deno.test("generateCSS - the colorFormats option adds formats without editing the config", () => {
 	const config = defineConfig({
 		colors: {
 			palette: {
 				value: { coral: { 100: { hex: "#FF7F50" } } },
-				settings: { fallback: "hex" },
+			},
+		},
+	});
+
+	const css = generateCSS(config, { colorFormats: ["hex", "rgb"] });
+
+	assertEquals(declaredValue(css, "--palette-coral-100"), "#ff7f50");
+	assertEquals(JSON.parse(generateJSON(config, { colorFormats: ["hex", "rgb"] })), {
+		palette: {
+			coral: {
+				"100": {
+					key: "--palette-coral-100",
+					value: "oklch(73.511% 0.16799 40.24666)",
+					variable: "--palette-coral-100: oklch(73.511% 0.16799 40.24666);",
+					color: { hex: "#ff7f50", rgb: "rgb(255 127 80)" },
+				},
+			},
+		},
+	});
+});
+
+Deno.test("generateCSS - the option appends to the configured formats", () => {
+	const config = defineConfig({
+		colors: {
+			palette: {
+				value: { coral: { 100: { hex: "#FF7F50" } } },
+				settings: { color: { formats: ["rgb"] } },
+			},
+		},
+	});
+
+	// The configuration picks the CSS declaration, and the option only adds.
+	const css = generateCSS(config, { colorFormats: ["hex", "rgb"] });
+
+	assertEquals(declaredValue(css, "--palette-coral-100"), "rgb(255 127 80)");
+	assertEquals(JSON.parse(generateJSON(config, { colorFormats: ["hex"] })), {
+		palette: {
+			coral: {
+				"100": {
+					key: "--palette-coral-100",
+					value: "oklch(73.511% 0.16799 40.24666)",
+					variable: "--palette-coral-100: oklch(73.511% 0.16799 40.24666);",
+					color: { rgb: "rgb(255 127 80)", hex: "#ff7f50" },
+				},
+			},
+		},
+	});
+});
+
+Deno.test("generateJSON and generateTS - every requested format is part of the token object", () => {
+	const config = defineConfig({
+		colors: {
+			palette: {
+				value: { coral: { 100: { hex: "#FF7F50" } } },
+				settings: { color: { formats: ["hex", "rgb"] } },
 			},
 		},
 	});
@@ -230,15 +304,15 @@ Deno.test("generateJSON and generateTS - fallback is part of the token object", 
 					key: "--palette-coral-100",
 					value: "oklch(73.511% 0.16799 40.24666)",
 					variable: "--palette-coral-100: oklch(73.511% 0.16799 40.24666);",
-					fallback: "#ff7f50",
+					color: { hex: "#ff7f50", rgb: "rgb(255 127 80)" },
 				},
 			},
 		},
 	});
-	assertEquals(generateTS(config).includes('"fallback": "#ff7f50"'), true);
+	assertEquals(generateTS(config).includes('"rgb": "rgb(255 127 80)"'), true);
 });
 
-Deno.test("generateJSON - token objects omit the fallback when none is configured", () => {
+Deno.test("generateJSON - token objects omit the color field when none is configured", () => {
 	const config = defineConfig({
 		colors: {
 			palette: {
@@ -260,27 +334,27 @@ Deno.test("generateJSON - token objects omit the fallback when none is configure
 	});
 });
 
-Deno.test("generateStyleDictionaryJSON - exposes the fallback beside the resolved value", () => {
+Deno.test("generateStyleDictionaryJSON - exposes the formats beside the resolved value", () => {
 	const config = defineConfig({
 		colors: {
 			palette: {
 				value: { coral: { 100: { hex: "#FF7F50" } } },
-				settings: { fallback: "hex" },
+				settings: { color: { formats: ["hex", "rgb"] } },
 			},
 		},
 	});
 
 	const token = JSON.parse(generateStyleDictionaryJSON(config)).palette.coral["100"];
 
-	assertEquals(token.$fallback, "#ff7f50");
-	assertEquals(token.attributes.fallback, "#ff7f50");
+	assertEquals(token.$color, { hex: "#ff7f50", rgb: "rgb(255 127 80)" });
+	assertEquals(token.attributes.color, { hex: "#ff7f50", rgb: "rgb(255 127 80)" });
 	assertEquals(token.$resolvedValue, "oklch(73.511% 0.16799 40.24666)");
 });
 
-Deno.test("generateCSS - rejects an unsupported fallback format", () => {
+Deno.test("generateCSS - rejects an unsupported color format", () => {
 	const palette = { value: { coral: { 100: { hex: "#FF7F50" } } } };
 	const invalidPalette = {
-		colors: { palette: { ...palette, settings: { fallback: "oklch" } } },
+		colors: { palette: { ...palette, settings: { color: { formats: ["oklch"] } } } },
 	} as unknown as CSSForgeConfig;
 	const invalidColor = {
 		colors: {
@@ -288,7 +362,7 @@ Deno.test("generateCSS - rejects an unsupported fallback format", () => {
 				value: {
 					coral: {
 						value: { 100: { hex: "#FF7F50" } },
-						settings: { fallback: "sqrgb" },
+						settings: { color: { formats: ["sqrgb"] } },
 					},
 				},
 			},
@@ -299,36 +373,58 @@ Deno.test("generateCSS - rejects an unsupported fallback format", () => {
 	const colorError = assertThrows(() => generateCSS(invalidColor));
 
 	assert(
-		paletteError.message.includes('"palette.settings"'),
-		`Expected the error to name "palette.settings". Received: ${paletteError.message}`,
+		paletteError.message.includes('"palette.settings.color.formats"'),
+		`Expected the error to name "palette.settings.color.formats". Received: ${paletteError.message}`,
 	);
 	assert(
-		colorError.message.includes('"palette.coral.settings"'),
-		`Expected the error to name "palette.coral.settings". Received: ${colorError.message}`,
+		colorError.message.includes('"palette.coral.settings.color.formats"'),
+		`Expected the error to name "palette.coral.settings.color.formats". Received: ${colorError.message}`,
 	);
 });
 
-Deno.test("generateCSS - rejects a fallback that is not inside settings", () => {
+Deno.test("generateCSS - rejects formats that are not an array of formats", () => {
 	const palette = { value: { coral: { 100: { hex: "#FF7F50" } } } };
-	const misplacedPalette = {
-		colors: { palette: { ...palette, fallback: "hex" } },
+	const formatsNotAnArray = {
+		colors: { palette: { ...palette, settings: { color: { formats: "hex" } } } },
 	} as unknown as CSSForgeConfig;
-	const misplacedColor = {
+	const settingsNotAnObject = {
+		colors: { palette: { ...palette, settings: "color" } },
+	} as unknown as CSSForgeConfig;
+
+	const formatsError = assertThrows(() => generateCSS(formatsNotAnArray));
+	const settingsError = assertThrows(() => generateCSS(settingsNotAnObject));
+
+	assert(
+		formatsError.message.includes('"palette.settings.color.formats"'),
+		`Expected the error to name "palette.settings.color.formats". Received: ${formatsError.message}`,
+	);
+	assert(
+		settingsError.message.includes('"palette.settings"'),
+		`Expected the error to name "palette.settings". Received: ${settingsError.message}`,
+	);
+});
+
+Deno.test("generateCSS - rejects color settings that are not inside settings", () => {
+	const palette = { value: { coral: { 100: { hex: "#FF7F50" } } } };
+	const colorOnPalette = {
+		colors: { palette: { ...palette, color: { formats: ["hex"] } } },
+	} as unknown as CSSForgeConfig;
+	const colorOnColor = {
 		colors: {
 			palette: {
 				value: {
-					coral: { value: { 100: { hex: "#FF7F50" } }, fallback: "hex" },
+					coral: { value: { 100: { hex: "#FF7F50" } }, color: { formats: ["hex"] } },
 				},
 			},
 		},
 	} as unknown as CSSForgeConfig;
-	const settingsNotAnObject = {
-		colors: { palette: { ...palette, settings: "hex" } },
+	const formatsInSettings = {
+		colors: { palette: { ...palette, settings: { formats: ["hex"] } } },
 	} as unknown as CSSForgeConfig;
 
-	const paletteError = assertThrows(() => generateCSS(misplacedPalette));
-	const colorError = assertThrows(() => generateCSS(misplacedColor));
-	const settingsError = assertThrows(() => generateCSS(settingsNotAnObject));
+	const paletteError = assertThrows(() => generateCSS(colorOnPalette));
+	const colorError = assertThrows(() => generateCSS(colorOnColor));
+	const formatsError = assertThrows(() => generateCSS(formatsInSettings));
 
 	assert(
 		paletteError.message.includes('"palette"'),
@@ -339,8 +435,8 @@ Deno.test("generateCSS - rejects a fallback that is not inside settings", () => 
 		`Expected the error to name "palette.coral". Received: ${colorError.message}`,
 	);
 	assert(
-		settingsError.message.includes('"palette.settings"'),
-		`Expected the error to name "palette.settings". Received: ${settingsError.message}`,
+		formatsError.message.includes('"palette.settings.color"'),
+		`Expected the error to name "palette.settings.color". Received: ${formatsError.message}`,
 	);
 });
 
@@ -354,7 +450,7 @@ Deno.test("generateCSS - a whitespace-only selector is read as the root scope", 
 						settings: { selector: "   " },
 					},
 				},
-				settings: { fallback: "hex" },
+				settings: { color: { formats: ["hex"] } },
 			},
 		},
 	});
@@ -379,17 +475,17 @@ Deno.test("generateCSS - a whitespace-only selector is read as the root scope", 
 	);
 });
 
-Deno.test("generateCSS - a shorthand color may keep a variant named fallback", () => {
+Deno.test("generateCSS - a shorthand color may keep a variant named color", () => {
 	const config = defineConfig({
 		colors: {
 			palette: {
-				value: { coral: { fallback: { hex: "#FFFFFF" } } },
+				value: { coral: { color: { hex: "#FFFFFF" } } },
 			},
 		},
 	});
 
 	assertEquals(
-		generateCSS(config).includes("--palette-coral-fallback: oklch(100% 0 0);"),
+		generateCSS(config).includes("--palette-coral-color: oklch(100% 0 0);"),
 		true,
 	);
 });
