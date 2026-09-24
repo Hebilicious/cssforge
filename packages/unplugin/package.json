@@ -1,6 +1,6 @@
 {
 	"name": "@hebilicious/cssforge-unplugin",
-	"version": "0.0.0",
+	"version": "0.1.0",
 	"description": "Bundler plugin that generates CSS Forge design-token output inside the build.",
 	"license": "MIT",
 	"type": "module",
