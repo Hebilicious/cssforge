@@ -16,6 +16,7 @@ tasks:
     outputs:
       - "contributing.md"
       - "guide/getting-started.md"
+      - "guide/bundlers.md"
       - "guide/configuration.md"
       - "guide/usage.md"
       - "guide/style-dictionary.md"

@@ -20,9 +20,11 @@ pnpm create vite@latest vanilla-react-css -- --template react-ts --no-interactiv
 pnpm install
 pnpm exec playwright install chromium
 moon run vanilla-react-css:cssforge-build-local
-moon run vanilla-react-css:cssforge-generate
 moon run vanilla-react-css:dev
 ```
+
+The Vite plugin generates the tokens from `cssforge.config.ts`, and `src/main.tsx` imports
+them from `virtual:cssforge.css`. There is no pre-generation step to run.
 
 ## E2E Test
 
@@ -30,9 +32,11 @@ moon run vanilla-react-css:dev
 moon run vanilla-react-css:e2e
 ```
 
-The Playwright suite has two specs. `tests/e2e.spec.ts` validates CSS Forge variables on
+The Playwright suite has three specs. `tests/e2e.spec.ts` validates CSS Forge variables on
 `:root` and computed styles on `[data-testid="token-card"]`. The
 `tests/theme-alias-scoping.spec.ts` spec covers theme alias scoping: with the `Another`
 theme class on the root element the probe resolves to the `:root.Another` palette color,
 while a descendant-only class leaves `--primary` invalid at computed-value time on `:root`
-and the probe uses its fallback.
+and the probe uses its fallback. The `tests/hmr.spec.ts` spec edits `cssforge.config.ts`
+against the running dev server and asserts the browser picks up the new token value without
+reloading the page.

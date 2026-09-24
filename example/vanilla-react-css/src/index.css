@@ -1,5 +1,3 @@
-@import "../.cssforge/output.css" layer(cssforge);
-
 :root {
   color: #fff;
   background: var(--palette-brand-surface);

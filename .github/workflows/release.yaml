@@ -108,6 +108,12 @@ jobs:
       - name: Publish to npm
         run: moon exec --ignore-ci-checks cssforge:npm-publish
 
+      # The bundler plugin is npm-only and versioned independently through the
+      # same changesets release PR. It needs its own trusted publisher on
+      # npmjs.com, configured for this workflow like the core package.
+      - name: Publish the bundler plugin to npm
+        run: moon exec --ignore-ci-checks unplugin:npm-publish
+
   jsr:
     name: Publish to JSR
     needs:

@@ -1,0 +1,162 @@
+$schema: "https://moonrepo.dev/schemas/v2/project.json"
+
+language: "typescript"
+layer: "library"
+
+tags:
+  - "cssforge"
+
+dependsOn:
+  - "cssforge"
+
+tasks:
+  build:
+    command: "tsup"
+    # The declaration build resolves the core types through the package exports,
+    # which point at the core's dist.
+    deps:
+      - "^:build"
+    inputs:
+      - "src/**/*"
+      - "client.d.ts"
+      - "tsup.config.ts"
+      - "tsconfig.json"
+      - "package.json"
+    outputs:
+      - "dist"
+    options:
+      runInCI: "affected"
+  test:
+    command: "vitest"
+    args: ["run"]
+    # The plugin resolves `@hebilicious/cssforge` through the package exports,
+    # which point at the built core.
+    deps:
+      - "^:build"
+    inputs:
+      - "src/**/*"
+      - "tests/**/*"
+      - "client.d.ts"
+      - "vitest.config.ts"
+      - "tsconfig.json"
+      - "package.json"
+      - "/pnpm-lock.yaml"
+    options:
+      runInCI: "always"
+  test-watch:
+    command: "vitest"
+    options:
+      runInCI: false
+      persistent: true
+      cache: false
+      outputStyle: "stream"
+  typecheck:
+    command: "npx"
+    args:
+      - "-y"
+      - "@typescript/native-preview"
+      - "--project"
+      - "tsconfig.json"
+      - "--noEmit"
+    inputs:
+      - "src/**/*"
+      - "tests/**/*"
+      - "scripts/**/*"
+      - "client.d.ts"
+      - "tsconfig.json"
+      - "/tsconfig.base.json"
+    options:
+      runInCI: "always"
+  format:
+    command: "biome"
+    args:
+      - "check"
+      - "src"
+      - "tests"
+      - "scripts"
+      - "client.d.ts"
+      - "package.json"
+      - "tsconfig.json"
+      - "vitest.config.ts"
+      - "tsup.config.ts"
+      - "--linter-enabled=false"
+      - "--assist-enabled=true"
+      - "--enforce-assist=true"
+    inputs:
+      - "src/**/*"
+      - "tests/**/*"
+      - "scripts/**/*"
+      - "client.d.ts"
+      - "package.json"
+      - "tsconfig.json"
+      - "vitest.config.ts"
+      - "tsup.config.ts"
+      - "/biome.json"
+    options:
+      runInCI: "always"
+  format-write:
+    command: "biome"
+    args:
+      - "check"
+      - "src"
+      - "tests"
+      - "scripts"
+      - "client.d.ts"
+      - "package.json"
+      - "tsconfig.json"
+      - "vitest.config.ts"
+      - "tsup.config.ts"
+      - "--linter-enabled=false"
+      - "--assist-enabled=true"
+      - "--enforce-assist=true"
+      - "--write"
+    options:
+      runInCI: false
+  lint:
+    command: "biome"
+    args:
+      - "check"
+      - "src"
+      - "tests"
+      - "scripts"
+      - "--formatter-enabled=false"
+      - "--assist-enabled=true"
+      - "--enforce-assist=true"
+    inputs:
+      - "src/**/*"
+      - "tests/**/*"
+      - "scripts/**/*"
+      - "/biome.json"
+    options:
+      runInCI: false
+  pack:
+    # `pnpm pack` rewrites the `workspace:` dependency range for the core package.
+    command: "pnpm"
+    args: ["pack"]
+    deps:
+      - "~:build"
+    inputs:
+      - "src/**/*"
+      - "client.d.ts"
+      - "package.json"
+      - "tsconfig.json"
+      - "tsup.config.ts"
+      - "README.md"
+    outputs:
+      - "*.tgz"
+    options:
+      runInCI: "affected"
+  npm-publish:
+    command: "node"
+    args: ["./scripts/publish.ts"]
+    deps:
+      - "~:build"
+    inputs:
+      - "src/**/*"
+      - "client.d.ts"
+      - "scripts/publish.ts"
+      - "package.json"
+      - "README.md"
+    options:
+      runInCI: false
+      cache: false

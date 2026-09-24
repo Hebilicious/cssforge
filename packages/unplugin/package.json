@@ -1,0 +1,159 @@
+{
+	"name": "@hebilicious/cssforge-unplugin",
+	"version": "0.0.0",
+	"description": "Bundler plugin that generates CSS Forge design-token output inside the build.",
+	"license": "MIT",
+	"type": "module",
+	"main": "./dist/index.cjs",
+	"module": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"exports": {
+		".": {
+			"import": {
+				"types": "./dist/index.d.ts",
+				"default": "./dist/index.js"
+			},
+			"require": {
+				"types": "./dist/index.d.cts",
+				"default": "./dist/index.cjs"
+			}
+		},
+		"./vite": {
+			"import": {
+				"types": "./dist/vite.d.ts",
+				"default": "./dist/vite.js"
+			},
+			"require": {
+				"types": "./dist/vite.d.cts",
+				"default": "./dist/vite.cjs"
+			}
+		},
+		"./rollup": {
+			"import": {
+				"types": "./dist/rollup.d.ts",
+				"default": "./dist/rollup.js"
+			},
+			"require": {
+				"types": "./dist/rollup.d.cts",
+				"default": "./dist/rollup.cjs"
+			}
+		},
+		"./rolldown": {
+			"import": {
+				"types": "./dist/rolldown.d.ts",
+				"default": "./dist/rolldown.js"
+			},
+			"require": {
+				"types": "./dist/rolldown.d.cts",
+				"default": "./dist/rolldown.cjs"
+			}
+		},
+		"./webpack": {
+			"import": {
+				"types": "./dist/webpack.d.ts",
+				"default": "./dist/webpack.js"
+			},
+			"require": {
+				"types": "./dist/webpack.d.cts",
+				"default": "./dist/webpack.cjs"
+			}
+		},
+		"./rspack": {
+			"import": {
+				"types": "./dist/rspack.d.ts",
+				"default": "./dist/rspack.js"
+			},
+			"require": {
+				"types": "./dist/rspack.d.cts",
+				"default": "./dist/rspack.cjs"
+			}
+		},
+		"./rsbuild": {
+			"import": {
+				"types": "./dist/rsbuild.d.ts",
+				"default": "./dist/rsbuild.js"
+			},
+			"require": {
+				"types": "./dist/rsbuild.d.cts",
+				"default": "./dist/rsbuild.cjs"
+			}
+		},
+		"./esbuild": {
+			"import": {
+				"types": "./dist/esbuild.d.ts",
+				"default": "./dist/esbuild.js"
+			},
+			"require": {
+				"types": "./dist/esbuild.d.cts",
+				"default": "./dist/esbuild.cjs"
+			}
+		},
+		"./farm": {
+			"import": {
+				"types": "./dist/farm.d.ts",
+				"default": "./dist/farm.js"
+			},
+			"require": {
+				"types": "./dist/farm.d.cts",
+				"default": "./dist/farm.cjs"
+			}
+		},
+		"./bun": {
+			"import": {
+				"types": "./dist/bun.d.ts",
+				"default": "./dist/bun.js"
+			},
+			"require": {
+				"types": "./dist/bun.d.cts",
+				"default": "./dist/bun.cjs"
+			}
+		},
+		"./client": {
+			"types": "./client.d.ts"
+		},
+		"./package.json": "./package.json"
+	},
+	"keywords": [
+		"unplugin",
+		"cssforge",
+		"design-tokens",
+		"css-variables",
+		"vite-plugin",
+		"rollup-plugin",
+		"webpack-plugin",
+		"rspack-plugin",
+		"esbuild-plugin"
+	],
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/Hebilicious/cssforge.git",
+		"directory": "packages/unplugin"
+	},
+	"homepage": "https://cssforge.hebilicious.workers.dev",
+	"bugs": {
+		"url": "https://github.com/Hebilicious/cssforge/issues"
+	},
+	"engines": {
+		"node": ">=24.0.0"
+	},
+	"publishConfig": {
+		"access": "public"
+	},
+	"files": [
+		"dist",
+		"client.d.ts",
+		"README.md",
+		"CHANGELOG.md"
+	],
+	"dependencies": {
+		"@hebilicious/cssforge": "workspace:^",
+		"unplugin": "3.4.0"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "2.4.2",
+		"@types/node": "^24.10.1",
+		"tsup": "8.5.0",
+		"typescript": "5.9.3",
+		"vitest": "4.0.18"
+	}
+}

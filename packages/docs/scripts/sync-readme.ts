@@ -136,6 +136,15 @@ const pages: GeneratedPage[] = [
     ].join("\n\n"),
   },
   {
+    path: "guide/bundlers.md",
+    title: "Bundler Plugin",
+    description:
+      "Generate CSS Forge tokens inside Vite, webpack, Rollup, and other bundler builds.",
+    content: renderTopLevelPage(
+      requireSection(readmeSections.sections, "Bundler Plugin"),
+    ),
+  },
+  {
     path: "guide/configuration.md",
     title: "Configuration",
     description: "Understand the CSS Forge config shape and token references.",

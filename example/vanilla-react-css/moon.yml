@@ -5,20 +5,19 @@ layer: "application"
 
 dependsOn:
   - "cssforge"
+  - "unplugin"
 
 tasks:
   build:
     script: "tsc -b && vite build"
     deps:
       - "^:build"
-      - "~:cssforge-generate"
     options:
       runInCI: false
   dev:
     command: "vite"
     deps:
       - "^:build"
-      - "~:cssforge-generate"
     preset: "server"
     options:
       runInCI: false
@@ -27,7 +26,6 @@ tasks:
     args: ["--host", "127.0.0.1", "--port", "4177"]
     deps:
       - "^:build"
-      - "~:cssforge-generate"
     preset: "server"
     options:
       runInCI: false
@@ -44,36 +42,18 @@ tasks:
     preset: "server"
     options:
       runInCI: false
-  cssforge-generate:
-    command: "node"
-    args:
-      - "../../packages/cssforge/dist/cli.js"
-      - "--prefix"
-      - "."
-      - "--config"
-      - "./cssforge.config.ts"
-      - "--mode"
-      - "css"
-      - "--css"
-      - "./.cssforge/output.css"
-    deps:
-      - "^:build"
-    outputs:
-      - ".cssforge/output.css"
-    options:
-      runInCI: false
   e2e:
     command: "playwright"
     args: ["test"]
     deps:
-      - "~:cssforge-generate"
+      - "^:build"
     options:
       runInCI: false
   e2e-headed:
     command: "playwright"
     args: ["test", "--headed"]
     deps:
-      - "~:cssforge-generate"
+      - "^:build"
     options:
       runInCI: false
   cssforge-build-local:
