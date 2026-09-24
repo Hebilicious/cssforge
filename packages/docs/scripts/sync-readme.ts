@@ -168,6 +168,15 @@ const pages: GeneratedPage[] = [
     ].join("\n\n"),
   },
   {
+    path: "guide/output-formats.md",
+    title: "Output formats",
+    description:
+      "Use the generated CSS, TypeScript, JSON, and Style Dictionary outputs.",
+    content: renderTopLevelPage(
+      requireSection(readmeSections.sections, "Output Formats"),
+    ),
+  },
+  {
     path: "guide/style-dictionary.md",
     title: "Style Dictionary JSON",
     description:

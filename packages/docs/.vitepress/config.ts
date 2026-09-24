@@ -55,6 +55,7 @@ export default defineConfig({
           { text: "Bundler plugin", link: "/guide/bundlers" },
           { text: "Configuration", link: "/guide/configuration" },
           { text: "CLI and API", link: "/guide/usage" },
+          { text: "Output formats", link: "/guide/output-formats" },
           {
             text: "Style Dictionary JSON",
             link: "/guide/style-dictionary",

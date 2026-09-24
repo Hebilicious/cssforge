@@ -274,6 +274,117 @@ file; set `write` and import the written file with `layer(cssforge)` to keep the
 The CLI stays the integration path for everything else: Deno and JSR, Style Dictionary, CI steps, and
 tools without a bundler.
 
+## Output Formats
+
+CSS Forge writes more than CSS. One run emits the same tokens as CSS, TypeScript, JSON and
+Style Dictionary JSON, so values can be imported directly in TypeScript or read from other
+tools.
+
+| Format | Mode | Default path | Flag | Use it for |
+| --- | --- | --- | --- | --- |
+| CSS custom properties | `css` | `./.cssforge/output.css` | `--css` | Stylesheets, `var(--token)` |
+| TypeScript module | `ts` | `./.cssforge/output.ts` | `--ts` | Importing token values into TS/JS |
+| JSON | `json` | `./.cssforge/output.json` | `--json` | Any tool that reads JSON |
+| Style Dictionary tokens | `style-dictionary` | `./.cssforge/tokens.sd.json` | `--style-dictionary` | Style Dictionary and compatible tools |
+
+`--mode all` is the default and writes all four files. Every other mode writes one format, so
+run the command once per mode. Style Dictionary has its own section,
+[Style Dictionary JSON](#style-dictionary-json).
+
+### Token objects in TypeScript and JSON
+
+The TypeScript and JSON outputs hold the same nested tree. Every leaf is one token:
+
+```json
+{
+  "palette": {
+    "coral": {
+      "100": {
+        "key": "--palette-coral-100",
+        "value": "oklch(73.511% 0.16799 40.24666)",
+        "variable": "--palette-coral-100: oklch(73.511% 0.16799 40.24666);"
+      }
+    }
+  }
+}
+```
+
+| Field | Contains | Use it for |
+| --- | --- | --- |
+| `key` | The CSS custom property, such as `--palette-coral-100` | Building a `var()` string, or looking a token up by name |
+| `value` | The CSS value, such as `oklch(...)`, `0.5rem`, or `clamp(...)` | Passing a color, a length, or a font size to anything that accepts CSS |
+| `variable` | The full declaration, such as `--palette-coral-100: oklch(...);` | Injecting a declaration into a style tag or a shadow root |
+
+A level with one child is collapsed, so `palette: { value: { coral: ... } }` becomes
+`cssForge.palette.coral`. Numeric and `@` keys stay strings:
+`cssForge.spacing.custom.size["2"]`, `cssForge.typography_fluid["arial@m"]`.
+
+### Import color strings in TypeScript
+
+The TypeScript output is a typed module. Put it in your source tree:
+
+```bash
+cssforge --mode ts --ts ./src/design-tokens.ts
+```
+
+```typescript
+import { cssForge } from "./design-tokens.ts";
+
+const coral = cssForge.palette.coral["100"].value; // "oklch(73.511% 0.16799 40.24666)"
+
+// The string is the value: pass it to an SVG fill, a chart series, or a canvas call.
+const iconFill = coral;
+
+// The declaration moves a token into a style tag or a shadow root.
+const injected = `:root { ${cssForge.spacing.custom.size["2"].variable} }`;
+
+export const card = {
+  backgroundColor: coral,
+  padding: cssForge.spacing.custom.size["2"].value, // "0.5rem"
+  fontSize: cssForge.typography_fluid["arial@m"].value, // "clamp(0.875rem, ...)"
+};
+
+export { iconFill, injected };
+```
+
+The module is generated `as const`, so every path is typed and autocompleted, and a typo fails
+type checking. Importing it needs `"allowImportingTsExtensions": true` with `"noEmit": true`,
+the compiler options the Quick Start documents.
+
+### Read the tokens from other languages
+
+The JSON output is the same tree without the `as const` wrapper:
+
+```bash
+cssforge --mode json --json ./src/design-tokens.json
+```
+
+```javascript
+import tokens from "./design-tokens.json" with { type: "json" };
+
+const coral = tokens.palette.coral["100"].value; // "oklch(73.511% 0.16799 40.24666)"
+```
+
+### Values are CSS strings
+
+Palette, spacing and typography tokens hold final values, because CSS Forge converts colors to
+OKLCH and computes fluid scales at build time. Theme, gradient and primitive tokens keep their
+`var(--other-token)` reference, because only the CSS cascade knows which value is active:
+
+| Token | `value` |
+| --- | --- |
+| Palette, spacing, typography | The final value, such as `oklch(...)`, `0.5rem`, or `clamp(...)` |
+| Theme, gradient, primitive | `var(--token)`, resolved by the browser at paint time |
+
+```typescript
+const themed = {
+  color: cssForge.theme.light.background.primary.value, // "var(--palette-coral-100)"
+  borderColor: cssForge.palette.coral["100"].value, // "oklch(73.511% 0.16799 40.24666)"
+};
+```
+
+Both are valid CSS. The first follows the active theme; the second is a snapshot of one theme.
+
 ## Configuration
 
 ### Colors

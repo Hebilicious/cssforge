@@ -16,6 +16,7 @@ The compact machine-readable route index is available at [`/llms.txt`](/llms.txt
 - **Understand references and config structure:** [Configuration](/guide/configuration)
 - **Configure a token family:** [Colors](/tokens/colors), [Spacing](/tokens/spacing), [Typography](/tokens/typography), or [Primitives](/tokens/primitives)
 - **Run the CLI or call the API:** [Using CSS Forge](/guide/usage)
+- **Read or import the generated CSS, TS, or JSON:** [Output formats](/guide/output-formats)
 - **Integrate with a framework:** [Examples](/guide/examples)
 
 ## Repository sources of truth
