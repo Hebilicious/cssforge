@@ -111,6 +111,30 @@ Deno.test("loadConfig - returns the default export and every local file the conf
 	});
 });
 
+Deno.test("loadConfig - loads a TypeScript config in a CommonJS project", async () => {
+	// An explicit `"type": "commonjs"` makes Node read `.ts` as CommonJS and turns
+	// off module syntax detection, so `export default` would be a syntax error.
+	await inConfigDir(
+		{
+			"package.json": `{ "name": "cjs-project", "version": "0.0.0", "type": "commonjs" }\n`,
+			...configFiles,
+		},
+		async (dir) => {
+			const { first } = runScenario(dir);
+
+			assertEquals(first.config.spacing?.custom?.size?.value, {
+				2: "0.5rem",
+				4: "1rem",
+			});
+			assertEquals(first.dependencies.map((path) => path.replace(dir, "<dir>")).sort(), [
+				"<dir>/cssforge.config.ts",
+				"<dir>/nested.ts",
+				"<dir>/tokens.ts",
+			]);
+		},
+	);
+});
+
 Deno.test("loadConfig - re-evaluates a token module the config imports on the next load", async () => {
 	await inConfigDir(configFiles, async (dir) => {
 		const { first, second } = runScenario(dir);
