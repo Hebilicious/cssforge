@@ -19,6 +19,7 @@ tasks:
       - "guide/bundlers.md"
       - "guide/configuration.md"
       - "guide/usage.md"
+      - "guide/output-formats.md"
       - "guide/style-dictionary.md"
       - "guide/examples.md"
       - "tokens/colors.md"
