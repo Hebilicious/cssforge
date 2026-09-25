@@ -32,11 +32,14 @@ them from `virtual:cssforge.css`. There is no pre-generation step to run.
 moon run vanilla-react-css:e2e
 ```
 
-The Playwright suite has three specs. `tests/e2e.spec.ts` validates CSS Forge variables on
+The Playwright suite has four specs. `tests/e2e.spec.ts` validates CSS Forge variables on
 `:root` and computed styles on `[data-testid="token-card"]`. The
 `tests/theme-alias-scoping.spec.ts` spec covers theme alias scoping: with the `Another`
 theme class on the root element the probe resolves to the `:root.Another` palette color,
 while a descendant-only class leaves `--primary` invalid at computed-value time on `:root`
-and the probe uses its fallback. The `tests/hmr.spec.ts` spec edits `cssforge.config.ts`
-against the running dev server and asserts the browser picks up the new token value without
-reloading the page.
+and the probe uses its fallback. The `tests/oklch-fallback.spec.ts` spec reads the generated
+stylesheet through the CSSOM and asserts the `@supports not (color: oklch(0% 0 0))` block
+carries the sRGB fallback, stays inert in Chromium, which supports `oklch()`, and wins the
+cascade once its gate is opened on the generated rule. The
+`tests/hmr.spec.ts` spec edits `cssforge.config.ts` against the running dev server and
+asserts the browser picks up the new token value without reloading the page.

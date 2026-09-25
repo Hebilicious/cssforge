@@ -314,6 +314,7 @@ The TypeScript and JSON outputs hold the same nested tree. Every leaf is one tok
 | `key` | The CSS custom property, such as `--palette-coral-100` | Building a `var()` string, or looking a token up by name |
 | `value` | The CSS value, such as `oklch(...)`, `0.5rem`, or `clamp(...)` | Passing a color, a length, or a font size to anything that accepts CSS |
 | `variable` | The full declaration, such as `--palette-coral-100: oklch(...);` | Injecting a declaration into a style tag or a shadow root |
+| `color` | The generated formats, such as `{ "hex": { "string": "#ff7f50" }, "rgb": { "array": [255, 127, 80] } }` | Reading a palette color as a legacy value without converting it. Present only when `settings.color.formats` is configured, on the palette or on the color |
 
 A level with one child is collapsed, so `palette: { value: { coral: ... } }` becomes
 `cssForge.palette.coral`. Numeric and `@` keys stay strings:
@@ -657,6 +658,146 @@ Custom property references are substituted when the alias is computed, before in
 `:root.Another` keeps both declarations on the same element; a theme class on a descendant
 leaves `--primary` invalid at computed-value time, and every `var(--primary, fallback)`
 reference uses its fallback.
+
+#### Color formats for browsers without oklch
+
+Palette colors are generated in OKLCH. A custom property accepts any token stream, so a
+browser without `oklch()` support still parses `--palette-coral-100: oklch(...)` and only
+fails when the value is used as a color. Set `formats` to generate the same color in sRGB
+formats, so the unsupported browser keeps a usable color and non-CSS consumers read the
+value they need:
+
+<!-- md:generate defineConfig
+export default defineConfig({
+  colors: {
+    palette: {
+      value: {
+        coral: { 100: { hex: "#FF7F50" } },
+        coralDark: {
+          value: { 100: { hex: "#FF6347" } },
+          settings: { atRule: "@media (prefers-color-scheme: dark)" },
+        },
+      },
+      settings: {
+        color: {
+          formats: {
+            hex: { string: true, digits: true, number: true },
+            rgb: { string: true, array: true },
+          },
+          fallback: "hex",
+        },
+      },
+    },
+  },
+});
+-->
+
+```typescript
+export default defineConfig({
+  colors: {
+    palette: {
+      value: {
+        coral: { 100: { hex: "#FF7F50" } },
+        coralDark: {
+          value: { 100: { hex: "#FF6347" } },
+          settings: { atRule: "@media (prefers-color-scheme: dark)" },
+        },
+      },
+      settings: {
+        color: {
+          formats: {
+            hex: { string: true, digits: true, number: true },
+            rgb: { string: true, array: true },
+          },
+          fallback: "hex",
+        },
+      },
+    },
+  },
+});
+```
+
+This will generate the following CSS :
+
+```css
+/*____ CSSForge ____*/
+:root {
+/*____ Colors ____*/
+/* Palette */
+/* coral */
+--palette-coral-100: oklch(73.511% 0.16799 40.24666);
+/* coralDark */
+@media (prefers-color-scheme: dark) {
+  --palette-coralDark-100: oklch(69.622% 0.19552 32.32143);
+}
+}
+@supports not (color: oklch(0% 0 0)) {
+  :root {
+    /* coral */
+    --palette-coral-100: #ff7f50;
+  }
+}
+@media (prefers-color-scheme: dark) {
+  @supports not (color: oklch(0% 0 0)) {
+    :root {
+      /* coralDark */
+      --palette-coralDark-100: #ff6347;
+    }
+  }
+}
+```
+
+<!-- /md:generate -->
+
+| Format | Output | Value |
+| --- | --- | --- |
+| `hex` | `string` | `"#ff7f50"` |
+| `hex` | `digits` | `"ff7f50"` |
+| `hex` | `number` | `16744272` (`0xff7f50`) |
+| `rgb` | `string` | `"rgb(255 127 80)"` |
+| `rgb` | `array` | `[255, 127, 80]` |
+
+A format set to `true` generates its CSS value (`string`). A color with alpha carries it in
+every output: `#ff7f50aa`, `ff7f50aa`, `0xff7f50aa`, `rgb(255 127 80 / 0.667)` and
+`[255, 127, 80, 0.667]`.
+
+Every format also takes an `alpha` policy: `true` (the default) keeps the alpha the color
+carries, a number between 0 and 1 generates that format at that opacity, and `false` rejects
+a color that carries alpha and drops the alpha from the output. The `oklch()` value keeps the
+alpha the color carries, so a format that sets an alpha is generated at that opacity alone.
+
+`fallback` names the format whose `string` value, including its alpha policy, becomes the
+declaration for browsers without `oklch()` support. It defaults to the first generated
+format, has to be generated with its `string` output, and `false` emits no declaration so the
+formats only reach the tokens. The declaration is gated by
+`@supports not (color: oklch(0% 0 0))` and emitted after the root block, because a custom
+property accepts any token stream and the later declaration wins wherever the modern value is
+unsupported. It mirrors the color's `atRule` and `selector`, so it only overrides the
+declaration it stands in for.
+
+The palette settings cover every color, and a color replaces them in its own `settings`, so a
+color that only sets `fallback` keeps the palette's formats. The JSON, TypeScript and Style
+Dictionary tokens carry the generated values in a `color` object, keyed by format and output:
+
+```json
+{
+  "key": "--palette-coral-100",
+  "value": "oklch(73.511% 0.16799 40.24666)",
+  "variable": "--palette-coral-100: oklch(73.511% 0.16799 40.24666);",
+  "color": {
+    "hex": { "string": "#ff7f50", "digits": "ff7f50", "number": 16744272 },
+    "rgb": { "string": "rgb(255 127 80)", "array": [255, 127, 80] }
+  }
+}
+```
+
+Setting the palette formats needs the `settings` key next to `value`; a color that carries
+settings is written with the `value` wrapper.
+
+The palette is the only family that converts the colors it is given, so it is the only one
+that generates these formats. Themes, gradients and primitives keep their authored values,
+and they use the palette value through the `var(--palette-...)` references they already
+compose with. An `oklch()` written directly into a theme or gradient value stays as it is.
 
 #### Condition
 
@@ -1252,6 +1393,9 @@ cssforge --mode style-dictionary --style-dictionary ./dist/design-tokens.sd.json
 
 # Keep CSS variables as values for usage matching
 cssforge --mode style-dictionary --style-dictionary ./dist/design-tokens.sd.json --style-dictionary-value-mode css-reference
+
+# Generate sRGB formats next to oklch for every palette color, added to the config's formats
+cssforge --color-formats hex,rgb
 ```
 
 ## Programmatic Usage
@@ -1326,7 +1470,9 @@ the keys in the generated file, so consumers can connect a semantic token to its
 | `attributes.cssVariable` | The token's CSS custom property, such as `--palette-neutral-900` | Declaring or overriding the token in CSS |
 | `attributes.tailwindVariable` | The same custom property name, without the `var()` wrapper | Tools that match authored `var(--token)` usage to tokens |
 | `attributes.resolvedValue` | The final value, even in `css-reference` mode | Showing a value without following references |
+| `attributes.color` | The token's generated formats, when `settings.color.formats` is configured | Emitting a legacy-safe color for a token |
 | `$resolvedValue` | The same final value as a top-level DTCG-style field | Tools that read `$resolvedValue` before falling back to `value` |
+| `$color` | The same per-format values as a top-level field | Tools that read `$color` before converting the color themselves |
 
 `type` narrows `fontSize`, `lineHeight`, `fontWeight`, `fontFamily`, `borderRadius`,
 `letterSpacing`, `shadow`, `opacity`, `zIndex`, and `number` when the token's name and value
