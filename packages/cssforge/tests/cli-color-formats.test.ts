@@ -73,13 +73,13 @@ Deno.test("build - --color-formats adds the formats to every output", async () =
 
 		assertEquals(css.includes("--palette-coral-100: #ff7f50;"), true);
 		assertEquals(json.palette.coral["100"].color, {
-			hex: "#ff7f50",
-			rgb: "rgb(255 127 80)",
+			hex: { string: "#ff7f50" },
+			rgb: { string: "rgb(255 127 80)" },
 		});
-		assertEquals(ts.includes('"rgb": "rgb(255 127 80)"'), true);
+		assertEquals(ts.includes('"rgb": {'), true);
 		assertEquals(styleDictionary.palette.coral["100"].$color, {
-			hex: "#ff7f50",
-			rgb: "rgb(255 127 80)",
+			hex: { string: "#ff7f50" },
+			rgb: { string: "rgb(255 127 80)" },
 		});
 	} finally {
 		await rm(tempDir, { recursive: true, force: true });

@@ -15,11 +15,32 @@ export type TokenTier = "primitive" | "semantic";
  */
 export type ColorFormat = "hex" | "rgb";
 
+/** The values a token carries for the `hex` format. */
+export interface HexColorValues {
+	/** The CSS value, such as `"#ff7f50"`. */
+	string?: string;
+	/** The digits without `#`, such as `"ff7f50"`. */
+	digits?: string;
+	/** The digits as a number in RGBA byte order, such as `0xff7f50aa`. */
+	number?: number;
+}
+
+/** The values a token carries for the `rgb` format. */
+export interface RgbColorValues {
+	/** The CSS value, such as `"rgb(255 127 80)"`. */
+	string?: string;
+	/** The channels, with a fourth element holding the alpha when the color has one. */
+	array?: number[];
+}
+
 /**
- * The extra color values a token carries, keyed by the format that produced
- * them, for example `{ hex: "#ff7f50", rgb: "rgb(255 127 80)" }`.
+ * The color values a token carries alongside `oklch()`, keyed by format. Only
+ * the formats and representations the configuration asked for are present.
  */
-export type TokenColorFormats = Partial<Record<ColorFormat, string>>;
+export interface TokenColorFormats {
+	hex?: HexColorValues;
+	rgb?: RgbColorValues;
+}
 
 /**
  * Metadata carried through generation so alternate outputs can preserve token

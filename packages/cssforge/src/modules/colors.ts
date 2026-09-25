@@ -1,6 +1,12 @@
 import Color from "colorjs.io";
 import { InvalidNameError, validateName, validateVariableAliases } from "../helpers.ts";
-import type { ColorFormat, TokenColorFormats, Variables } from "../lib.ts";
+import type {
+	ColorFormat,
+	HexColorValues,
+	RgbColorValues,
+	TokenColorFormats,
+	Variables,
+} from "../lib.ts";
 import {
 	getReferencePaths,
 	getResolvedVariablesMap,
@@ -83,30 +89,80 @@ export interface WithCondition {
 export type { ColorFormat } from "../lib.ts";
 
 /**
- * Settings for the extra color formats generated next to `oklch()`.
+ * The values one color format can produce.
+ *
+ * `hex` writes `#rrggbb` (or `#rrggbbaa` with alpha), the same digits without
+ * `#`, and the digits as a 32-bit number in RGBA byte order (`0xff7f50aa`).
+ * `rgb` writes `rgb(r g b)` (or `rgb(r g b / a)` with alpha) and the channels as
+ * an array, with a fourth element holding the alpha when the color has one.
+ */
+export interface HexFormatOutputs {
+	/** The CSS value, such as `"#ff7f50"`. */
+	string?: boolean;
+	/** The digits without `#`, such as `"ff7f50"`. */
+	digits?: boolean;
+	/** The digits as a number, such as `0xff7f50`. */
+	number?: boolean;
+}
+
+/** The values `rgb` can produce. */
+export interface RgbFormatOutputs {
+	/** The CSS value, such as `"rgb(255 127 80)"`. */
+	string?: boolean;
+	/** The channels, such as `[255, 127, 80]`. */
+	array?: boolean;
+}
+
+/**
+ * Settings for the color values generated next to `oklch()`, shared by the
+ * palette and its colors.
  */
 export interface ColorFormatConfig {
 	/**
-	 * Formats to generate alongside `oklch()`, in order. A CSS declaration
-	 * cannot hold two values, so the first format is the one emitted for
-	 * browsers without `oklch()` support, gated by
-	 * `@supports not (color: oklch(0% 0 0))`. The JSON, TypeScript and Style
-	 * Dictionary tokens carry every requested format.
+	 * Formats generated alongside `oklch()`, keyed by format. A format set to
+	 * `true` produces its CSS value; an object selects the representations to
+	 * include, so `{ hex: { digits: true } }` produces only `"ff7f50"`.
 	 *
-	 * The palette setting covers every color; a color overrides it in its own
-	 * `settings`, and `[]` or `false` opts out of an inherited value.
+	 * The palette setting covers every color, and a color replaces it in its own
+	 * `settings`.
 	 *
 	 * @example
 	 * ```ts
 	 * colors: {
 	 *   palette: {
 	 *     value: { coral: { 100: { hex: "#FF7F50" } } },
-	 *     settings: { color: { formats: ["hex", "rgb"] } },
+	 *     settings: {
+	 *       color: {
+	 *         formats: { hex: { string: true, digits: true }, rgb: true },
+	 *         fallback: "hex",
+	 *       },
+	 *     },
 	 *   },
 	 * }
 	 * ```
 	 */
-	formats?: readonly ColorFormat[] | false;
+	formats?: {
+		hex?: boolean | HexFormatOutputs;
+		rgb?: boolean | RgbFormatOutputs;
+	};
+	/**
+	 * The format emitted as the CSS declaration for browsers without `oklch()`
+	 * support, gated by `@supports not (color: oklch(0% 0 0))`. The format has to
+	 * be generated, and to include its `string` value.
+	 *
+	 * Defaults to the first generated format. `false` emits no declaration, so
+	 * the formats only reach the JSON, TypeScript and Style Dictionary tokens.
+	 */
+	fallback?: ColorFormat | false;
+	/**
+	 * Alpha handling for the generated color.
+	 *
+	 * `true` (the default) keeps the alpha the color carries. A number between 0
+	 * and 1 replaces it, which generates the color at that opacity everywhere,
+	 * including its `oklch()` value. `false` rejects a color that carries alpha,
+	 * and no representation then holds an alpha channel.
+	 */
+	alpha?: boolean | number;
 }
 
 /**
@@ -302,19 +358,151 @@ function getColorString(value: ColorValue): string {
 	throw new Error("Invalid color value");
 }
 
+/** The condition a format declaration is gated by. */
+const OKLCH_SUPPORT_CONDITION = "@supports not (color: oklch(0% 0 0))";
+
 /**
- * Converts a color value to the OKLCH color space.
- * @example
- * ```ts
- * colorValueToOklch({ hex: "#ff0000" }); // "oklch(62.796% 0.25768 29.23388)"
- * colorValueToOklch("blue"); // "oklch(45.201% 0.31321 264.05202)"
- * ```
+ * The representations a format can produce, keyed by the name a configuration
+ * enables. The accepted representations and the values they generate come from
+ * this one table, so a representation cannot be validated without also being
+ * implemented.
  */
-function colorValueToOklch(value: ColorValueOrString): string {
+type ColorFormatValue = string | number | number[];
+
+/** The CSS value of one format, which is the declaration a browser without `oklch()` support reads. */
+const colorFormatDeclarations: Record<ColorFormat, (color: Color) => string> = {
+	hex: (color) => `#${hexDigits(color)}`,
+	rgb: (color) => `rgb(${srgbBytes(color).join(" ")}${alphaSuffix(color)})`,
+};
+
+const colorFormatOutputs: Record<
+	ColorFormat,
+	Record<string, (color: Color) => ColorFormatValue>
+> = {
+	hex: {
+		string: colorFormatDeclarations.hex,
+		digits: (color) => hexDigits(color),
+		number: (color) => Number.parseInt(hexDigits(color), 16),
+	},
+	rgb: {
+		string: colorFormatDeclarations.rgb,
+		array: (color) =>
+			alphaValue(color) === 1
+				? srgbBytes(color)
+				: [...srgbBytes(color), alphaValue(color)],
+	},
+};
+
+type ColorFormatOutput = string;
+
+/** Every accepted format name, in the order error messages and the CLI list them. */
+export const supportedColorFormats = Object.keys(colorFormatOutputs) as ColorFormat[];
+
+/** Whether a runtime value is one of the accepted format names. */
+export const isColorFormat = (value: unknown): value is ColorFormat =>
+	typeof value === "string" && Object.hasOwn(colorFormatOutputs, value);
+
+/** The accepted format names as the configuration errors list them. */
+const colorFormatList = supportedColorFormats.map((format) => `"${format}"`).join(", ");
+
+/** The representations `format` accepts, in the order they are generated. */
+const outputsOf = (format: ColorFormat): readonly ColorFormatOutput[] =>
+	Object.keys(colorFormatOutputs[format]);
+
+const toChannelByte = (coord: number) =>
+	Math.round(Math.min(Math.max(Number.isNaN(coord) ? 0 : coord, 0), 1) * 255);
+
+const toHexByte = (byte: number) => byte.toString(16).padStart(2, "0");
+
+/**
+ * The color channels mapped into the sRGB gamut. The conversion uses the CSS
+ * gamut mapping algorithm, which is how a browser maps an out-of-gamut
+ * `oklch()` color, so a saturated value stays as close to the modern one as
+ * sRGB allows.
+ */
+const srgbBytes = (color: Color): number[] =>
+	color.to("srgb").toGamut().coords.map(toChannelByte);
+
+/** The alpha the generated values carry, clamped to 0-1 and rounded to three decimals. */
+const alphaValue = (color: Color): number =>
+	Math.round(
+		Math.min(Math.max(Number.isNaN(color.alpha) ? 1 : color.alpha, 0), 1) * 1000,
+	) / 1000;
+
+/** `" / 0.12"`, or an empty string for an opaque color. */
+const alphaSuffix = (color: Color) =>
+	alphaValue(color) === 1 ? "" : ` / ${alphaValue(color)}`;
+
+/** The hex digits of the color, with the alpha byte when it carries alpha. */
+const hexDigits = (color: Color) => {
+	const digits = srgbBytes(color).map(toHexByte).join("");
+	return alphaValue(color) === 1
+		? digits
+		: `${digits}${toHexByte(Math.round(alphaValue(color) * 255))}`;
+};
+
+/**
+ * The color as it is generated, with the alpha policy applied: the alpha the
+ * color carries, a replacement, or a rejection of a color that has one.
+ */
+const readColor = (
+	value: ColorValueOrString,
+	alpha: boolean | number,
+	path: string,
+): Color => {
 	const colorString = typeof value === "string" ? value : getColorString(value);
 	const color = new Color(colorString);
-	const oklchColor = color.to("oklch");
 
+	if (alpha === false && color.alpha !== 1) {
+		throw new Error(
+			`Invalid color at "${path}": the color carries alpha, but "settings.color.alpha" is false.`,
+		);
+	}
+
+	if (typeof alpha === "number") color.alpha = alpha;
+
+	return color;
+};
+
+/** The alpha a color value carries, or undefined when the value is not a color. */
+const colorAlpha = (value: ColorValueOrString): number | undefined => {
+	try {
+		const colorString = typeof value === "string" ? value : getColorString(value);
+		return new Color(colorString).alpha;
+	} catch {
+		// The emission pass reports a value it cannot parse.
+		return undefined;
+	}
+};
+
+/**
+ * Rejects a variant that carries alpha under an `alpha: false` policy, before
+ * generation, so the mistake fails loudly instead of skipping the color with a
+ * log line.
+ */
+const assertOpaqueVariants = (
+	variants: Record<string, ColorValueOrString>,
+	path: string,
+): void => {
+	for (const [variantId, value] of Object.entries(variants)) {
+		const alpha = colorAlpha(value);
+		if (alpha !== undefined && alpha !== 1) {
+			throw new Error(
+				`Invalid color at "${path}.${variantId}": the color carries alpha, but "settings.color.alpha" is false.`,
+			);
+		}
+	}
+};
+
+/**
+ * Converts a color to the OKLCH value of a generated token.
+ * @example
+ * ```ts
+ * colorToOklch(new Color("#ff0000")); // "oklch(62.796% 0.25768 29.23388)"
+ * ```
+ */
+function colorToOklch(color: Color): string {
+	const oklchColor = color.to("oklch");
 	const parsedCoords = oklchColor.coords.map((coord) =>
 		Number.isNaN(coord) ? 0 : coord,
 	);
@@ -326,162 +514,266 @@ function colorValueToOklch(value: ColorValueOrString): string {
 	return `oklch(${Number((l * 100).toFixed(3))}% ${c} ${h}${alpha})`;
 }
 
-/**
- * The condition every fallback declaration is gated by. A browser without
- * `oklch()` support parses the feature as unsupported, so the negation matches
- * there and only there.
- */
-const OKLCH_SUPPORT_CONDITION = "@supports not (color: oklch(0% 0 0))";
-
-const toChannelByte = (coord: number) =>
-	Math.round(Math.min(Math.max(Number.isNaN(coord) ? 0 : coord, 0), 1) * 255);
-
-const toHexByte = (byte: number) => byte.toString(16).padStart(2, "0");
+/** One generated format: the format, and the representations it produces. */
+interface GeneratedFormat {
+	format: ColorFormat;
+	outputs: readonly ColorFormatOutput[];
+}
 
 /**
- * Serializers for the supported color formats. The accepted formats and the
- * syntax they emit come from this one table, so a format cannot be validated
- * without also being implemented.
+ * Converts a color to every requested representation of every requested format,
+ * in the order they are generated.
  */
-const colorFormatSerializers: Record<
-	ColorFormat,
-	(red: number, green: number, blue: number, alpha: number) => string
-> = {
-	hex: (red, green, blue, alpha) =>
-		`#${toHexByte(red)}${toHexByte(green)}${toHexByte(blue)}${
-			alpha === 1 ? "" : toHexByte(Math.round(alpha * 255))
-		}`,
-	rgb: (red, green, blue, alpha) =>
-		`rgb(${red} ${green} ${blue}${alpha === 1 ? "" : ` / ${Number(alpha.toFixed(3))}`})`,
+const colorToFormats = (
+	color: Color,
+	formats: readonly GeneratedFormat[],
+): TokenColorFormats => {
+	const values: TokenColorFormats = {};
+
+	for (const { format, outputs } of formats) {
+		const generated: Record<string, ColorFormatValue> = {};
+		for (const output of outputs) {
+			generated[output] = colorFormatOutputs[format][output](color);
+		}
+		if (format === "hex") values.hex = generated as HexColorValues;
+		else values.rgb = generated as RgbColorValues;
+	}
+
+	return values;
 };
 
-/** Every accepted color format, in the order error messages and the CLI list them. */
-export const supportedColorFormats = Object.keys(colorFormatSerializers) as ColorFormat[];
-
-/** Whether a runtime value is one of the accepted color formats. */
-export const isColorFormat = (value: unknown): value is ColorFormat =>
-	typeof value === "string" && Object.hasOwn(colorFormatSerializers, value);
+/** The CSS value of one format, which is the declaration a browser without `oklch()` support reads. */
+const colorToDeclaration = (color: Color, format: ColorFormat): string =>
+	colorFormatDeclarations[format](color);
 
 /**
- * Converts a color value to the sRGB syntax of one format, which is what a
- * browser without `oklch()` support can render.
- *
- * The conversion uses the CSS gamut mapping algorithm, which is how a browser
- * maps an out-of-gamut `oklch()` color, so a saturated value stays as close to
- * the modern one as sRGB allows.
- *
- * @example
- * ```ts
- * colorValueToFormat({ hex: "#ff7f50" }, "hex"); // "#ff7f50"
- * colorValueToFormat({ hex: "#ff7f50" }, "rgb"); // "rgb(255 127 80)"
- * ```
+ * The color settings of one level, normalized. A field the level does not set is
+ * inherited from the level above it, so a color that only names a fallback keeps
+ * the palette's formats.
  */
-function colorValueToFormat(value: ColorValueOrString, format: ColorFormat): string {
-	const colorString = typeof value === "string" ? value : getColorString(value);
-	const mapped = new Color(colorString).to("srgb").toGamut();
-	const alpha = Math.min(Math.max(Number.isNaN(mapped.alpha) ? 1 : mapped.alpha, 0), 1);
-	const [red, green, blue] = mapped.coords.map(toChannelByte);
-
-	return colorFormatSerializers[format](red, green, blue, alpha);
+interface ColorFormatSettings {
+	formats?: GeneratedFormat[];
+	fallback?: ColorFormat | false;
+	alpha?: boolean | number;
 }
 
-/**
- * Converts a color value to every requested format, in the requested order.
- */
-const colorValueToFormats = (
-	value: ColorValueOrString,
-	formats: readonly ColorFormat[],
-): TokenColorFormats =>
-	Object.fromEntries(
-		formats.map((format) => [format, colorValueToFormat(value, format)]),
-	) as TokenColorFormats;
+/** The settings of one generated color, with every field resolved. */
+interface ResolvedColorFormatSettings {
+	formats: GeneratedFormat[];
+	fallback?: ColorFormat | false;
+	alpha: boolean | number;
+}
 
-/** The accepted formats as the configuration errors list them. */
-const colorFormatList = supportedColorFormats.map((format) => `"${format}"`).join(", ");
+const defaultFormats = (format: ColorFormat): GeneratedFormat => ({
+	format,
+	outputs: ["string"],
+});
 
 /**
- * Reads the configured formats from one level's `color` settings, rejecting a
- * shape generation would otherwise ignore.
+ * Reads and validates the `color` settings of one palette level. The values come
+ * from a JavaScript object at runtime, so a setting generation would ignore has
+ * to fail loudly instead of quietly producing nothing.
  */
-function readColorFormats(
+function readColorFormatSettings(
+	entry: object,
 	settings: unknown,
 	path: string,
-): readonly ColorFormat[] | false {
-	if (settings === undefined) return false;
-	if (!isRecord(settings)) {
-		throw new Error(`Invalid configuration at "${path}": settings must be an object.`);
-	}
-
-	const color = settings.color;
-	if (color === undefined) return false;
-	if (!isRecord(color)) {
-		throw new Error(`Invalid configuration at "${path}.color": color must be an object.`);
-	}
-
-	const formats = color.formats;
-	if (formats === undefined || formats === false) return false;
-	if (!Array.isArray(formats)) {
-		throw new Error(
-			`Invalid configuration at "${path}.color.formats": expected an array of formats such as ["hex"], or false.`,
-		);
-	}
-
-	for (const format of formats) {
-		if (!isColorFormat(format)) {
-			throw new Error(
-				`Invalid color format at configuration path "${path}.color.formats": ${JSON.stringify(
-					format,
-				)}. Use ${colorFormatList}.`,
-			);
-		}
-	}
-
-	return formats as readonly ColorFormat[];
-}
-
-/**
- * Validates the color settings of one palette level, which is where the extra
- * formats belong. The values come from a JavaScript object at runtime, so a
- * setting generation would ignore has to fail loudly instead of quietly
- * producing no extra format.
- *
- * `entry` is the palette or the palette color itself, so a format written one
- * level too high is reported with the path that holds it.
- */
-function validateColorSettings(entry: object, settings: unknown, path: string): void {
+): ColorFormatSettings | undefined {
 	if ("color" in entry) {
 		throw new Error(
 			`Invalid configuration at "${path}": "color" belongs inside "${path}.settings".`,
 		);
 	}
-	if ("formats" in entry) {
+	if ("formats" in entry || "fallback" in entry || "alpha" in entry) {
 		throw new Error(
-			`Invalid configuration at "${path}": "formats" belongs inside "${path}.settings.color".`,
-		);
-	}
-	if (isRecord(settings) && "formats" in settings) {
-		throw new Error(
-			`Invalid configuration at "${path}.settings": "formats" belongs inside "${path}.settings.color".`,
+			`Invalid configuration at "${path}": color settings belong inside "${path}.settings.color".`,
 		);
 	}
 
-	readColorFormats(settings, `${path}.settings`);
+	if (settings === undefined) return undefined;
+	if (!isRecord(settings)) {
+		throw new Error(
+			`Invalid configuration at "${path}.settings": settings must be an object.`,
+		);
+	}
+
+	const settingsPath = `${path}.settings`;
+	if ("formats" in settings || "fallback" in settings || "alpha" in settings) {
+		throw new Error(
+			`Invalid configuration at "${settingsPath}": color settings belong inside "${settingsPath}.color".`,
+		);
+	}
+
+	const color = settings.color;
+	if (color === undefined) return undefined;
+	if (!isRecord(color)) {
+		throw new Error(
+			`Invalid configuration at "${settingsPath}.color": color must be an object.`,
+		);
+	}
+
+	const colorSettings: ColorFormatSettings = {};
+	if (color.formats !== undefined) {
+		colorSettings.formats = readFormats(color.formats, `${settingsPath}.color.formats`);
+	}
+	if (color.fallback !== undefined) {
+		colorSettings.fallback = readFallback(
+			color.fallback,
+			`${settingsPath}.color.fallback`,
+		);
+	}
+	if (color.alpha !== undefined) {
+		colorSettings.alpha = readAlpha(color.alpha, `${settingsPath}.color.alpha`);
+	}
+
+	return colorSettings;
 }
 
-/**
- * Resolves the formats generated for one palette color: the color's own list
- * wins over the palette's, `false` and `[]` opt out of an inherited list, and
- * the formats a caller adds are appended.
- */
-const resolveColorFormats = (
-	settings: ColorSettings | undefined,
-	paletteSettings: ColorSettings | undefined,
-	extraFormats: readonly ColorFormat[] = [],
-): ColorFormat[] => {
-	const configured = settings?.color?.formats ?? paletteSettings?.color?.formats;
-	const formats = Array.isArray(configured) ? [...configured] : [];
+const readFormats = (value: unknown, path: string): GeneratedFormat[] => {
+	if (value === undefined || value === false) return [];
+	if (!isRecord(value)) {
+		throw new Error(
+			`Invalid configuration at "${path}": expected formats such as { hex: true }, or omit it.`,
+		);
+	}
 
-	return [...new Set([...formats, ...extraFormats])];
+	const formats: GeneratedFormat[] = [];
+	for (const [name, outputs] of Object.entries(value)) {
+		if (!isColorFormat(name)) {
+			throw new Error(
+				`Invalid color format at configuration path "${path}": ${JSON.stringify(
+					name,
+				)}. Use ${colorFormatList}.`,
+			);
+		}
+
+		formats.push({
+			format: name,
+			outputs: readOutputs(name, outputs, `${path}.${name}`),
+		});
+	}
+
+	return formats;
+};
+
+const readOutputs = (
+	format: ColorFormat,
+	value: unknown,
+	path: string,
+): readonly ColorFormatOutput[] => {
+	if (value === undefined || value === false) return [];
+	if (value === true) return ["string"];
+	if (!isRecord(value)) {
+		throw new Error(
+			`Invalid configuration at "${path}": expected true or an object of outputs such as { string: true }.`,
+		);
+	}
+
+	const allowed = outputsOf(format);
+	const outputs: ColorFormatOutput[] = [];
+	for (const [name, enabled] of Object.entries(value)) {
+		if (!allowed.includes(name as ColorFormatOutput)) {
+			throw new Error(
+				`Invalid ${format} output at configuration path "${path}": ${JSON.stringify(
+					name,
+				)}. Use ${allowed.map((output) => `"${output}"`).join(", ")}.`,
+			);
+		}
+		if (enabled !== true && enabled !== false) {
+			throw new Error(
+				`Invalid configuration at "${path}.${name}": expected true or false, received ${JSON.stringify(
+					enabled,
+				)}.`,
+			);
+		}
+		if (enabled) outputs.push(name as ColorFormatOutput);
+	}
+
+	if (outputs.length === 0) {
+		throw new Error(
+			`Invalid configuration at "${path}": enable at least one output, such as { string: true }.`,
+		);
+	}
+
+	return outputs;
+};
+
+const readFallback = (value: unknown, path: string): ColorFormat | false | undefined => {
+	if (value === undefined || value === false) return value;
+	if (!isColorFormat(value)) {
+		throw new Error(
+			`Invalid fallback format at configuration path "${path}": ${JSON.stringify(
+				value,
+			)}. Use ${colorFormatList}, or false.`,
+		);
+	}
+
+	return value;
+};
+
+const readAlpha = (value: unknown, path: string): boolean | number => {
+	if (value === undefined || typeof value === "boolean") return value ?? true;
+	if (typeof value !== "number" || !Number.isFinite(value) || value < 0 || value > 1) {
+		throw new Error(
+			`Invalid alpha at configuration path "${path}": ${JSON.stringify(
+				value,
+			)}. Use true, false, or a number between 0 and 1.`,
+		);
+	}
+
+	return value;
+};
+
+/**
+ * Resolves the settings of one palette color: the color's own settings replace
+ * the palette's, and the formats a caller adds are appended to the result.
+ */
+const resolveColorFormatSettings = (
+	settings: ColorFormatSettings | undefined,
+	paletteSettings: ColorFormatSettings | undefined,
+	extraFormats: readonly ColorFormat[] = [],
+): ResolvedColorFormatSettings => {
+	const formats = [...(settings?.formats ?? paletteSettings?.formats ?? [])];
+	for (const format of extraFormats) {
+		if (!formats.some((entry) => entry.format === format)) {
+			formats.push(defaultFormats(format));
+		}
+	}
+
+	return {
+		formats,
+		fallback: settings?.fallback ?? paletteSettings?.fallback,
+		alpha: settings?.alpha ?? paletteSettings?.alpha ?? true,
+	};
+};
+
+/**
+ * The format whose `string` output becomes the CSS declaration. A named fallback
+ * has to be generated and to include that output, and the default is the first
+ * generated format.
+ */
+const resolveDeclarationFormat = ({
+	formats,
+	fallback,
+}: ResolvedColorFormatSettings): ColorFormat | undefined => {
+	if (fallback === false) return undefined;
+
+	const format = fallback ?? formats.at(0)?.format;
+	if (format === undefined) return undefined;
+
+	const generated = formats.find((entry) => entry.format === format);
+	if (!generated) {
+		throw new Error(
+			`Invalid fallback format: "${format}" is not generated. Add it to "settings.color.formats", or use false.`,
+		);
+	}
+	if (!generated.outputs.includes("string")) {
+		throw new Error(
+			`Invalid fallback format: "${format}" does not generate its "string" output. Enable it, or use false.`,
+		);
+	}
+
+	return format;
 };
 
 /**
@@ -640,33 +932,38 @@ export function processColors(
 		};
 	}
 
-	validateColorSettings(colors.palette, colors.palette.settings, "palette");
+	const paletteSettings = readColorFormatSettings(
+		colors.palette,
+		colors.palette.settings,
+		"palette",
+	);
 
 	for (const [colorName, colorConfig] of Object.entries(colors.palette.value)) {
 		validateName(colorName, `palette.${colorName}`);
 
 		const normalizedColorConfig = getPaletteColorConfig(colorConfig);
-		// Validated before the try block: a configuration mistake has to fail
-		// loudly instead of being logged and skipped per color. A color entry
-		// written in the shorthand form has no settings to validate, and its
-		// keys are variant names that may legitimately include "color".
-		if (isPaletteColorConfig(colorConfig)) {
-			validateColorSettings(
-				colorConfig,
-				normalizedColorConfig.settings,
-				`palette.${colorName}`,
-			);
-		}
-		const formats = resolveColorFormats(
-			normalizedColorConfig.settings,
-			colors.palette.settings,
+		// Read before the try block: a configuration mistake has to fail loudly
+		// instead of being logged and skipped per color. A color entry written in
+		// the shorthand form has no settings to read, and its keys are variant
+		// names that may legitimately include "color".
+		const colorSettings = resolveColorFormatSettings(
+			isPaletteColorConfig(colorConfig)
+				? readColorFormatSettings(
+						colorConfig,
+						normalizedColorConfig.settings,
+						`palette.${colorName}`,
+					)
+				: undefined,
+			paletteSettings,
 			options.colorFormats,
 		);
-		// One CSS declaration cannot hold two values, so the first format is the
-		// one a browser without `oklch()` support reads.
-		const cssFormat = formats.at(0);
-		const fallback = cssFormat
-			? { cssFormat, group: getFallbackGroup(normalizedColorConfig.settings) }
+		if (colorSettings.alpha === false) {
+			assertOpaqueVariants(normalizedColorConfig.value, `palette.${colorName}`);
+		}
+
+		const declarationFormat = resolveDeclarationFormat(colorSettings);
+		const fallback = declarationFormat
+			? { declarationFormat, group: getFallbackGroup(normalizedColorConfig.settings) }
 			: undefined;
 		if (fallback) fallback.group.declarations.push(`/* ${colorName} */`);
 
@@ -679,12 +976,19 @@ export function processColors(
 			for (const [variantId, colorValue] of Object.entries(normalizedColorConfig.value)) {
 				validateName(variantId, `palette.${colorName}.${variantId}`);
 				const key = `--${moduleKey}-${colorName}-${variantId}`;
-				const value = colorValueToOklch(colorValue);
+				const color = readColor(
+					colorValue,
+					colorSettings.alpha,
+					`palette.${colorName}.${variantId}`,
+				);
+				const value = colorToOklch(color);
 				const variable = `${key}: ${value};`;
 				const colorValues =
-					formats.length > 0 ? colorValueToFormats(colorValue, formats) : undefined;
-				const cssValue = fallback ? colorValues?.[fallback.cssFormat] : undefined;
-				if (fallback && cssValue) {
+					colorSettings.formats.length > 0
+						? colorToFormats(color, colorSettings.formats)
+						: undefined;
+				if (fallback) {
+					const cssValue = colorToDeclaration(color, fallback.declarationFormat);
 					fallback.group.declarations.push(`${key}: ${cssValue};`);
 				}
 

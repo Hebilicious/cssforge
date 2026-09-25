@@ -21,7 +21,12 @@ import { processTypography } from "./modules/typography.ts";
  */
 export type { CSSForgeConfig };
 export type { GenerateOptions, StyleDictionaryJSONOptions } from "./generator.ts";
-export type { ColorFormat, TokenColorFormats } from "./lib.ts";
+export type {
+	ColorFormat,
+	HexColorValues,
+	RgbColorValues,
+	TokenColorFormats,
+} from "./lib.ts";
 export type { LoadedConfig } from "./loader.ts";
 
 export {

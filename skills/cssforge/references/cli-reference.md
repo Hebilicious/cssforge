@@ -14,7 +14,8 @@ CLI implementation: `packages/cssforge/src/cli.ts`
 - `--style-dictionary`: Style Dictionary token JSON path (default `./.cssforge/tokens.sd.json`)
 - `--style-dictionary-value-mode`: `resolved | css-reference` (default `resolved`)
 - `--color-formats`: comma separated sRGB formats generated alongside oklch (`hex`, `rgb`),
-  appended to the formats `settings.color.formats` declares
+  appended to the formats `settings.color.formats` declares. Each added format generates its
+  CSS value, and `settings.color.fallback` still picks the declaration
 
 ## Typical commands from docs
 

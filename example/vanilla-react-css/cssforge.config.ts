@@ -28,7 +28,7 @@ export default defineConfig({
         // `@supports not (color: oklch(0% 0 0))`, so the example keeps working in
         // a browser without `oklch()` support. `tests/oklch-fallback.spec.ts`
         // asserts the gate from the browser.
-        color: { formats: ["hex"] },
+        color: { formats: { hex: true } },
       },
     },
     theme: {
