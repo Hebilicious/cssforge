@@ -761,18 +761,19 @@ A format set to `true` generates its CSS value (`string`). A color with alpha ca
 every output: `#ff7f50aa`, `ff7f50aa`, `0xff7f50aa`, `rgb(255 127 80 / 0.667)` and
 `[255, 127, 80, 0.667]`.
 
-`fallback` names the format whose `string` value becomes the declaration for browsers
-without `oklch()` support. It defaults to the first generated format, has to be generated
-with its `string` output, and `false` emits no declaration so the formats only reach the
-tokens. The declaration is gated by `@supports not (color: oklch(0% 0 0))` and emitted after
-the root block, because a custom property accepts any token stream and the later declaration
-wins wherever the modern value is unsupported. It mirrors the color's `atRule` and
-`selector`, so it only overrides the declaration it stands in for.
+Every format also takes an `alpha` policy: `true` (the default) keeps the alpha the color
+carries, a number between 0 and 1 generates that format at that opacity, and `false` rejects
+a color that carries alpha and drops the alpha from the output. The `oklch()` value keeps the
+alpha the color carries, so a format that sets an alpha is generated at that opacity alone.
 
-`alpha` controls the alpha of the generated color. `true` (the default) keeps the alpha the
-color carries. A number between 0 and 1 replaces it, which generates the color at that
-opacity everywhere, including its `oklch()` value. `false` rejects a color that carries
-alpha.
+`fallback` names the format whose `string` value, including its alpha policy, becomes the
+declaration for browsers without `oklch()` support. It defaults to the first generated
+format, has to be generated with its `string` output, and `false` emits no declaration so the
+formats only reach the tokens. The declaration is gated by
+`@supports not (color: oklch(0% 0 0))` and emitted after the root block, because a custom
+property accepts any token stream and the later declaration wins wherever the modern value is
+unsupported. It mirrors the color's `atRule` and `selector`, so it only overrides the
+declaration it stands in for.
 
 The palette settings cover every color, and a color replaces them in its own `settings`, so a
 color that only sets `fallback` keeps the palette's formats. The JSON, TypeScript and Style

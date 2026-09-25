@@ -19,9 +19,10 @@ stream, so the modern value wins everywhere, including where `oklch()` cannot be
 color outside sRGB uses the CSS gamut mapping algorithm, which is how a browser maps a color
 its display cannot show.
 
-`settings.color.alpha` controls the alpha of the generated color: `true` keeps the alpha the
-color carries, a number between 0 and 1 replaces it everywhere including the `oklch()` value,
-and `false` rejects a color that carries alpha.
+Each format also takes an `alpha` policy: `true` (the default) keeps the alpha the color
+carries, a number between 0 and 1 generates that format at that opacity, and `false` rejects
+a color that carries alpha and drops the alpha from the output. The `oklch()` value keeps the
+alpha the color carries, so a format that sets an alpha is generated at that opacity alone.
 
 The JSON and TypeScript token objects gain a `color` object keyed by format and output, such
 as `{ hex: { string: "#ff7f50", number: 16744272 }, rgb: { array: [255, 127, 80] } }`, and
