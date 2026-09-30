@@ -406,6 +406,26 @@ Deno.test("generateCSS - a palette color without variants emits no color block",
 	assertEquals(generateCSS(config).includes("@supports"), false);
 });
 
+Deno.test("generateCSS - an alpha percentage keeps its decimals", () => {
+	// 0.549 * 100 is not exact in binary, and the value is what users compare.
+	const config = defineConfig({
+		colors: {
+			palette: {
+				value: { soft: { 100: "rgb(11 11 18 / 54.9%)" } },
+				settings: { color: { formats: { hex: true } } },
+			},
+		},
+	});
+
+	const css = generateCSS(config);
+
+	assertEquals(
+		css.includes("--palette-soft-100: oklch(15.325% 0.0149 284.50542 / 54.9%);"),
+		true,
+	);
+	assertEquals(declaredValue(css, "--palette-soft-100"), "#0b0b128c");
+});
+
 Deno.test("generateCSS - a wide gamut color uses the CSS gamut mapped sRGB value", () => {
 	// `oklch(70% 0.4 20)` cannot be shown in sRGB: its conversion is
 	// `rgb(336 -117 10)`, and clipping each channel would give `#ff000a`. The

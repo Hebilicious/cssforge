@@ -454,7 +454,7 @@ function colorToOklch(color: Color): string {
 	const c = Number(parsedCoords[1].toFixed(5));
 	const h = Number(parsedCoords[2].toFixed(5));
 	const alpha =
-		oklchColor.alpha === 1 ? "" : ` / ${Number(oklchColor.alpha.toFixed(3)) * 100}%`;
+		oklchColor.alpha === 1 ? "" : ` / ${Number((oklchColor.alpha * 100).toFixed(1))}%`;
 	return `oklch(${Number((l * 100).toFixed(3))}% ${c} ${h}${alpha})`;
 }
 
