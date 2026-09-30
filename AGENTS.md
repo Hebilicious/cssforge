@@ -20,9 +20,14 @@ standard library or writing code from first principles.
 - Run `git status` before editing and review the complete diff afterward. Preserve unrelated
   changes and commit only when explicitly requested.
 - Open a pull request and stop there. Never merge a pull request that a human has not reviewed,
-  including release pull requests, and never merge one because the work looks finished or the
-  checks are green. Merging needs an explicit instruction from the user for that specific pull
-  request, and opening a pull request is not that instruction. Report the pull request URL and wait.
+  and never merge one because the work looks finished or the checks are green. Merging needs an
+  explicit instruction from the user for that specific pull request, and opening a pull request
+  is not that instruction. Report the pull request URL and wait.
+- A changesets release pull request is the exception, and it is pre-authorized: when the release
+  workflow opens one for work that was just merged, merge it as soon as GitHub reports it
+  mergeable. That branch never gets a green CI gate, its workflow run sits at `action_required`,
+  and the runs that do execute on it fail, so waiting for a green board deadlocks the release.
+  Merging it publishes the packages to npm and JSR, which is the intended effect.
 - Define repository operations in `moon.yml` or `.moon/tasks/**/*.yml`, not `package.json`
   scripts. Run existing operations through their Moon targets; use pnpm directly only for
   dependency management.
