@@ -65,11 +65,10 @@ export interface ResolvedToken extends TokenMetadata {
 	value: string;
 	/** The full CSS declaration. */
 	variable: string;
-	/**
-	 * The sRGB values generated for this token alongside `oklch()`, keyed by
-	 * format, when the color asked for them.
-	 */
+	/** The sRGB values generated for this token alongside `oklch()`, keyed by format. */
 	color?: TokenColorFormats;
+	/** Whether the color is outside sRGB, so its sRGB values were gamut mapped. */
+	gamutMapped?: boolean;
 	/**
 	 * The effective wrapper chain this declaration is emitted into, recorded by
 	 * the module that emitted it. Declarations without a wrapper share

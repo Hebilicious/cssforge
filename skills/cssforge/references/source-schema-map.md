@@ -33,6 +33,7 @@ color output settings.
   `false` to remove one.
 - Unknown keys, wrong shapes, and color format settings on a gradient or a theme are rejected
   with the configuration path. Spacing and primitives keep flat `PixelSettings`.
+- A palette token carries `gamutMapped: true` when the color is outside sRGB.
 
 ## Exposed API entrypoint
 

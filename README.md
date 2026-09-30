@@ -315,6 +315,7 @@ The TypeScript and JSON outputs hold the same nested tree. Every leaf is one tok
 | `value` | The CSS value, such as `oklch(...)`, `0.5rem`, or `clamp(...)` | Passing a color, a length, or a font size to anything that accepts CSS |
 | `variable` | The full declaration, such as `--palette-coral-100: oklch(...);` | Injecting a declaration into a style tag or a shadow root |
 | `color` | The generated formats, such as `{ "hex": { "string": "#ff7f50" }, "rgb": { "array": [255, 127, 80] } }` | Reading a palette color as a legacy value without converting it. Present only when `settings.color.formats` is configured, on the palette or on the color |
+| `gamutMapped` | `true` when the color is outside sRGB | Knowing which colors the browser paints differently from the authored value. Absent for a color inside sRGB |
 
 A level with one child is collapsed, so `palette: { value: { coral: ... } }` becomes
 `cssForge.palette.coral`. Numeric and `@` keys stay strings:
@@ -772,6 +773,9 @@ every generated value in `color`, under their format and output:
   "rgb": { "array": [255, 127, 80] }
 }
 ```
+
+A color outside sRGB is gamut mapped for its sRGB values, and its token carries
+`gamutMapped: true` so the mapping is visible.
 
 The palette is the only family that converts the colors it is given, so it is the only one
 that generates formats. Themes and gradients keep their authored values. A setting no schema
@@ -1451,6 +1455,8 @@ the keys in the generated file, so consumers can connect a semantic token to its
 | `attributes.color` | The token's generated formats, when `settings.color.formats` is configured | Emitting a legacy-safe color for a token |
 | `$resolvedValue` | The same final value as a top-level DTCG-style field | Tools that read `$resolvedValue` before falling back to `value` |
 | `$color` | The same per-format values as a top-level field | Tools that read `$color` before converting the color themselves |
+| `attributes.gamutMapped` | `true` when the color is outside sRGB | Knowing which tokens were gamut mapped |
+| `$gamutMapped` | The same flag as a top-level field | Tools that read `$gamutMapped` |
 
 `type` narrows `fontSize`, `lineHeight`, `fontWeight`, `fontFamily`, `borderRadius`,
 `letterSpacing`, `shadow`, `opacity`, `zIndex`, and `number` when the token's name and value

@@ -20,5 +20,6 @@ format with `false` to remove one. The settings are a closed schema: unknown key
 shapes, and color format settings on a gradient or a theme throw with the configuration path.
 The settings types are exported from the package entry.
 
-Tokens gain a `color` object keyed by format and output, and Style Dictionary gains
-`attributes.color` and `$color`. `cssforge --color-formats hex,rgb` adds formats for a run.
+Tokens gain a `color` object keyed by format and output, plus `gamutMapped: true` when the
+color is outside sRGB, mirrored by `attributes.color`, `$color` and `$gamutMapped` in Style
+Dictionary. `cssforge --color-formats hex,rgb` adds formats for a run.

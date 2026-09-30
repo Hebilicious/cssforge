@@ -312,15 +312,22 @@ const OKLCH_SUPPORT_CONDITION = "@supports not (color: oklch(0% 0 0))";
 /** The representations each format accepts, and the value each produces. */
 type ColorFormatValue = string | number | number[];
 
+/** A color in the sRGB gamut, and whether reaching it took gamut mapping. */
+interface SrgbColor {
+	bytes: number[];
+	alpha: number;
+	mapped: boolean;
+}
+
 /** The CSS value of one format, which is the declaration a browser without `oklch()` support reads. */
-const colorFormatDeclarations: Record<ColorFormat, (color: Color) => string> = {
+const colorFormatDeclarations: Record<ColorFormat, (color: SrgbColor) => string> = {
 	hex: (color) => `#${hexDigits(color)}`,
-	rgb: (color) => `rgb(${srgbBytes(color).join(" ")}${alphaSuffix(color)})`,
+	rgb: (color) => `rgb(${color.bytes.join(" ")}${alphaSuffix(color)})`,
 };
 
 const colorFormatOutputs: Record<
 	ColorFormat,
-	Record<string, (color: Color) => ColorFormatValue>
+	Record<string, (color: SrgbColor) => ColorFormatValue>
 > = {
 	hex: {
 		string: colorFormatDeclarations.hex,
@@ -329,10 +336,7 @@ const colorFormatOutputs: Record<
 	},
 	rgb: {
 		string: colorFormatDeclarations.rgb,
-		array: (color) =>
-			alphaValue(color) === 1
-				? srgbBytes(color)
-				: [...srgbBytes(color), alphaValue(color)],
+		array: (color) => (color.alpha === 1 ? color.bytes : [...color.bytes, color.alpha]),
 	},
 };
 
@@ -358,8 +362,16 @@ const toChannelByte = (coord: number) =>
 const toHexByte = (byte: number) => byte.toString(16).padStart(2, "0");
 
 /** The color channels in the sRGB gamut, through the CSS gamut mapping algorithm. */
-const srgbBytes = (color: Color): number[] =>
-	color.to("srgb").toGamut().coords.map(toChannelByte);
+const toSrgb = (color: Color): SrgbColor => {
+	const srgb = color.to("srgb");
+	const mapped = !srgb.inGamut("srgb");
+
+	return {
+		bytes: srgb.toGamut().coords.map(toChannelByte),
+		alpha: alphaValue(color),
+		mapped,
+	};
+};
 
 /** The alpha the generated values carry, clamped to 0-1 and rounded to three decimals. */
 const alphaValue = (color: Color): number =>
@@ -368,16 +380,13 @@ const alphaValue = (color: Color): number =>
 	) / 1000;
 
 /** `" / 0.12"`, or an empty string for an opaque color. */
-const alphaSuffix = (color: Color) =>
-	alphaValue(color) === 1 ? "" : ` / ${alphaValue(color)}`;
+const alphaSuffix = (color: SrgbColor) => (color.alpha === 1 ? "" : ` / ${color.alpha}`);
 
 /** The hex digits of the color, with the alpha byte when it carries alpha. */
-const hexDigits = (color: Color) => {
-	const digits = srgbBytes(color).map(toHexByte).join("");
-	return alphaValue(color) === 1
-		? digits
-		: `${digits}${toHexByte(Math.round(alphaValue(color) * 255))}`;
-};
+const hexDigits = (color: SrgbColor) =>
+	`${color.bytes.map(toHexByte).join("")}${
+		color.alpha === 1 ? "" : toHexByte(Math.round(color.alpha * 255))
+	}`;
 
 /** The color a palette value resolves to. */
 const readColor = (value: ColorValueOrString): Color =>
@@ -461,12 +470,15 @@ const colorToFormats = (
 	color: Color,
 	formats: readonly GeneratedFormat[],
 	path: string,
-): TokenColorFormats => {
+): { values: TokenColorFormats; gamutMapped: boolean } => {
 	const values: TokenColorFormats = {};
+	let gamutMapped = false;
 
 	for (const entry of formats) {
+		const formatColor = toSrgb(colorForFormat(color, entry, path));
+		gamutMapped ||= formatColor.mapped;
+
 		const generated: Record<string, ColorFormatValue> = {};
-		const formatColor = colorForFormat(color, entry, path);
 		for (const output of entry.outputs) {
 			generated[output] = colorFormatOutputs[entry.format][output](formatColor);
 		}
@@ -474,15 +486,12 @@ const colorToFormats = (
 		else values.rgb = generated as RgbColorValues;
 	}
 
-	return values;
+	return { values, gamutMapped };
 };
 
 /** The CSS value of one format, which is the declaration a browser without `oklch()` support reads. */
-const colorToDeclaration = (
-	color: Color,
-	format: GeneratedFormat,
-	path: string,
-): string => colorFormatDeclarations[format.format](colorForFormat(color, format, path));
+const colorToDeclaration = (color: Color, format: GeneratedFormat, path: string) =>
+	colorFormatDeclarations[format.format](toSrgb(colorForFormat(color, format, path)));
 
 /** One level's color settings; a field the level omits is inherited. */
 interface ColorFormatSettings {
@@ -972,7 +981,7 @@ export function processColors(
 				const color = readColor(colorValue);
 				const value = colorToOklch(color);
 				const variable = `${key}: ${value};`;
-				const colorValues =
+				const generated =
 					colorSettings.formats.length > 0
 						? colorToFormats(color, colorSettings.formats, path)
 						: undefined;
@@ -990,7 +999,8 @@ export function processColors(
 							key,
 							value,
 							variable,
-							...(colorValues ? { color: colorValues } : {}),
+							...(generated ? { color: generated.values } : {}),
+							...(generated?.gamutMapped ? { gamutMapped: true } : {}),
 							sourcePath: `${moduleKey}.${colorName}.${variantId}`,
 							type: "color",
 							tier: "primitive",

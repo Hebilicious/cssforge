@@ -21,6 +21,8 @@ type CssValue = {
 	variable: string;
 	/** The extra color values generated alongside `oklch()`, keyed by format. */
 	color?: TokenColorFormats;
+	/** Whether the color is outside sRGB, so its sRGB values were gamut mapped. */
+	gamutMapped?: boolean;
 };
 
 /**
@@ -69,6 +71,8 @@ type StyleDictionaryToken = {
 		resolvedValue: string;
 		/** The extra color values generated alongside `oklch()`, keyed by format. */
 		color?: TokenColorFormats;
+		/** Whether the color is outside sRGB, so its sRGB values were gamut mapped. */
+		gamutMapped?: boolean;
 		sourcePath: string;
 		referencePaths?: string[];
 	};
@@ -76,6 +80,7 @@ type StyleDictionaryToken = {
 	$reference?: string;
 	$resolvedValue: string;
 	$color?: TokenColorFormats;
+	$gamutMapped?: boolean;
 };
 
 type StyleDictionaryValue = {
@@ -256,6 +261,7 @@ export function createForgeValues(
 					value: token.value,
 					variable: token.variable,
 					...(token.color ? { color: token.color } : {}),
+					...(token.gamutMapped ? { gamutMapped: true } : {}),
 				},
 			] satisfies Input,
 	);
@@ -454,6 +460,7 @@ export function generateStyleDictionaryJSON(
 				tailwindVariable: token.key,
 				resolvedValue,
 				...(token.color ? { color: token.color } : {}),
+				...(token.gamutMapped ? { gamutMapped: true } : {}),
 				sourcePath: toStyleDictionaryPath(token.sourcePath),
 				...(referencePaths ? { referencePaths } : {}),
 			},
@@ -461,6 +468,7 @@ export function generateStyleDictionaryJSON(
 			...(referencePaths?.[0] ? { $reference: referencePaths[0] } : {}),
 			$resolvedValue: resolvedValue,
 			...(token.color ? { $color: token.color } : {}),
+			...(token.gamutMapped ? { $gamutMapped: true } : {}),
 		};
 		const nestedObject = createNestedStyleDictionaryObject(
 			outputPath.split("."),

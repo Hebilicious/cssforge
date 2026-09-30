@@ -426,6 +426,43 @@ Deno.test("generateCSS - a wide gamut color uses the CSS gamut mapped sRGB value
 	assertEquals(new Color(declared).inGamut("srgb", { epsilon: 0 }), true);
 });
 
+Deno.test("generateJSON - an out-of-sRGB color is flagged as gamut mapped", () => {
+	const config = defineConfig({
+		colors: {
+			palette: {
+				value: {
+					vivid: { 100: { oklch: "oklch(70% 0.4 20)" } },
+					plain: { 100: { hex: "#FF7F50" } },
+				},
+				settings: { color: { formats: { hex: true } } },
+			},
+		},
+	});
+
+	const tokens = JSON.parse(generateJSON(config)).palette;
+	const styleDictionary = JSON.parse(generateStyleDictionaryJSON(config)).palette;
+
+	assertEquals(tokens.vivid["100"].gamutMapped, true);
+	assertEquals(tokens.vivid["100"].color.hex.string, "#ff5464");
+	assertEquals(tokens.plain["100"].gamutMapped, undefined);
+	assertEquals(styleDictionary.vivid["100"].$gamutMapped, true);
+	assertEquals(styleDictionary.vivid["100"].attributes.gamutMapped, true);
+	assertEquals(styleDictionary.plain["100"].$gamutMapped, undefined);
+});
+
+Deno.test("generateJSON - a color with no sRGB format is not flagged", () => {
+	const config = defineConfig({
+		colors: {
+			palette: { value: { vivid: { 100: { oklch: "oklch(70% 0.4 20)" } } } },
+		},
+	});
+
+	assertEquals(
+		JSON.parse(generateJSON(config)).palette.vivid["100"].gamutMapped,
+		undefined,
+	);
+});
+
 Deno.test("generateStyleDictionaryJSON - exposes the color outputs beside the resolved value", () => {
 	const config = defineConfig({
 		colors: {
@@ -448,6 +485,7 @@ Deno.test("generateStyleDictionaryJSON - exposes the color outputs beside the re
 	});
 	assertEquals(token.attributes.color, token.$color);
 	assertEquals(token.$resolvedValue, "oklch(73.511% 0.16799 40.24666)");
+	assertEquals(token.$gamutMapped, undefined);
 });
 
 Deno.test("generateJSON and generateTS - the color outputs are part of the token object", () => {
