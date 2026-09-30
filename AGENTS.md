@@ -58,8 +58,6 @@ Every module takes a `settings` object beside its `value`.
   merges per key and takes `false` to remove an entry.
 - The README section for the module says whether a setting reaches the tokens or the CSS. A
   CLI flag is an adapter over the same resolution, not a second implementation.
-- Color settings are the reference for this convention. A module whose settings predate it
-  keeps them; bring it along when the module is next touched.
 
 ## Updating the README.md
 

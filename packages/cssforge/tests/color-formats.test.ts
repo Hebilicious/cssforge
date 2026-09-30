@@ -483,6 +483,39 @@ Deno.test("generateJSON - a color with no sRGB format is not flagged", () => {
 	);
 });
 
+Deno.test("generateCSS - a later theme declaration wins over a format", () => {
+	const config = defineConfig({
+		colors: {
+			palette: {
+				value: { brand: { primary: { hex: "#4F46E5" } } },
+				settings: { color: { formats: { hex: true } } },
+			},
+			theme: {
+				dark: {
+					value: {
+						override: {
+							settings: { variantNameOnly: true },
+							value: { "palette-brand-primary": "#111827" },
+						},
+					},
+					settings: { selector: ".dark" },
+				},
+			},
+		},
+	});
+
+	const css = generateCSS(config);
+	const declaration = css.indexOf("--palette-brand-primary: oklch(");
+	const shim = css.indexOf("@supports not (color: oklch(0% 0 0))");
+	const theme = css.indexOf(".dark {");
+
+	assert(
+		declaration >= 0 && shim > declaration,
+		`Expected the shim after the value. Received:\n${css}`,
+	);
+	assert(theme > shim, `Expected the theme after the shim. Received:\n${css}`);
+});
+
 Deno.test("generateJSON - the hex alpha byte rounds from the exact alpha", () => {
 	// Rounding the alpha to three decimals first moved 12.35% off the byte a
 	// browser paints.

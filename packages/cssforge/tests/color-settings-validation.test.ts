@@ -477,3 +477,31 @@ Deno.test("generateCSS - rejects formats set to false", () => {
 		`Expected the error to name the formats. Received: ${error.message}`,
 	);
 });
+
+Deno.test("generateCSS - rejects settings a gradient variant does not read", () => {
+	const config = {
+		colors: {
+			palette: { value: { coral: { 100: { hex: "#FF7F50" } } } },
+			gradients: {
+				value: {
+					g: {
+						value: {
+							primary: {
+								value: "linear-gradient(red, blue)",
+								settings: { selector: ".g" },
+							},
+						},
+					},
+				},
+			},
+		},
+	} as unknown as CSSForgeConfig;
+
+	const error = assertThrows(() => generateCSS(config));
+
+	assert(
+		error.message.includes('"gradients.g.primary.settings"') &&
+			error.message.includes("reads no settings"),
+		`Expected the error to name the variant. Received: ${error.message}`,
+	);
+});

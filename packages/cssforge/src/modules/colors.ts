@@ -1,5 +1,12 @@
 import Color from "colorjs.io";
-import { InvalidNameError, validateName, validateVariableAliases } from "../helpers.ts";
+import {
+	assertKnownKeys,
+	assertSettingsKeys,
+	InvalidNameError,
+	unreadSettings,
+	validateName,
+	validateVariableAliases,
+} from "../helpers.ts";
 import type {
 	ColorFormat,
 	GenerateOptions,
@@ -161,7 +168,6 @@ export interface ColorPalette {
 interface GradientDefinition {
 	value: string;
 	variables?: Variables;
-	settings?: unknown;
 }
 
 interface GradientValue {
@@ -538,36 +544,6 @@ const paletteColorSettingsKeys = ["selector", "atRule", "color"] as const;
 /** The color format settings, and the places a misplaced one is reported from. */
 const colorFormatSettingKeys = ["color", "formats", "fallback", "alpha"] as const;
 
-const quoted = (values: readonly string[]) =>
-	values.map((value) => `"${value}"`).join(", ");
-
-/** Rejects a key no setting at this level accepts, rather than ignoring it. */
-const assertKnownKeys = (
-	value: object,
-	allowed: readonly string[],
-	path: string,
-): void => {
-	const unknown = Object.keys(value).filter((key) => !allowed.includes(key));
-	if (unknown.length === 0) return;
-
-	const use =
-		allowed.length === 0 ? "This level reads no settings." : `Use ${quoted(allowed)}.`;
-	throw new Error(`Unknown setting at "${path}": ${quoted(unknown)}. ${use}`);
-};
-
-/** Checks a settings object that is read at `path`: it has to be an object of known keys. */
-const assertSettingsKeys = (
-	settings: unknown,
-	allowed: readonly string[],
-	path: string,
-): void => {
-	if (settings === undefined) return;
-	if (!isRecord(settings)) {
-		throw new Error(`Invalid configuration at "${path}": settings must be an object.`);
-	}
-	assertKnownKeys(settings, allowed, path);
-};
-
 /** Rejects color format settings on gradients and themes, which keep authored values. */
 const assertNoColorFormatSettings = (settings: unknown, path: string): void => {
 	if (!isRecord(settings)) return;
@@ -575,8 +551,9 @@ const assertNoColorFormatSettings = (settings: unknown, path: string): void => {
 	const misplaced = colorFormatSettingKeys.filter((key) => key in settings);
 	if (misplaced.length === 0) return;
 
+	const keys = misplaced.map((key) => `"${key}"`).join(", ");
 	throw new Error(
-		`Invalid configuration at "${path}": ${quoted(misplaced)} ${
+		`Invalid configuration at "${path}": ${keys} ${
 			misplaced.length === 1 ? "is a palette setting" : "are palette settings"
 		}. Configure "formats" on "colors.palette.settings.color" or on a palette color.`,
 	);
@@ -1039,6 +1016,12 @@ export function processColors(
 		}
 	}
 
+	// Emitted with the palette, before gradients and themes: a format duplicates the
+	// declaration it mirrors, so a later intentional declaration still wins.
+	for (const { wrappers, declarations } of fallbackGroups.values()) {
+		outsideOutput.push(...renderFallbackBlock(wrappers, declarations));
+	}
+
 	if (colors.gradients) {
 		assertNoColorFormatSettings(colors.gradients.settings, "gradients.settings");
 		assertSettingsKeys(colors.gradients.settings, [], "gradients.settings");
@@ -1066,7 +1049,7 @@ export function processColors(
 				const { value, variables } = definition;
 				validateName(variantName, `gradients.${gradientName}.${variantName}`);
 				assertSettingsKeys(
-					definition.settings,
+					unreadSettings(definition),
 					[],
 					`gradients.${gradientName}.${variantName}.settings`,
 				);
@@ -1212,11 +1195,6 @@ export function processColors(
 				console.error(`Error processing theme ${themeName}:`, error);
 			}
 		}
-	}
-
-	// Last, so a format overrides the modern declaration it mirrors.
-	for (const { wrappers, declarations } of fallbackGroups.values()) {
-		outsideOutput.push(...renderFallbackBlock(wrappers, declarations));
 	}
 
 	const output = {

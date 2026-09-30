@@ -389,6 +389,10 @@ Both are valid CSS. The first follows the active theme; the second is a snapshot
 
 ## Configuration
 
+Every module holds its tokens under `value` and its options under `settings`. A setting no
+schema accepts is rejected with its configuration path, so a misspelled key cannot quietly
+generate nothing.
+
 ### Colors
 
 Define colors in any format - they'll be automatically converted to OKLCH. You can compose
@@ -762,7 +766,8 @@ format sets `alpha`: `true` keeps it, a number from 0 to 1 sets it, `false` reje
 
 The declaration is the `string` value of `fallback`, or of the first format that has one,
 gated by `@supports not (color: oklch(0% 0 0))` and mirroring the color's `atRule` and
-`selector`. `fallback: false` declares nothing.
+`selector`. `fallback: false` declares nothing. It is emitted with the palette, before
+gradient and theme blocks, so a later declaration still wins.
 
 A color's `formats` merge into the palette's per format, and `false` removes one. Tokens carry
 every generated value in `color`, under their format and output:
@@ -778,8 +783,7 @@ A color outside sRGB is gamut mapped for its sRGB values, and its token carries
 `gamutMapped: true` so the mapping is visible.
 
 The palette is the only family that converts the colors it is given, so it is the only one
-that generates formats. Themes and gradients keep their authored values. A setting no schema
-accepts is rejected with its configuration path.
+that generates formats. Themes and gradients keep their authored values.
 
 #### Condition
 

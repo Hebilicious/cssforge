@@ -144,3 +144,41 @@ export function pxToRem({ value, rem = 16 }: { value: string; rem?: number }): s
 	}
 	return value;
 }
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+	typeof value === "object" && value !== null && !Array.isArray(value);
+
+const quoted = (values: readonly string[]) =>
+	values.map((value) => `"${value}"`).join(", ");
+
+/** Rejects a key no setting at this level accepts, rather than ignoring it. */
+export function assertKnownKeys(
+	value: object,
+	allowed: readonly string[],
+	path: string,
+): void {
+	const unknown = Object.keys(value).filter((key) => !allowed.includes(key));
+	if (unknown.length === 0) return;
+
+	const use =
+		allowed.length === 0 ? "This level reads no settings." : `Use ${quoted(allowed)}.`;
+	throw new Error(`Unknown setting at "${path}": ${quoted(unknown)}. ${use}`);
+}
+
+/** Checks a settings object read at `path`: an object of known keys, or absent. */
+export function assertSettingsKeys(
+	settings: unknown,
+	allowed: readonly string[],
+	path: string,
+): void {
+	if (settings === undefined) return;
+	if (!isRecord(settings)) {
+		throw new Error(`Invalid configuration at "${path}": settings must be an object.`);
+	}
+
+	assertKnownKeys(settings, allowed, path);
+}
+
+/** Reads a `settings` value a JavaScript config can write where no type declares one. */
+export const unreadSettings = (value: object): unknown =>
+	"settings" in value ? (value as { settings?: unknown }).settings : undefined;

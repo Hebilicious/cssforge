@@ -1,5 +1,5 @@
 import { calculateTypeScale, type UtopiaTypeConfig } from "utopia-core";
-import { validateCustomLabel, validateName } from "../helpers.ts";
+import { assertSettingsKeys, validateCustomLabel, validateName } from "../helpers.ts";
 import type { Output, ResolveMap } from "../lib.ts";
 
 export interface FluidTypeScaleDefinition {
@@ -75,6 +75,7 @@ export function processTypography(config: TypographyConfig): Output {
 		for (const [scaleName, definition] of Object.entries(config.fluid)) {
 			validateName(scaleName, `${moduleKey}.${scaleName}`);
 			const { value, settings } = definition;
+			assertSettingsKeys(settings, ["customLabel"], `${moduleKey}.${scaleName}.settings`);
 			const { prefix, ...utopiaConfig } = value;
 			if (prefix) validateName(prefix, `${moduleKey}.${scaleName}.prefix`);
 
