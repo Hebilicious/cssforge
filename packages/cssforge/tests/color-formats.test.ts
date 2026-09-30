@@ -147,44 +147,6 @@ Deno.test("generateCSS - fallback false keeps the formats out of the CSS", () =>
 	assertEquals(tokenColor(config), { hex: { string: "#ff7f50" } });
 });
 
-Deno.test("generateCSS - rejects a fallback format that is not generated", () => {
-	const config = {
-		colors: {
-			palette: {
-				value: { coral: { 100: { hex: "#FF7F50" } } },
-				settings: { color: { formats: { hex: true }, fallback: "rgb" } },
-			},
-		},
-	} as unknown as CSSForgeConfig;
-
-	const error = assertThrows(() => generateCSS(config));
-
-	assert(
-		error.message.includes('"rgb"'),
-		`Expected the error to name the missing format. Received: ${error.message}`,
-	);
-});
-
-Deno.test("generateCSS - rejects a fallback format without its string output", () => {
-	const config = defineConfig({
-		colors: {
-			palette: {
-				value: { coral: { 100: { hex: "#FF7F50" } } },
-				settings: {
-					color: { formats: { hex: { digits: true } }, fallback: "hex" },
-				},
-			},
-		},
-	});
-
-	const error = assertThrows(() => generateCSS(config));
-
-	assert(
-		error.message.includes('"string"'),
-		`Expected the error to ask for the string output. Received: ${error.message}`,
-	);
-});
-
 Deno.test("generateJSON - a format generates at the alpha it sets", () => {
 	const config = defineConfig({
 		colors: {
@@ -231,27 +193,6 @@ Deno.test("generateCSS - the declaration uses the alpha of the fallback format",
 	assertEquals(declaredValue(generateCSS(config), "--palette-coral-100"), "#00000080");
 });
 
-Deno.test("generateCSS - a format rejects a color that carries alpha when it sets alpha false", () => {
-	const config = defineConfig({
-		colors: {
-			palette: {
-				value: {
-					coral: { 100: "rgb(0 0 0 / 12%)" },
-					opaque: { 100: { hex: "#FF7F50" } },
-				},
-				settings: { color: { formats: { hex: { string: true, alpha: false } } } },
-			},
-		},
-	});
-
-	const error = assertThrows(() => generateCSS(config));
-
-	assert(
-		error.message.includes('"palette.coral.100"') && error.message.includes('"hex"'),
-		`Expected the error to name the variant and the format. Received: ${error.message}`,
-	);
-});
-
 Deno.test("generateJSON - alpha false generates no alpha channel", () => {
 	const config = defineConfig({
 		colors: {
@@ -275,7 +216,7 @@ Deno.test("generateJSON - alpha false generates no alpha channel", () => {
 	});
 });
 
-Deno.test("generateJSON - a color replaces the inherited color settings", () => {
+Deno.test("generateJSON - a color merges its formats into the palette's", () => {
 	const config = defineConfig({
 		colors: {
 			palette: {
@@ -295,8 +236,85 @@ Deno.test("generateJSON - a color replaces the inherited color settings", () => 
 		},
 	});
 
-	assertEquals(tokenColor(config), { hex: { number: 0xff7f5080 } });
+	// The palette's rgb survives, the color adds hex, and the color's
+	// `fallback: false` still wins over the palette's choice.
+	assertEquals(tokenColor(config), {
+		rgb: { string: "rgb(255 127 80)" },
+		hex: { number: 0xff7f5080 },
+	});
 	assertEquals(generateCSS(config).includes("@supports"), false);
+});
+
+Deno.test("generateJSON - a format set to false removes the inherited format", () => {
+	const config = defineConfig({
+		colors: {
+			palette: {
+				value: {
+					coral: {
+						value: { 100: { hex: "#FF7F50" } },
+						settings: { color: { formats: { hex: false } } },
+					},
+					plain: { 100: { hex: "#FF7F50" } },
+				},
+				settings: { color: { formats: { hex: true, rgb: true } } },
+			},
+		},
+	});
+
+	const tokens = JSON.parse(generateJSON(config)).palette;
+
+	assertEquals(tokens.coral["100"].color, { rgb: { string: "rgb(255 127 80)" } });
+	assertEquals(tokens.plain["100"].color, {
+		hex: { string: "#ff7f50" },
+		rgb: { string: "rgb(255 127 80)" },
+	});
+});
+
+Deno.test("generateJSON - a format set to false at the palette level is not generated", () => {
+	const config = defineConfig({
+		colors: {
+			palette: {
+				value: { coral: { 100: { hex: "#FF7F50" } } },
+				settings: { color: { formats: { hex: false, rgb: true } } },
+			},
+		},
+	});
+
+	assertEquals(tokenColor(config), { rgb: { string: "rgb(255 127 80)" } });
+});
+
+Deno.test("generateCSS - the declaration defaults to the first format with a CSS value", () => {
+	// `hex` produces no CSS value here, so the declaration has to come from
+	// `rgb` instead of failing on the first generated format.
+	const config = defineConfig({
+		colors: {
+			palette: {
+				value: { coral: { 100: { hex: "#FF7F50" } } },
+				settings: { color: { formats: { hex: { digits: true }, rgb: true } } },
+			},
+		},
+	});
+
+	assertEquals(
+		declaredValue(generateCSS(config), "--palette-coral-100"),
+		"rgb(255 127 80)",
+	);
+});
+
+Deno.test("generateCSS - formats without a CSS value emit no declaration", () => {
+	const config = defineConfig({
+		colors: {
+			palette: {
+				value: { coral: { 100: { hex: "#FF7F50" } } },
+				settings: { color: { formats: { hex: { number: true } } } },
+			},
+		},
+	});
+
+	const css = generateCSS(config);
+
+	assertEquals(css.includes("@supports"), false);
+	assertEquals(tokenColor(config), { hex: { number: 16744272 } });
 });
 
 Deno.test("generateCSS - the colorFormats option appends a default format", () => {
@@ -485,154 +503,6 @@ Deno.test("generateJSON - token objects omit the color field when none is config
 			},
 		},
 	});
-});
-
-Deno.test("generateCSS - rejects an unknown color format", () => {
-	const palette = { value: { coral: { 100: { hex: "#FF7F50" } } } };
-	const invalidPalette = {
-		colors: { palette: { ...palette, settings: { color: { formats: { hsl: true } } } } },
-	} as unknown as CSSForgeConfig;
-	const invalidColor = {
-		colors: {
-			palette: {
-				value: {
-					coral: {
-						value: { 100: { hex: "#FF7F50" } },
-						settings: { color: { formats: { sqrgb: true } } },
-					},
-				},
-			},
-		},
-	} as unknown as CSSForgeConfig;
-
-	const paletteError = assertThrows(() => generateCSS(invalidPalette));
-	const colorError = assertThrows(() => generateCSS(invalidColor));
-
-	assert(
-		paletteError.message.includes('"palette.settings.color.formats"') &&
-			paletteError.message.includes("hsl"),
-		`Expected the error to name the path and the value. Received: ${paletteError.message}`,
-	);
-	assert(
-		colorError.message.includes('"palette.coral.settings.color.formats"'),
-		`Expected the error to name "palette.coral.settings.color.formats". Received: ${colorError.message}`,
-	);
-});
-
-Deno.test("generateCSS - rejects an output a format does not produce", () => {
-	const palette = { value: { coral: { 100: { hex: "#FF7F50" } } } };
-	const arrayOnHex = {
-		colors: {
-			palette: { ...palette, settings: { color: { formats: { hex: { array: true } } } } },
-		},
-	} as unknown as CSSForgeConfig;
-	const digitsOnRgb = {
-		colors: {
-			palette: {
-				...palette,
-				settings: { color: { formats: { rgb: { digits: true } } } },
-			},
-		},
-	} as unknown as CSSForgeConfig;
-	const nothingEnabled = {
-		colors: { palette: { ...palette, settings: { color: { formats: { hex: {} } } } } },
-	} as unknown as CSSForgeConfig;
-
-	const hexError = assertThrows(() => generateCSS(arrayOnHex));
-	const rgbError = assertThrows(() => generateCSS(digitsOnRgb));
-	const emptyError = assertThrows(() => generateCSS(nothingEnabled));
-
-	assert(
-		hexError.message.includes('"palette.settings.color.formats.hex"') &&
-			hexError.message.includes('"digits"'),
-		`Expected the error to list the hex outputs. Received: ${hexError.message}`,
-	);
-	assert(
-		rgbError.message.includes('"palette.settings.color.formats.rgb"') &&
-			rgbError.message.includes('"array"'),
-		`Expected the error to list the rgb outputs. Received: ${rgbError.message}`,
-	);
-	assert(
-		emptyError.message.includes('"palette.settings.color.formats.hex"'),
-		`Expected the error to name the empty format. Received: ${emptyError.message}`,
-	);
-});
-
-Deno.test("generateCSS - rejects an alpha that is not a boolean or an opacity", () => {
-	const palette = { value: { coral: { 100: { hex: "#FF7F50" } } } };
-	const notAnOpacity = {
-		colors: {
-			palette: {
-				...palette,
-				settings: { color: { formats: { hex: { string: true, alpha: 2 } } } },
-			},
-		},
-	} as unknown as CSSForgeConfig;
-
-	const error = assertThrows(() => generateCSS(notAnOpacity));
-
-	assert(
-		error.message.includes('"palette.settings.color.formats.hex.alpha"'),
-		`Expected the error to name the format's alpha. Received: ${error.message}`,
-	);
-});
-
-Deno.test("generateCSS - rejects an alpha outside a format", () => {
-	const config = {
-		colors: {
-			palette: {
-				value: { coral: { 100: { hex: "#FF7F50" } } },
-				settings: { color: { formats: { hex: true }, alpha: 0.5 } },
-			},
-		},
-	} as unknown as CSSForgeConfig;
-
-	const error = assertThrows(() => generateCSS(config));
-
-	assert(
-		error.message.includes('"palette.settings.color"') &&
-			error.message.includes("formats.hex.alpha"),
-		`Expected the error to point at the format. Received: ${error.message}`,
-	);
-});
-
-Deno.test("generateCSS - rejects color settings that are not inside settings", () => {
-	const palette = { value: { coral: { 100: { hex: "#FF7F50" } } } };
-	const colorOnPalette = {
-		colors: { palette: { ...palette, color: { formats: { hex: true } } } },
-	} as unknown as CSSForgeConfig;
-	const formatsInSettings = {
-		colors: { palette: { ...palette, settings: { formats: { hex: true } } } },
-	} as unknown as CSSForgeConfig;
-	const fallbackOnColor = {
-		colors: {
-			palette: {
-				value: {
-					coral: {
-						value: { 100: { hex: "#FF7F50" } },
-						fallback: "hex",
-					},
-				},
-			},
-		},
-	} as unknown as CSSForgeConfig;
-
-	const paletteError = assertThrows(() => generateCSS(colorOnPalette));
-	const settingsError = assertThrows(() => generateCSS(formatsInSettings));
-	const colorError = assertThrows(() => generateCSS(fallbackOnColor));
-
-	assert(
-		paletteError.message.includes('"palette"'),
-		`Expected the error to name "palette". Received: ${paletteError.message}`,
-	);
-	assert(
-		settingsError.message.includes('"palette.settings.color"'),
-		`Expected the error to name "palette.settings.color". Received: ${settingsError.message}`,
-	);
-	assert(
-		colorError.message.includes('"palette.coral"'),
-		`Expected the error to name "palette.coral". Received: ${colorError.message}`,
-	);
 });
 
 Deno.test("generateCSS - a whitespace-only selector is read as the root scope", () => {

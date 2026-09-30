@@ -767,17 +767,20 @@ a color that carries alpha and drops the alpha from the output. The `oklch()` va
 alpha the color carries, so a format that sets an alpha is generated at that opacity alone.
 
 `fallback` names the format whose `string` value, including its alpha policy, becomes the
-declaration for browsers without `oklch()` support. It defaults to the first generated
-format, has to be generated with its `string` output, and `false` emits no declaration so the
-formats only reach the tokens. The declaration is gated by
+declaration for browsers without `oklch()` support. Without it, the first format that
+produces a CSS value is used, and a set of formats that produces none emits no declaration.
+`false` also emits no declaration, so the formats only reach the tokens. The declaration is
+gated by
 `@supports not (color: oklch(0% 0 0))` and emitted after the root block, because a custom
 property accepts any token stream and the later declaration wins wherever the modern value is
 unsupported. It mirrors the color's `atRule` and `selector`, so it only overrides the
 declaration it stands in for.
 
-The palette settings cover every color, and a color replaces them in its own `settings`, so a
-color that only sets `fallback` keeps the palette's formats. The JSON, TypeScript and Style
-Dictionary tokens carry the generated values in a `color` object, keyed by format and output:
+The palette settings cover every color, and a color's `formats` merge into the palette's per
+format, so a color can add an output to one format, or remove a format with `false`, without
+restating the others. A color's `fallback` overrides the palette's. The JSON, TypeScript and
+Style Dictionary tokens carry the generated values in a `color` object, keyed by format and
+output:
 
 ```json
 {
@@ -792,7 +795,9 @@ Dictionary tokens carry the generated values in a `color` object, keyed by forma
 ```
 
 Setting the palette formats needs the `settings` key next to `value`; a color that carries
-settings is written with the `value` wrapper.
+settings is written with the `value` wrapper. A setting no schema accepts, and a format
+setting written on a gradient or a theme, are rejected with the configuration path, so a
+misspelled key cannot quietly generate nothing.
 
 The palette is the only family that converts the colors it is given, so it is the only one
 that generates these formats. Themes, gradients and primitives keep their authored values,

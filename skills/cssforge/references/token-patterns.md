@@ -15,10 +15,13 @@ All patterns below are derived from README configuration examples.
   1 generates that format at that opacity, and `false` rejects a color that carries alpha.
   The `oklch()` value always keeps the color's own alpha.
 - `settings.color.fallback` names the format whose `string` value is the declaration emitted
-  under `@supports not (color: oklch(0% 0 0))`; it defaults to the first generated format and
-  `false` emits no declaration. Every generated value reaches the JSON, TypeScript and Style
-  Dictionary tokens as the token's `color` object, and `--color-formats hex,rgb` adds formats
-  at run time.
+  under `@supports not (color: oklch(0% 0 0))`. Without it the first format that produces a CSS
+  value is used, and `false` emits no declaration. Every generated value reaches the JSON,
+  TypeScript and Style Dictionary tokens as the token's `color` object, and
+  `--color-formats hex,rgb` adds formats at run time.
+- A palette color's `settings.color` overrides the palette's per setting: `formats` merge per
+  format and take `false` to remove an inherited one. Unknown settings and color format
+  settings on a gradient or a theme are rejected with the configuration path.
 
 ## Spacing
 

@@ -590,6 +590,52 @@ const defaultFormats = (format: ColorFormat): GeneratedFormat => ({
 	alpha: true,
 });
 
+/** The keys that may appear in a `settings` object, per level. */
+export const paletteSettingsKeys = ["color"] as const;
+export const paletteColorSettingsKeys = ["selector", "atRule", "color"] as const;
+
+/** The color format settings, and the places a misplaced one is reported from. */
+const colorFormatSettingKeys = ["color", "formats", "fallback", "alpha"] as const;
+
+const quoted = (values: readonly string[]) =>
+	values.map((value) => `"${value}"`).join(", ");
+
+/**
+ * Rejects a key no setting at this level accepts. A JavaScript config is not
+ * protected by the types, and an unknown key would otherwise be ignored, so the
+ * generated output would quietly miss what the config asked for.
+ */
+const assertKnownKeys = (
+	value: object,
+	allowed: readonly string[],
+	path: string,
+): void => {
+	const unknown = Object.keys(value).filter((key) => !allowed.includes(key));
+	if (unknown.length === 0) return;
+
+	throw new Error(
+		`Unknown setting at "${path}": ${quoted(unknown)}. Use ${quoted(allowed)}.`,
+	);
+};
+
+/**
+ * Rejects color format settings written where generation does not read them.
+ * Gradients and themes carry authored values, so their formats come from the
+ * palette color they reference, not from settings of their own.
+ */
+const assertNoColorFormatSettings = (settings: unknown, path: string): void => {
+	if (!isRecord(settings)) return;
+
+	const misplaced = colorFormatSettingKeys.filter((key) => key in settings);
+	if (misplaced.length === 0) return;
+
+	throw new Error(
+		`Invalid configuration at "${path}": ${quoted(misplaced)} ${
+			misplaced.length === 1 ? "is a palette setting" : "are palette settings"
+		}. Configure "formats" on "colors.palette.settings.color" or on a palette color.`,
+	);
+};
+
 /**
  * Reads and validates the `color` settings of one palette level. The values come
  * from a JavaScript object at runtime, so a setting generation would ignore has
@@ -599,6 +645,7 @@ function readColorFormatSettings(
 	entry: object,
 	settings: unknown,
 	path: string,
+	settingsKeys: readonly string[],
 ): ColorFormatSettings | undefined {
 	if ("color" in entry) {
 		throw new Error(
@@ -610,6 +657,7 @@ function readColorFormatSettings(
 			`Invalid configuration at "${path}": color settings belong inside "${path}.settings.color".`,
 		);
 	}
+	assertKnownKeys(entry, ["value", "settings"], path);
 
 	if (settings === undefined) return undefined;
 	if (!isRecord(settings)) {
@@ -624,6 +672,7 @@ function readColorFormatSettings(
 			`Invalid configuration at "${settingsPath}": color settings belong inside "${settingsPath}.color".`,
 		);
 	}
+	assertKnownKeys(settings, settingsKeys, settingsPath);
 
 	const color = settings.color;
 	if (color === undefined) return undefined;
@@ -638,6 +687,7 @@ function readColorFormatSettings(
 			`Invalid configuration at "${settingsPath}.color": "alpha" belongs inside a format, as in "${settingsPath}.color.formats.hex.alpha".`,
 		);
 	}
+	assertKnownKeys(color, ["formats", "fallback"], `${settingsPath}.color`);
 
 	const colorSettings: ColorFormatSettings = {};
 	if (color.formats !== undefined) {
@@ -757,15 +807,41 @@ const readFormatAlpha = (value: unknown, path: string): boolean | number => {
 };
 
 /**
- * Resolves the settings of one palette color: the color's own settings replace
- * the palette's, and the formats a caller adds are appended to the result.
+ * Merges the formats of one palette level over the palette's, per format. A
+ * color can therefore add an output to one format without restating the others,
+ * and a format set to `false` removes the inherited one.
+ */
+const mergeFormats = (
+	paletteFormats: readonly GeneratedFormat[] | undefined,
+	colorFormats: readonly GeneratedFormat[] | undefined,
+): GeneratedFormat[] => {
+	const merged = new Map<ColorFormat, GeneratedFormat>();
+
+	for (const entry of paletteFormats ?? []) merged.set(entry.format, entry);
+	for (const entry of colorFormats ?? []) {
+		if (entry.outputs.length === 0) merged.delete(entry.format);
+		else merged.set(entry.format, entry);
+	}
+	// A format no level enables is not generated, so it never reaches a token as
+	// an empty object.
+	for (const [format, entry] of merged) {
+		if (entry.outputs.length === 0) merged.delete(format);
+	}
+
+	return [...merged.values()];
+};
+
+/**
+ * Resolves the settings of one palette color: its formats merge into the
+ * palette's, its `fallback` overrides the palette's, and the formats a caller
+ * adds are appended.
  */
 const resolveColorFormatSettings = (
 	settings: ColorFormatSettings | undefined,
 	paletteSettings: ColorFormatSettings | undefined,
 	extraFormats: readonly ColorFormat[] = [],
 ): ResolvedColorFormatSettings => {
-	const formats = [...(settings?.formats ?? paletteSettings?.formats ?? [])];
+	const formats = mergeFormats(paletteSettings?.formats, settings?.formats);
 	for (const format of extraFormats) {
 		if (!formats.some((entry) => entry.format === format)) {
 			formats.push(defaultFormats(format));
@@ -783,25 +859,25 @@ const resolveColorFormatSettings = (
  * has to be generated and to include that output, and the default is the first
  * generated format.
  */
-const resolveDeclarationFormat = ({
-	formats,
-	fallback,
-}: ResolvedColorFormatSettings): GeneratedFormat | undefined => {
+const resolveDeclarationFormat = (
+	{ formats, fallback }: ResolvedColorFormatSettings,
+	path: string,
+): GeneratedFormat | undefined => {
 	if (fallback === false) return undefined;
 
-	const generated =
-		fallback === undefined
-			? formats.at(0)
-			: formats.find((entry) => entry.format === fallback);
+	if (fallback === undefined) {
+		return formats.find((entry) => entry.outputs.includes("string"));
+	}
 
-	if (fallback !== undefined && !generated) {
+	const generated = formats.find((entry) => entry.format === fallback);
+	if (!generated) {
 		throw new Error(
-			`Invalid fallback format: "${fallback}" is not generated. Add it to "settings.color.formats", or use false.`,
+			`Invalid fallback format at "${path}": "${fallback}" is not generated. Add it to "formats", generate it from the palette, or use false.`,
 		);
 	}
-	if (generated && !generated.outputs.includes("string")) {
+	if (!generated.outputs.includes("string")) {
 		throw new Error(
-			`Invalid fallback format: "${generated.format}" does not generate its "string" output. Enable it, or use false.`,
+			`Invalid fallback format at "${path}": "${generated.format}" does not generate its "string" output. Enable it, or use false.`,
 		);
 	}
 
@@ -968,6 +1044,7 @@ export function processColors(
 		colors.palette,
 		colors.palette.settings,
 		"palette",
+		paletteSettingsKeys,
 	);
 
 	for (const [colorName, colorConfig] of Object.entries(colors.palette.value)) {
@@ -984,6 +1061,7 @@ export function processColors(
 						colorConfig,
 						normalizedColorConfig.settings,
 						`palette.${colorName}`,
+						paletteColorSettingsKeys,
 					)
 				: undefined,
 			paletteSettings,
@@ -995,7 +1073,10 @@ export function processColors(
 			`palette.${colorName}`,
 		);
 
-		const declarationFormat = resolveDeclarationFormat(colorSettings);
+		const declarationFormat = resolveDeclarationFormat(
+			colorSettings,
+			`palette.${colorName}`,
+		);
 		const fallback = declarationFormat
 			? { declarationFormat, group: getFallbackGroup(normalizedColorConfig.settings) }
 			: undefined;
@@ -1050,6 +1131,7 @@ export function processColors(
 	}
 
 	if (colors.gradients) {
+		assertNoColorFormatSettings(colors.gradients.settings, "gradients.settings");
 		rootOutput.push(`/* Gradients */`);
 		const moduleKey = "gradients";
 		const palette = {
@@ -1059,6 +1141,10 @@ export function processColors(
 
 		for (const [gradientName, gradient] of Object.entries(colors.gradients.value)) {
 			validateName(gradientName, `gradients.${gradientName}`);
+			assertNoColorFormatSettings(
+				gradient.settings,
+				`gradients.${gradientName}.settings`,
+			);
 			const handler = conditionalBuilder(gradient.settings, `/* ${gradientName} */`);
 
 			for (const [variantName, { value, variables }] of Object.entries(gradient.value)) {
@@ -1121,6 +1207,7 @@ export function processColors(
 
 		for (const [themeName, themeConfig] of Object.entries(themes)) {
 			validateName(themeName, `theme.${themeName}`);
+			assertNoColorFormatSettings(themeConfig.settings, `theme.${themeName}.settings`);
 			const handler = conditionalBuilder(
 				themeConfig.settings,
 				`/* Theme: ${themeName} */`,
@@ -1129,6 +1216,10 @@ export function processColors(
 			try {
 				for (const [colorName, colorInTheme] of Object.entries(themeConfig.value)) {
 					validateName(colorName, `theme.${themeName}.${colorName}`);
+					assertNoColorFormatSettings(
+						colorInTheme.settings,
+						`theme.${themeName}.${colorName}.settings`,
+					);
 					const colorComment = `/* ${colorName} */`;
 					handler.addComment(colorComment);
 

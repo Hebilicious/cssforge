@@ -12,12 +12,22 @@ value only, so `{ hex: true }` stays the short form.
 
 `settings.color.fallback` names the format whose `string` value is the declaration emitted
 for browsers without `oklch()` support, after the root block and inside
-`@supports not (color: oklch(0% 0 0))`, mirroring the color's `atRule` and `selector`. It
-defaults to the first generated format, and `false` emits no declaration. A duplicate
-declaration in the same block would not have worked: a custom property accepts any token
-stream, so the modern value wins everywhere, including where `oklch()` cannot be used. A
-color outside sRGB uses the CSS gamut mapping algorithm, which is how a browser maps a color
-its display cannot show.
+`@supports not (color: oklch(0% 0 0))`, mirroring the color's `atRule` and `selector`. Without
+it, the first format that produces a CSS value is used, so a set of formats that produces none
+emits no declaration, and `false` emits none either. A duplicate declaration in the same block
+would not have worked: a custom property accepts any token stream, so the modern value wins
+everywhere, including where `oklch()` cannot be used. A color outside sRGB uses the CSS gamut
+mapping algorithm, which is how a browser maps a color its display cannot show.
+
+A palette color's `settings.color` overrides the palette's per setting. Its `formats` merge
+into the palette's per format, so a color can add an output to one format or remove a format
+with `false` without restating the others.
+
+The settings are a closed schema. An unknown key, a value of the wrong shape, a fallback that
+is not generated or has no `string` output, and color format settings written on a gradient or
+a theme all throw with the configuration path instead of generating nothing quietly. The
+settings types (`ColorFormatConfig`, `HexFormatOutputs`, `RgbFormatOutputs`, `ColorSettings`,
+`PaletteColorSettings`) are exported from the package entry.
 
 Each format also takes an `alpha` policy: `true` (the default) keeps the alpha the color
 carries, a number between 0 and 1 generates that format at that opacity, and `false` rejects

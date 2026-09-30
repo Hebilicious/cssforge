@@ -28,6 +28,13 @@ export type {
 	TokenColorFormats,
 } from "./lib.ts";
 export type { LoadedConfig } from "./loader.ts";
+export type {
+	ColorFormatConfig,
+	ColorSettings,
+	HexFormatOutputs,
+	PaletteColorSettings,
+	RgbFormatOutputs,
+} from "./modules/colors.ts";
 
 export {
 	/**
