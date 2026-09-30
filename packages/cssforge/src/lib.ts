@@ -35,6 +35,12 @@ export interface TokenColorFormats {
 	rgb?: RgbColorValues;
 }
 
+/** Options every generated output accepts. */
+export interface GenerateOptions {
+	/** Extra color formats generated alongside `oklch()`, added to the config's. */
+	colorFormats?: readonly ColorFormat[];
+}
+
 /**
  * Metadata carried through generation so alternate outputs can preserve token
  * provenance without changing the generated CSS.

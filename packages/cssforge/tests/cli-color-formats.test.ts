@@ -1,8 +1,20 @@
+import { spawnSync } from "node:child_process";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { build, parseColorFormats } from "../src/cli.ts";
+import { childEnv } from "./helpers.ts";
 import { assert, assertEquals, assertThrows, Deno } from "./vitest-compat.ts";
+
+const cliPath = fileURLToPath(new URL("../src/cli.ts", import.meta.url));
+
+const runCli = (args: string[], cwd: string) =>
+	spawnSync(process.execPath, [cliPath, ...args], {
+		cwd,
+		encoding: "utf8",
+		env: childEnv,
+	});
 
 const configSource = `export default {
 	colors: {
@@ -99,6 +111,67 @@ Deno.test("build - rejects an unknown color format for JavaScript callers", asyn
 		const message =
 			result.error instanceof Error ? result.error.message : String(result.error);
 		assertEquals(message.includes("hsl"), true);
+	} finally {
+		await rm(tempDir, { recursive: true, force: true });
+	}
+});
+
+Deno.test("cli - --color-formats writes the formats through the CLI entry", async () => {
+	const tempDir = await mkdtemp(join(tmpdir(), "cssforge-color-formats-cli-"));
+
+	try {
+		const paths = pathsIn(tempDir);
+		await writeFile(paths.config, configSource, "utf8");
+
+		const result = runCli(
+			[
+				"--config",
+				paths.config,
+				"--mode",
+				"css",
+				"--css",
+				paths.css,
+				"--color-formats",
+				"hex,rgb",
+			],
+			tempDir,
+		);
+
+		assertEquals(result.status, 0, result.stderr);
+		const css = await readFile(paths.css, "utf8");
+		assertEquals(css.includes("--palette-coral-100: #ff7f50;"), true);
+	} finally {
+		await rm(tempDir, { recursive: true, force: true });
+	}
+});
+
+Deno.test("cli - --color-formats reports an unknown format", async () => {
+	const tempDir = await mkdtemp(join(tmpdir(), "cssforge-color-formats-cli-invalid-"));
+
+	try {
+		const paths = pathsIn(tempDir);
+		await writeFile(paths.config, configSource, "utf8");
+
+		const result = runCli(
+			[
+				"--config",
+				paths.config,
+				"--mode",
+				"css",
+				"--css",
+				paths.css,
+				"--color-formats",
+				"hex,hsl",
+			],
+			tempDir,
+		);
+
+		assertEquals(result.status, 1);
+		assertEquals(
+			result.stderr.includes("Invalid color format: hsl"),
+			true,
+			result.stderr,
+		);
 	} finally {
 		await rm(tempDir, { recursive: true, force: true });
 	}

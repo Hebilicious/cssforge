@@ -2,6 +2,7 @@ import Color from "colorjs.io";
 import { InvalidNameError, validateName, validateVariableAliases } from "../helpers.ts";
 import type {
 	ColorFormat,
+	GenerateOptions,
 	HexColorValues,
 	RgbColorValues,
 	TokenColorFormats,
@@ -319,28 +320,34 @@ interface SrgbColor {
 	mapped: boolean;
 }
 
-/** The CSS value of one format, which is the declaration a browser without `oklch()` support reads. */
-const colorFormatDeclarations: Record<ColorFormat, (color: SrgbColor) => string> = {
-	hex: (color) => `#${hexDigits(color)}`,
-	rgb: (color) => `rgb(${color.bytes.join(" ")}${alphaSuffix(color)})`,
+/** The outputs one format produces, one entry per value the token carries. */
+type ColorFormatOutputTable<Values> = {
+	[K in keyof Values]-?: (color: SrgbColor) => NonNullable<Values[K]>;
 };
 
-const colorFormatOutputs: Record<
-	ColorFormat,
-	Record<string, (color: SrgbColor) => ColorFormatValue>
-> = {
+const colorFormatOutputs: {
+	hex: ColorFormatOutputTable<HexColorValues>;
+	rgb: ColorFormatOutputTable<RgbColorValues>;
+} = {
 	hex: {
-		string: colorFormatDeclarations.hex,
+		string: (color) => `#${hexDigits(color)}`,
 		digits: (color) => hexDigits(color),
 		number: (color) => Number.parseInt(hexDigits(color), 16),
 	},
 	rgb: {
-		string: colorFormatDeclarations.rgb,
-		array: (color) => (color.alpha === 1 ? color.bytes : [...color.bytes, color.alpha]),
+		string: (color) => `rgb(${color.bytes.join(" ")}${alphaSuffix(color)})`,
+		array: (color) =>
+			color.alpha === 1 ? color.bytes : [...color.bytes, Number(color.alpha.toFixed(3))],
 	},
 };
 
-type ColorFormatOutput = string;
+/** The CSS value of one format, which is the declaration a browser without `oklch()` support reads. */
+const colorFormatDeclarations: Record<ColorFormat, (color: SrgbColor) => string> = {
+	hex: colorFormatOutputs.hex.string,
+	rgb: colorFormatOutputs.rgb.string,
+};
+
+type ColorFormatOutput = keyof HexColorValues | keyof RgbColorValues;
 
 /** Every accepted format name, in the order error messages and the CLI list them. */
 export const supportedColorFormats = Object.keys(colorFormatOutputs) as ColorFormat[];
@@ -354,7 +361,21 @@ const colorFormatList = supportedColorFormats.map((format) => `"${format}"`).joi
 
 /** The representations `format` accepts, in the order they are generated. */
 const outputsOf = (format: ColorFormat): readonly ColorFormatOutput[] =>
-	Object.keys(colorFormatOutputs[format]);
+	Object.keys(colorFormatOutputs[format]) as ColorFormatOutput[];
+
+/** One output of one format. The registry types the pair; `readFormat` validates it. */
+const formatOutput = (
+	format: ColorFormat,
+	output: ColorFormatOutput,
+	color: SrgbColor,
+): string | number | number[] => {
+	const table = colorFormatOutputs[format] as Record<
+		ColorFormatOutput,
+		(color: SrgbColor) => string | number | number[]
+	>;
+
+	return table[output](color);
+};
 
 const toChannelByte = (coord: number) =>
 	Math.round(Math.min(Math.max(Number.isNaN(coord) ? 0 : coord, 0), 1) * 255);
@@ -373,14 +394,13 @@ const toSrgb = (color: Color): SrgbColor => {
 	};
 };
 
-/** The alpha the generated values carry, clamped to 0-1 and rounded to three decimals. */
+/** The alpha clamped to 0-1, without rounding: every output rounds once. */
 const alphaValue = (color: Color): number =>
-	Math.round(
-		Math.min(Math.max(Number.isNaN(color.alpha) ? 1 : color.alpha, 0), 1) * 1000,
-	) / 1000;
+	Math.min(Math.max(Number.isNaN(color.alpha) ? 1 : color.alpha, 0), 1);
 
 /** `" / 0.12"`, or an empty string for an opaque color. */
-const alphaSuffix = (color: SrgbColor) => (color.alpha === 1 ? "" : ` / ${color.alpha}`);
+const alphaSuffix = (color: SrgbColor) =>
+	color.alpha === 1 ? "" : ` / ${Number(color.alpha.toFixed(3))}`;
 
 /** The hex digits of the color, with the alpha byte when it carries alpha. */
 const hexDigits = (color: SrgbColor) =>
@@ -480,7 +500,7 @@ const colorToFormats = (
 
 		const generated: Record<string, ColorFormatValue> = {};
 		for (const output of entry.outputs) {
-			generated[output] = colorFormatOutputs[entry.format][output](formatColor);
+			generated[output] = formatOutput(entry.format, output, formatColor);
 		}
 		if (entry.format === "hex") values.hex = generated as HexColorValues;
 		else values.rgb = generated as RgbColorValues;
@@ -511,9 +531,9 @@ const defaultFormats = (format: ColorFormat): GeneratedFormat => ({
 	alpha: true,
 });
 
-/** The keys that may appear in a `settings` object, per level. */
-export const paletteSettingsKeys = ["color"] as const;
-export const paletteColorSettingsKeys = ["selector", "atRule", "color"] as const;
+/** The keys a `settings` object accepts, per level. */
+const paletteSettingsKeys = ["color"] as const;
+const paletteColorSettingsKeys = ["selector", "atRule", "color"] as const;
 
 /** The color format settings, and the places a misplaced one is reported from. */
 const colorFormatSettingKeys = ["color", "formats", "fallback", "alpha"] as const;
@@ -530,9 +550,22 @@ const assertKnownKeys = (
 	const unknown = Object.keys(value).filter((key) => !allowed.includes(key));
 	if (unknown.length === 0) return;
 
-	throw new Error(
-		`Unknown setting at "${path}": ${quoted(unknown)}. Use ${quoted(allowed)}.`,
-	);
+	const use =
+		allowed.length === 0 ? "This level reads no settings." : `Use ${quoted(allowed)}.`;
+	throw new Error(`Unknown setting at "${path}": ${quoted(unknown)}. ${use}`);
+};
+
+/** Checks a settings object that is read at `path`: it has to be an object of known keys. */
+const assertSettingsKeys = (
+	settings: unknown,
+	allowed: readonly string[],
+	path: string,
+): void => {
+	if (settings === undefined) return;
+	if (!isRecord(settings)) {
+		throw new Error(`Invalid configuration at "${path}": settings must be an object.`);
+	}
+	assertKnownKeys(settings, allowed, path);
 };
 
 /** Rejects color format settings on gradients and themes, which keep authored values. */
@@ -613,10 +646,10 @@ function readColorFormatSettings(
 }
 
 const readFormats = (value: unknown, path: string): GeneratedFormat[] => {
-	if (value === undefined || value === false) return [];
+	if (value === undefined) return [];
 	if (!isRecord(value)) {
 		throw new Error(
-			`Invalid configuration at "${path}": expected formats such as { hex: true }, or omit it.`,
+			`Invalid configuration at "${path}": expected formats such as { hex: true }, or omit it. Set one format to false to remove it.`,
 		);
 	}
 
@@ -644,7 +677,7 @@ const readFormat = (
 	value: unknown,
 	path: string,
 ): GeneratedFormat => {
-	if (value === true) return { format, outputs: ["string"], alpha: true };
+	if (value === true) return defaultFormats(format);
 	if (value === undefined || value === false) return { format, outputs: [], alpha: true };
 	if (!isRecord(value)) {
 		throw new Error(
@@ -807,17 +840,6 @@ const renderFallbackBlock = (wrappers: string[], declarations: string[]): string
 };
 
 /**
- * Extra color formats generated on top of the ones a configuration declares.
- */
-export interface ColorFormatOptions {
-	/**
-	 * Formats added to the configured ones, so a caller such as the CLI
-	 * `--color-formats` flag generates them without editing the configuration.
-	 */
-	colorFormats?: readonly ColorFormat[];
-}
-
-/**
  * Processes the color configuration to generate CSS variables.
  * This includes palettes, gradients, and themes.
  * @example
@@ -837,7 +859,7 @@ export interface ColorFormatOptions {
  */
 export function processColors(
 	colors: ColorConfig,
-	options: ColorFormatOptions = {},
+	options: GenerateOptions = {},
 ): Output {
 	const rootOutput: string[] = [];
 	const outsideOutput: string[] = [];
@@ -1019,6 +1041,7 @@ export function processColors(
 
 	if (colors.gradients) {
 		assertNoColorFormatSettings(colors.gradients.settings, "gradients.settings");
+		assertSettingsKeys(colors.gradients.settings, [], "gradients.settings");
 		rootOutput.push(`/* Gradients */`);
 		const moduleKey = "gradients";
 		const palette = {
@@ -1032,10 +1055,21 @@ export function processColors(
 				gradient.settings,
 				`gradients.${gradientName}.settings`,
 			);
+			assertSettingsKeys(
+				gradient.settings,
+				["selector", "atRule"],
+				`gradients.${gradientName}.settings`,
+			);
 			const handler = conditionalBuilder(gradient.settings, `/* ${gradientName} */`);
 
-			for (const [variantName, { value, variables }] of Object.entries(gradient.value)) {
+			for (const [variantName, definition] of Object.entries(gradient.value)) {
+				const { value, variables } = definition;
 				validateName(variantName, `gradients.${gradientName}.${variantName}`);
+				assertSettingsKeys(
+					definition.settings,
+					[],
+					`gradients.${gradientName}.${variantName}.settings`,
+				);
 				try {
 					validateVariableAliases({
 						aliases: variables,
@@ -1095,6 +1129,24 @@ export function processColors(
 		for (const [themeName, themeConfig] of Object.entries(themes)) {
 			validateName(themeName, `theme.${themeName}`);
 			assertNoColorFormatSettings(themeConfig.settings, `theme.${themeName}.settings`);
+			assertSettingsKeys(
+				themeConfig.settings,
+				["selector", "atRule"],
+				`theme.${themeName}.settings`,
+			);
+			// Checked outside the try block, so a misplaced setting fails instead of
+			// dropping the theme with a logged line.
+			for (const [colorName, colorInTheme] of Object.entries(themeConfig.value)) {
+				assertNoColorFormatSettings(
+					colorInTheme.settings,
+					`theme.${themeName}.${colorName}.settings`,
+				);
+				assertSettingsKeys(
+					colorInTheme.settings,
+					["variantNameOnly"],
+					`theme.${themeName}.${colorName}.settings`,
+				);
+			}
 			const handler = conditionalBuilder(
 				themeConfig.settings,
 				`/* Theme: ${themeName} */`,
@@ -1103,10 +1155,6 @@ export function processColors(
 			try {
 				for (const [colorName, colorInTheme] of Object.entries(themeConfig.value)) {
 					validateName(colorName, `theme.${themeName}.${colorName}`);
-					assertNoColorFormatSettings(
-						colorInTheme.settings,
-						`theme.${themeName}.${colorName}.settings`,
-					);
 					const colorComment = `/* ${colorName} */`;
 					handler.addComment(colorComment);
 

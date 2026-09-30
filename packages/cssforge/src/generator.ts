@@ -1,5 +1,5 @@
 import type { CSSForgeConfig } from "./config.ts";
-import type { ColorFormat, TokenColorFormats } from "./lib.ts";
+import type { ColorFormat, GenerateOptions, TokenColorFormats } from "./lib.ts";
 import {
 	getTokenScope,
 	type Output,
@@ -9,7 +9,6 @@ import {
 	type TokenTier,
 	type TokenType,
 } from "./lib.ts";
-import type { ColorFormatOptions } from "./modules/colors.ts";
 import { processColors } from "./modules/colors.ts";
 import { processPrimitives } from "./modules/primitive.ts";
 import { processSpacing } from "./modules/spacing.ts";
@@ -24,13 +23,6 @@ type CssValue = {
 	/** Whether the color is outside sRGB, so its sRGB values were gamut mapped. */
 	gamutMapped?: boolean;
 };
-
-/**
- * Options every generated output accepts.
- */
-export type GenerateOptions = ColorFormatOptions;
-
-export type { ColorFormat, TokenColorFormats };
 
 type ForgeValue = {
 	[key: string]: ForgeValue | CssValue;

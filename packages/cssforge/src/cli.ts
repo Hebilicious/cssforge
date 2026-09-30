@@ -14,14 +14,13 @@ import type { CommandDef } from "citty";
  * @module
  */
 import { defineCommand, runMain } from "citty";
-import type { GenerateOptions } from "./generator.ts";
 import {
 	generateCSS,
 	generateJSON,
 	generateStyleDictionaryJSON,
 	generateTS,
 } from "./generator.ts";
-import type { ColorFormat } from "./lib.ts";
+import type { ColorFormat, GenerateOptions } from "./lib.ts";
 import { loadConfig } from "./loader.ts";
 import { isColorFormat, supportedColorFormats } from "./modules/colors.ts";
 import { version } from "./version.ts";

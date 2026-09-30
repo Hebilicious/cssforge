@@ -16,10 +16,11 @@ browsers without `oklch()` support, emitted after the root block inside
 Without it, the first format that produces a CSS value is used, and `false` declares nothing.
 
 A palette color's settings override the palette's per setting, and its `formats` merge per
-format with `false` to remove one. The settings are a closed schema: unknown keys, wrong
-shapes, and color format settings on a gradient or a theme throw with the configuration path.
-The settings types are exported from the package entry.
+format with `false` to remove one. The color settings are a closed schema: unknown keys, a
+`formats` that is not an object, and color format settings on a gradient, a theme, or a level
+that reads no settings throw with the configuration path. The settings types are exported
+from the package entry.
 
-Tokens gain a `color` object keyed by format and output, plus `gamutMapped: true` when the
-color is outside sRGB, mirrored by `attributes.color`, `$color` and `$gamutMapped` in Style
-Dictionary. `cssforge --color-formats hex,rgb` adds formats for a run.
+Tokens gain a `color` object keyed by format and output, plus `gamutMapped: true` when a
+format is generated for a color outside sRGB, mirrored by `attributes.color`, `$color` and
+`$gamutMapped` in Style Dictionary. `cssforge --color-formats hex,rgb` adds formats for a run.

@@ -370,3 +370,110 @@ Deno.test("generateCSS - a fallback error names the color it was resolved for", 
 		`Expected the error to name the color and the output. Received: ${stringError.message}`,
 	);
 });
+
+Deno.test("generateCSS - rejects color format settings on a theme color", () => {
+	// This check used to sit inside the theme try block, which logged and dropped
+	// the theme instead of reporting the configuration.
+	const config = {
+		colors: {
+			palette: { value: { coral: { 100: { hex: "#FF7F50" } } } },
+			theme: {
+				light: {
+					value: {
+						content: {
+							value: { primary: "var(--one)" },
+							variables: { one: "palette.coral.100" },
+							settings: { color: { formats: { hex: true } } },
+						},
+					},
+				},
+			},
+		},
+	} as unknown as CSSForgeConfig;
+
+	const error = assertThrows(() => generateCSS(config));
+
+	assert(
+		error.message.includes('"theme.light.content.settings"'),
+		`Expected the error to name the theme color. Received: ${error.message}`,
+	);
+});
+
+Deno.test("generateCSS - rejects unknown keys at the gradient and theme levels", () => {
+	const base = { palette: { value: { coral: { 100: { hex: "#FF7F50" } } } } };
+	const onTheme = {
+		colors: {
+			...base,
+			theme: {
+				light: {
+					value: {
+						content: {
+							value: { primary: "var(--one)" },
+							variables: { one: "palette.coral.100" },
+						},
+					},
+					settings: { selectr: ".light" },
+				},
+			},
+		},
+	} as unknown as CSSForgeConfig;
+	const onThemeColor = {
+		colors: {
+			...base,
+			theme: {
+				light: {
+					value: {
+						content: {
+							value: { primary: "var(--one)" },
+							variables: { one: "palette.coral.100" },
+							settings: { variantNameOnyl: true },
+						},
+					},
+				},
+			},
+		},
+	} as unknown as CSSForgeConfig;
+	const onGradientLevel = {
+		colors: {
+			...base,
+			gradients: {
+				value: { g: { value: { primary: { value: "linear-gradient(red, blue)" } } } },
+				settings: { selector: ".g" },
+			},
+		},
+	} as unknown as CSSForgeConfig;
+
+	const themeError = assertThrows(() => generateCSS(onTheme));
+	const themeColorError = assertThrows(() => generateCSS(onThemeColor));
+	const gradientError = assertThrows(() => generateCSS(onGradientLevel));
+
+	assert(
+		themeError.message.includes('"theme.light.settings"') &&
+			themeError.message.includes('"selectr"'),
+		`Expected the theme settings key to be rejected. Received: ${themeError.message}`,
+	);
+	assert(
+		themeColorError.message.includes('"theme.light.content.settings"') &&
+			themeColorError.message.includes('"variantNameOnly"'),
+		`Expected the theme color settings key to be rejected. Received: ${themeColorError.message}`,
+	);
+	assert(
+		gradientError.message.includes('"gradients.settings"') &&
+			gradientError.message.includes("reads no settings"),
+		`Expected the unread gradient settings to be rejected. Received: ${gradientError.message}`,
+	);
+});
+
+Deno.test("generateCSS - rejects formats set to false", () => {
+	const palette = { value: { coral: { 100: { hex: "#FF7F50" } } } };
+	const config = {
+		colors: { palette: { ...palette, settings: { color: { formats: false } } } },
+	} as unknown as CSSForgeConfig;
+
+	const error = assertThrows(() => generateCSS(config));
+
+	assert(
+		error.message.includes('"palette.settings.color.formats"'),
+		`Expected the error to name the formats. Received: ${error.message}`,
+	);
+});

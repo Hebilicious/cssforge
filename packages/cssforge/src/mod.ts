@@ -20,9 +20,10 @@ import { processTypography } from "./modules/typography.ts";
  * The main configuration object for CSSForge.
  */
 export type { CSSForgeConfig };
-export type { GenerateOptions, StyleDictionaryJSONOptions } from "./generator.ts";
+export type { StyleDictionaryJSONOptions } from "./generator.ts";
 export type {
 	ColorFormat,
+	GenerateOptions,
 	HexColorValues,
 	RgbColorValues,
 	TokenColorFormats,

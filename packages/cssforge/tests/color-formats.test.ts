@@ -483,6 +483,24 @@ Deno.test("generateJSON - a color with no sRGB format is not flagged", () => {
 	);
 });
 
+Deno.test("generateJSON - the hex alpha byte rounds from the exact alpha", () => {
+	// Rounding the alpha to three decimals first moved 12.35% off the byte a
+	// browser paints.
+	const config = defineConfig({
+		colors: {
+			palette: {
+				value: { soft: { 100: "rgb(0 0 0 / 12.35%)" } },
+				settings: { color: { formats: { hex: true, rgb: { string: true } } } },
+			},
+		},
+	});
+
+	assertEquals(JSON.parse(generateJSON(config)).palette.soft["100"].color, {
+		hex: { string: "#0000001f" },
+		rgb: { string: "rgb(0 0 0 / 0.123)" },
+	});
+});
+
 Deno.test("generateStyleDictionaryJSON - exposes the color outputs beside the resolved value", () => {
 	const config = defineConfig({
 		colors: {
