@@ -18,9 +18,29 @@ When README examples are not enough, use source types.
 - Typography schema: `packages/cssforge/src/modules/typography.ts`
 - Primitives schema: `packages/cssforge/src/modules/primitive.ts`
 
+## Settings
+
+A `settings` object sits beside each module's `value`, with `settings.color` grouping the
+color output settings.
+
+- `ColorSettings`, `ColorFormatConfig`, `HexFormatOutputs` and `RgbFormatOutputs` in
+  `packages/cssforge/src/modules/colors.ts`, re-exported from `mod.ts`.
+- `settings.color.formats` is keyed by format: `hex` produces `string`, `digits` and
+  `number`, `rgb` produces `string` and `array`, and each format takes `alpha`.
+- `settings.color.fallback` names the format whose `string` value becomes the CSS declaration,
+  or `false` for none. Without it, the first format that produces a CSS value is used.
+- A color's `settings` override the palette's per setting; `formats` merge per format and take
+  `false` to remove one.
+- Unknown keys, wrong shapes, and color format settings on a gradient or a theme are rejected
+  with the configuration path. Spacing and primitives keep flat `PixelSettings`.
+- A palette token carries `gamutMapped: true` when the color is outside sRGB.
+
 ## Exposed API entrypoint
 
-- `packages/cssforge/src/mod.ts` exports `defineConfig`, `generateCSS`, and processing helpers.
+- `packages/cssforge/src/mod.ts` exports `defineConfig`, `generateCSS`, the processing helpers,
+  and the config and token types (`CSSForgeConfig`, `ColorFormatConfig`, `HexFormatOutputs`,
+  `RgbFormatOutputs`, `ColorSettings`, `ColorFormat`, `HexColorValues`, `RgbColorValues`,
+  `TokenColorFormats`, `GenerateOptions`, `StyleDictionaryJSONOptions`).
 
 ## Guidance
 

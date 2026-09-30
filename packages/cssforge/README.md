@@ -314,6 +314,8 @@ The TypeScript and JSON outputs hold the same nested tree. Every leaf is one tok
 | `key` | The CSS custom property, such as `--palette-coral-100` | Building a `var()` string, or looking a token up by name |
 | `value` | The CSS value, such as `oklch(...)`, `0.5rem`, or `clamp(...)` | Passing a color, a length, or a font size to anything that accepts CSS |
 | `variable` | The full declaration, such as `--palette-coral-100: oklch(...);` | Injecting a declaration into a style tag or a shadow root |
+| `color` | The generated formats, such as `{ "hex": { "string": "#ff7f50" }, "rgb": { "array": [255, 127, 80] } }` | Reading a palette color as a legacy value without converting it. Present when formats are configured, on the palette or the color, or added by `colorFormats` |
+| `gamutMapped` | `true` when the color is outside sRGB | Knowing which colors the browser paints differently from the authored value. Absent inside sRGB, and absent when no format is generated |
 
 A level with one child is collapsed, so `palette: { value: { coral: ... } }` becomes
 `cssForge.palette.coral`. Numeric and `@` keys stay strings:
@@ -386,6 +388,10 @@ const themed = {
 Both are valid CSS. The first follows the active theme; the second is a snapshot of one theme.
 
 ## Configuration
+
+Every module holds its tokens under `value` and its options under `settings`. A setting no
+schema accepts is rejected with its configuration path, so a misspelled key cannot quietly
+generate nothing.
 
 ### Colors
 
@@ -657,6 +663,127 @@ Custom property references are substituted when the alias is computed, before in
 `:root.Another` keeps both declarations on the same element; a theme class on a descendant
 leaves `--primary` invalid at computed-value time, and every `var(--primary, fallback)`
 reference uses its fallback.
+
+#### Color formats for browsers without oklch
+
+Palette colors are generated in OKLCH, which a browser without `oklch()` support cannot
+render. Set `formats` to generate sRGB values alongside it, and `fallback` to declare one of
+them for those browsers:
+
+<!-- md:generate defineConfig
+export default defineConfig({
+  colors: {
+    palette: {
+      value: {
+        coral: { 100: { hex: "#FF7F50" } },
+        coralDark: {
+          value: { 100: { hex: "#FF6347" } },
+          settings: { atRule: "@media (prefers-color-scheme: dark)" },
+        },
+      },
+      settings: {
+        color: {
+          formats: {
+            hex: { string: true, digits: true, number: true },
+            rgb: { string: true, array: true },
+          },
+          fallback: "hex",
+        },
+      },
+    },
+  },
+});
+-->
+
+```typescript
+export default defineConfig({
+  colors: {
+    palette: {
+      value: {
+        coral: { 100: { hex: "#FF7F50" } },
+        coralDark: {
+          value: { 100: { hex: "#FF6347" } },
+          settings: { atRule: "@media (prefers-color-scheme: dark)" },
+        },
+      },
+      settings: {
+        color: {
+          formats: {
+            hex: { string: true, digits: true, number: true },
+            rgb: { string: true, array: true },
+          },
+          fallback: "hex",
+        },
+      },
+    },
+  },
+});
+```
+
+This will generate the following CSS :
+
+```css
+/*____ CSSForge ____*/
+:root {
+/*____ Colors ____*/
+/* Palette */
+/* coral */
+--palette-coral-100: oklch(73.511% 0.16799 40.24666);
+/* coralDark */
+@media (prefers-color-scheme: dark) {
+  --palette-coralDark-100: oklch(69.622% 0.19552 32.32143);
+}
+}
+@supports not (color: oklch(0% 0 0)) {
+  :root {
+    /* coral */
+    --palette-coral-100: #ff7f50;
+  }
+}
+@media (prefers-color-scheme: dark) {
+  @supports not (color: oklch(0% 0 0)) {
+    :root {
+      /* coralDark */
+      --palette-coralDark-100: #ff6347;
+    }
+  }
+}
+```
+
+<!-- /md:generate -->
+
+| Format | Output | Value |
+| --- | --- | --- |
+| `hex` | `string` | `"#ff7f50"` |
+| `hex` | `digits` | `"ff7f50"` |
+| `hex` | `number` | `16744272` (`0xff7f50`) |
+| `rgb` | `string` | `"rgb(255 127 80)"` |
+| `rgb` | `array` | `[255, 127, 80]` |
+
+A format set to `true` generates its CSS value. A color with alpha carries it
+(`#ff7f50aa`, `0xff7f50aa`, `rgb(255 127 80 / 0.667)`, `[255, 127, 80, 0.667]`) unless the
+format sets `alpha`: `true` keeps it, a number from 0 to 1 sets it, `false` rejects the color.
+
+The declaration is the `string` value of `fallback`, or of the first format that has one,
+gated by `@supports not (color: oklch(0% 0 0))` and mirroring the color's `atRule` and
+`selector`. `fallback: false` declares nothing. It is emitted with the palette, before
+gradient and theme blocks, so a later declaration still wins.
+
+A color's `formats` merge into the palette's per format, and `false` removes one. Tokens carry
+every generated value in `color`, under their format and output:
+
+```json
+"color": {
+  "hex": { "string": "#ff7f50", "number": 16744272 },
+  "rgb": { "array": [255, 127, 80] }
+}
+```
+
+A color outside sRGB is gamut mapped for its sRGB values, and its token carries
+`gamutMapped: true` so the mapping is visible.
+
+The palette is the only family that converts the colors it is given, so it is the only one
+that generates formats. Themes and gradients keep their authored values.
 
 #### Condition
 
@@ -1252,6 +1379,9 @@ cssforge --mode style-dictionary --style-dictionary ./dist/design-tokens.sd.json
 
 # Keep CSS variables as values for usage matching
 cssforge --mode style-dictionary --style-dictionary ./dist/design-tokens.sd.json --style-dictionary-value-mode css-reference
+
+# Generate sRGB formats next to oklch for every palette color, added to the config's formats
+cssforge --color-formats hex,rgb
 ```
 
 ## Programmatic Usage
@@ -1263,6 +1393,9 @@ import { generateCSS, generateStyleDictionaryJSON } from "@hebilicious/cssforge"
 
 // Generate CSS string
 const css = generateCSS(config);
+
+// Add sRGB formats for this run instead of editing the config
+const withFormats = generateCSS(config, { colorFormats: ["hex", "rgb"] });
 
 // Write final values for Style Dictionary
 const resolvedTokens = generateStyleDictionaryJSON(config);
@@ -1326,7 +1459,11 @@ the keys in the generated file, so consumers can connect a semantic token to its
 | `attributes.cssVariable` | The token's CSS custom property, such as `--palette-neutral-900` | Declaring or overriding the token in CSS |
 | `attributes.tailwindVariable` | The same custom property name, without the `var()` wrapper | Tools that match authored `var(--token)` usage to tokens |
 | `attributes.resolvedValue` | The final value, even in `css-reference` mode | Showing a value without following references |
+| `attributes.color` | The token's generated formats, when `settings.color.formats` is configured | Emitting a legacy-safe color for a token |
 | `$resolvedValue` | The same final value as a top-level DTCG-style field | Tools that read `$resolvedValue` before falling back to `value` |
+| `$color` | The same per-format values as a top-level field | Tools that read `$color` before converting the color themselves |
+| `attributes.gamutMapped` | `true` when the color is outside sRGB and a format is generated | Knowing which tokens were gamut mapped |
+| `$gamutMapped` | The same flag as a top-level field | Tools that read `$gamutMapped` |
 
 `type` narrows `fontSize`, `lineHeight`, `fontWeight`, `fontFamily`, `borderRadius`,
 `letterSpacing`, `shadow`, `opacity`, `zIndex`, and `number` when the token's name and value

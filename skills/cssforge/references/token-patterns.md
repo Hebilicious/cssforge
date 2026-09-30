@@ -7,7 +7,14 @@ All patterns below are derived from README configuration examples.
 - Palette tokens under `colors.palette.value`.
 - Supports color formats like hex/rgb/hsl/oklch and string values.
 - Themes and gradients can reference palette entries with `variables` maps.
-
+- `settings.color.formats` generates sRGB values alongside `oklch()`. `hex` produces
+  `string`, `digits` and `number`; `rgb` produces `string` and `array`; each takes `alpha`
+  (`true` keeps it, a 0-1 number sets it, `false` rejects the color).
+- `settings.color.fallback` names the format whose `string` value becomes the CSS declaration,
+  or `false` for none. Without it, the first format with a CSS value is used. A color's
+  formats merge into the palette's per format, and `--color-formats hex,rgb` adds formats at
+  run time. Unknown settings are rejected with the configuration path. Tokens carry
+  `gamutMapped: true` when the color is outside sRGB.
 ## Spacing
 
 - Static spacing under `spacing.custom`.

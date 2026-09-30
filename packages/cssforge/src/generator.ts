@@ -1,4 +1,5 @@
 import type { CSSForgeConfig } from "./config.ts";
+import type { ColorFormat, GenerateOptions, TokenColorFormats } from "./lib.ts";
 import {
 	getTokenScope,
 	type Output,
@@ -17,6 +18,10 @@ type CssValue = {
 	value: string;
 	key: string;
 	variable: string;
+	/** The extra color values generated alongside `oklch()`, keyed by format. */
+	color?: TokenColorFormats;
+	/** Whether the color is outside sRGB, so its sRGB values were gamut mapped. */
+	gamutMapped?: boolean;
 };
 
 type ForgeValue = {
@@ -56,12 +61,18 @@ type StyleDictionaryToken = {
 		 */
 		tailwindVariable: string;
 		resolvedValue: string;
+		/** The extra color values generated alongside `oklch()`, keyed by format. */
+		color?: TokenColorFormats;
+		/** Whether the color is outside sRGB, so its sRGB values were gamut mapped. */
+		gamutMapped?: boolean;
 		sourcePath: string;
 		referencePaths?: string[];
 	};
 	$tier: TokenTier;
 	$reference?: string;
 	$resolvedValue: string;
+	$color?: TokenColorFormats;
+	$gamutMapped?: boolean;
 };
 
 type StyleDictionaryValue = {
@@ -149,9 +160,12 @@ const mergeResolveMaps = (
 	return resolveMap;
 };
 
-const collectResolveMap = (config: Partial<CSSForgeConfig>): ResolveMap => {
+const collectResolveMap = (
+	config: Partial<CSSForgeConfig>,
+	options: GenerateOptions = {},
+): ResolveMap => {
 	const forge = {
-		colors: config.colors ? processColors(config.colors) : undefined,
+		colors: config.colors ? processColors(config.colors, options) : undefined,
 		spacing: config.spacing ? processSpacing(config.spacing) : undefined,
 		typography: config.typography ? processTypography(config.typography) : undefined,
 		primitives: config.primitives
@@ -172,9 +186,13 @@ const collectResolveMap = (config: Partial<CSSForgeConfig>): ResolveMap => {
 /**
  * Creates a nested object structure of design tokens from a configuration.
  * @param config The CSSForge configuration.
+ * @param options The generation options.
  * @returns A nested object representing the design tokens.
  */
-export function createForgeValues(config: Partial<CSSForgeConfig>) {
+export function createForgeValues(
+	config: Partial<CSSForgeConfig>,
+	options: GenerateOptions = {},
+) {
 	type Input = readonly [string, CssValue];
 
 	/**
@@ -226,11 +244,17 @@ export function createForgeValues(config: Partial<CSSForgeConfig>) {
 		}, {} as ForgeValue);
 	}
 
-	const jsonKeys = [...collectResolveMap(config).entries()].map(
+	const jsonKeys = [...collectResolveMap(config, options).entries()].map(
 		([path, token]) =>
 			[
 				path,
-				{ key: token.key, value: token.value, variable: token.variable },
+				{
+					key: token.key,
+					value: token.value,
+					variable: token.variable,
+					...(token.color ? { color: token.color } : {}),
+					...(token.gamutMapped ? { gamutMapped: true } : {}),
+				},
 			] satisfies Input,
 	);
 	const forgeValues = createForgeValuesFromKeys(jsonKeys);
@@ -394,10 +418,10 @@ const inferValueKind = (
  */
 export function generateStyleDictionaryJSON(
 	config: Partial<CSSForgeConfig>,
-	options: StyleDictionaryJSONOptions = {},
+	options: StyleDictionaryJSONOptions & GenerateOptions = {},
 ): string {
 	const valueMode = options.valueMode ?? "resolved";
-	const resolveMap = collectResolveMap(config);
+	const resolveMap = collectResolveMap(config, options);
 	const tokensByCssVariable = new Map(
 		[...resolveMap.values()].map((token) => [token.key, token]),
 	);
@@ -427,12 +451,16 @@ export function generateStyleDictionaryJSON(
 				cssVariableReference,
 				tailwindVariable: token.key,
 				resolvedValue,
+				...(token.color ? { color: token.color } : {}),
+				...(token.gamutMapped ? { gamutMapped: true } : {}),
 				sourcePath: toStyleDictionaryPath(token.sourcePath),
 				...(referencePaths ? { referencePaths } : {}),
 			},
 			$tier: tier,
 			...(referencePaths?.[0] ? { $reference: referencePaths[0] } : {}),
 			$resolvedValue: resolvedValue,
+			...(token.color ? { $color: token.color } : {}),
+			...(token.gamutMapped ? { $gamutMapped: true } : {}),
 		};
 		const nestedObject = createNestedStyleDictionaryObject(
 			outputPath.split("."),
@@ -454,8 +482,11 @@ export function generateStyleDictionaryJSON(
  * // json: "{\n  \"colors\": {\n    \"palette\": {\n      \"value\": {\n        \"red\": {\n          \"100\": {\n            \"key\": \"--color-red-100\",\n            \"value\": \"oklch(62.796% 0.25768 29.23388)\",\n            \"variable\": \"--color-red-100: oklch(62.796% 0.25768 29.23388);\"\n          }\n        }\n      }\n    }\n  }\n}"
  * ```
  */
-export function generateJSON(config: Partial<CSSForgeConfig>): string {
-	const forgeValues = createForgeValues(config);
+export function generateJSON(
+	config: Partial<CSSForgeConfig>,
+	options: GenerateOptions = {},
+): string {
+	const forgeValues = createForgeValues(config, options);
 	return JSON.stringify(forgeValues, null, 2);
 }
 
@@ -469,8 +500,11 @@ export function generateJSON(config: Partial<CSSForgeConfig>): string {
  * // ts: "export const cssForge = {\n  \"colors\": {\n    \"palette\": {\n      \"value\": {\n        \"red\": {\n          \"100\": {\n            \"key\": \"--color-red-100\",\n            \"value\": \"oklch(62.796% 0.25768 29.23388)\",\n            \"variable\": \"--color-red-100: oklch(62.796% 0.25768 29.23388);\"\n          }\n        }\n      }\n    }\n  }\n} as const;"
  * ```
  */
-export function generateTS(config: Partial<CSSForgeConfig>): string {
-	const forgeValues = createForgeValues(config);
+export function generateTS(
+	config: Partial<CSSForgeConfig>,
+	options: GenerateOptions = {},
+): string {
+	const forgeValues = createForgeValues(config, options);
 	const forgeValuesString = JSON.stringify(forgeValues, null, 2);
 	return `export const cssForge = ${forgeValuesString} as const;`;
 }
@@ -485,7 +519,10 @@ export function generateTS(config: Partial<CSSForgeConfig>): string {
  * // css: "/*____ CSSForge ____*&#47;\n:root {\n/*____ Colors ____*&#47;\n/* Palette *&#47;\n--color-red-100: oklch(62.796% 0.25768 29.23388);\n}"
  * ```
  */
-export function generateCSS(config: Partial<CSSForgeConfig>): string {
+export function generateCSS(
+	config: Partial<CSSForgeConfig>,
+	options: GenerateOptions = {},
+): string {
 	const chunks: string[] = ["/*____ CSSForge ____*/", ":root {"];
 	const outsideChunks: string[] = [];
 	const processedConfig: {
@@ -496,7 +533,7 @@ export function generateCSS(config: Partial<CSSForgeConfig>): string {
 
 	// Process colors if present
 	if (config.colors) {
-		processedConfig.colors = processColors(config.colors);
+		processedConfig.colors = processColors(config.colors, options);
 		if (processedConfig.colors) {
 			if (processedConfig.colors.css.root) {
 				chunks.push("/*____ Colors ____*/");

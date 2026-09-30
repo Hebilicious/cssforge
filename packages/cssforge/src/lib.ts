@@ -8,6 +8,39 @@ export type TokenType =
 
 export type TokenTier = "primitive" | "semantic";
 
+/** A color format generated alongside the `oklch()` value. */
+export type ColorFormat = "hex" | "rgb";
+
+/** The values a token carries for the `hex` format. */
+export interface HexColorValues {
+	/** The CSS value, such as `"#ff7f50"`. */
+	string?: string;
+	/** The digits without `#`, such as `"ff7f50"`. */
+	digits?: string;
+	/** The digits as a number in RGBA byte order, such as `0xff7f50aa`. */
+	number?: number;
+}
+
+/** The values a token carries for the `rgb` format. */
+export interface RgbColorValues {
+	/** The CSS value, such as `"rgb(255 127 80)"`. */
+	string?: string;
+	/** The channels, with a fourth element holding the alpha when the color has one. */
+	array?: number[];
+}
+
+/** The color values a token carries alongside `oklch()`, keyed by format. */
+export interface TokenColorFormats {
+	hex?: HexColorValues;
+	rgb?: RgbColorValues;
+}
+
+/** Options every generated output accepts. */
+export interface GenerateOptions {
+	/** Extra color formats generated alongside `oklch()`, added to the config's. */
+	colorFormats?: readonly ColorFormat[];
+}
+
 /**
  * Metadata carried through generation so alternate outputs can preserve token
  * provenance without changing the generated CSS.
@@ -38,6 +71,10 @@ export interface ResolvedToken extends TokenMetadata {
 	value: string;
 	/** The full CSS declaration. */
 	variable: string;
+	/** The sRGB values generated for this token alongside `oklch()`, keyed by format. */
+	color?: TokenColorFormats;
+	/** Whether the color is outside sRGB, so its sRGB values were gamut mapped. */
+	gamutMapped?: boolean;
 	/**
 	 * The effective wrapper chain this declaration is emitted into, recorded by
 	 * the module that emitted it. Declarations without a wrapper share

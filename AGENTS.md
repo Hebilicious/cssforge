@@ -44,6 +44,21 @@ standard library or writing code from first principles.
 - Write new core package, test, and tooling code in TypeScript. Avoid `any` and `@ts-ignore`;
   framework examples may retain configuration formats required by their ecosystems.
 
+## Configuration settings
+
+Every module takes a `settings` object beside its `value`.
+
+- A grouped topic key holds settings that belong together, as `settings.color` does. A single
+  concern may stay flat, as spacing does with `settings.pxToRem`.
+- A setting is added to the exported type with the JSDoc the README renders, and read at
+  runtime with the path it was written at. Unknown keys, wrong value shapes, and settings
+  written on a level that does not read them are rejected: a JavaScript config is not
+  protected by the types.
+- A color's settings override the palette's per setting. A list setting such as `formats`
+  merges per key and takes `false` to remove an entry.
+- The README section for the module says whether a setting reaches the tokens or the CSS. A
+  CLI flag is an adapter over the same resolution, not a second implementation.
+
 ## Updating the README.md
 
 To update the README, run `moon run cssforge:readme-update` from the workspace root.

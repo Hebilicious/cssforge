@@ -1,4 +1,10 @@
-import { pxToRem, validateName, validateVariableAliases } from "../helpers.ts";
+import {
+	assertSettingsKeys,
+	pxToRem,
+	unreadSettings,
+	validateName,
+	validateVariableAliases,
+} from "../helpers.ts";
 import {
 	getReferencePaths,
 	getResolvedVariablesMap,
@@ -32,7 +38,6 @@ interface PrimitiveValue {
  */
 export interface Primitive {
 	value: PrimitiveValue;
-	settings?: unknown;
 }
 
 /**
@@ -92,12 +97,22 @@ export function processPrimitives(config: {
 	const spacingVariables = config.spacing ? processSpacing(config.spacing) : null;
 	for (const [primitiveName, primitive] of Object.entries(config.primitives)) {
 		validateName(primitiveName, `${moduleKey}.${primitiveName}`);
+		assertSettingsKeys(
+			unreadSettings(primitive),
+			[],
+			`${moduleKey}.${primitiveName}.settings`,
+		);
 		cssOutput.push(`/* ${primitiveName} */`);
 		for (const [
 			variantName,
 			{ value: properties, variables, settings = { pxToRem: true, rem: 16 } },
 		] of Object.entries(primitive.value)) {
 			validateName(variantName, `${moduleKey}.${primitiveName}.${variantName}`);
+			assertSettingsKeys(
+				settings,
+				["pxToRem", "rem"],
+				`${moduleKey}.${primitiveName}.${variantName}.settings`,
+			);
 			try {
 				validateVariableAliases({
 					aliases: variables,

@@ -1,6 +1,6 @@
 import type { UtopiaSpaceConfig } from "utopia-core";
 import { calculateSpaceScale } from "utopia-core";
-import { pxToRem, validateName } from "../helpers.ts";
+import { assertSettingsKeys, pxToRem, validateName } from "../helpers.ts";
 import type { Output, ResolveMap } from "../lib.ts";
 
 export interface FluidSpaceConfig {
@@ -110,6 +110,11 @@ export function processSpacing(spacing: SpacingConfig): Output {
 			{ value, settings = { pxToRem: true, rem: 16 } },
 		] of Object.entries(spacing.custom)) {
 			validateName(scaleName, `${moduleKey}.custom.${scaleName}`);
+			assertSettingsKeys(
+				settings,
+				["pxToRem", "rem"],
+				`${moduleKey}.custom.${scaleName}.settings`,
+			);
 			for (const [scaleKey, scaleValue] of Object.entries(value)) {
 				validateName(scaleKey, `${moduleKey}.custom.${scaleName}.${scaleKey}`);
 				const convertedValue = settings.pxToRem

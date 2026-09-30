@@ -23,6 +23,10 @@ export default defineConfig({
           },
         },
       },
+      settings: {
+        // A hex value for browsers without oklch(); see tests/oklch-fallback.spec.ts.
+        color: { formats: { hex: true } },
+      },
     },
     theme: {
       light: {
