@@ -661,11 +661,9 @@ reference uses its fallback.
 
 #### Color formats for browsers without oklch
 
-Palette colors are generated in OKLCH. A custom property accepts any token stream, so a
-browser without `oklch()` support still parses `--palette-coral-100: oklch(...)` and only
-fails when the value is used as a color. Set `formats` to generate the same color in sRGB
-formats, so the unsupported browser keeps a usable color and non-CSS consumers read the
-value they need:
+Palette colors are generated in OKLCH, which a browser without `oklch()` support cannot
+render. Set `formats` to generate sRGB values alongside it, and `fallback` to declare one of
+them for those browsers:
 
 <!-- md:generate defineConfig
 export default defineConfig({
@@ -757,52 +755,27 @@ This will generate the following CSS :
 | `rgb` | `string` | `"rgb(255 127 80)"` |
 | `rgb` | `array` | `[255, 127, 80]` |
 
-A format set to `true` generates its CSS value (`string`). A color with alpha carries it in
-every output: `#ff7f50aa`, `ff7f50aa`, `0xff7f50aa`, `rgb(255 127 80 / 0.667)` and
-`[255, 127, 80, 0.667]`.
+A format set to `true` generates its CSS value. A color with alpha carries it
+(`#ff7f50aa`, `0xff7f50aa`, `rgb(255 127 80 / 0.667)`, `[255, 127, 80, 0.667]`) unless the
+format sets `alpha`: `true` keeps it, a number from 0 to 1 sets it, `false` rejects the color.
 
-Every format also takes an `alpha` policy: `true` (the default) keeps the alpha the color
-carries, a number between 0 and 1 generates that format at that opacity, and `false` rejects
-a color that carries alpha and drops the alpha from the output. The `oklch()` value keeps the
-alpha the color carries, so a format that sets an alpha is generated at that opacity alone.
+The declaration is the `string` value of `fallback`, or of the first format that has one,
+gated by `@supports not (color: oklch(0% 0 0))` and mirroring the color's `atRule` and
+`selector`. `fallback: false` declares nothing.
 
-`fallback` names the format whose `string` value, including its alpha policy, becomes the
-declaration for browsers without `oklch()` support. Without it, the first format that
-produces a CSS value is used, and a set of formats that produces none emits no declaration.
-`false` also emits no declaration, so the formats only reach the tokens. The declaration is
-gated by
-`@supports not (color: oklch(0% 0 0))` and emitted after the root block, because a custom
-property accepts any token stream and the later declaration wins wherever the modern value is
-unsupported. It mirrors the color's `atRule` and `selector`, so it only overrides the
-declaration it stands in for.
-
-The palette settings cover every color, and a color's `formats` merge into the palette's per
-format, so a color can add an output to one format, or remove a format with `false`, without
-restating the others. A color's `fallback` overrides the palette's. The JSON, TypeScript and
-Style Dictionary tokens carry the generated values in a `color` object, keyed by format and
-output:
+A color's `formats` merge into the palette's per format, and `false` removes one. Tokens carry
+every generated value in `color`, under their format and output:
 
 ```json
-{
-  "key": "--palette-coral-100",
-  "value": "oklch(73.511% 0.16799 40.24666)",
-  "variable": "--palette-coral-100: oklch(73.511% 0.16799 40.24666);",
-  "color": {
-    "hex": { "string": "#ff7f50", "digits": "ff7f50", "number": 16744272 },
-    "rgb": { "string": "rgb(255 127 80)", "array": [255, 127, 80] }
-  }
+"color": {
+  "hex": { "string": "#ff7f50", "number": 16744272 },
+  "rgb": { "array": [255, 127, 80] }
 }
 ```
 
-Setting the palette formats needs the `settings` key next to `value`; a color that carries
-settings is written with the `value` wrapper. A setting no schema accepts, and a format
-setting written on a gradient or a theme, are rejected with the configuration path, so a
-misspelled key cannot quietly generate nothing.
-
 The palette is the only family that converts the colors it is given, so it is the only one
-that generates these formats. Themes, gradients and primitives keep their authored values,
-and they use the palette value through the `var(--palette-...)` references they already
-compose with. An `oklch()` written directly into a theme or gradient value stays as it is.
+that generates formats. Themes and gradients keep their authored values. A setting no schema
+accepts is rejected with its configuration path.
 
 #### Condition
 

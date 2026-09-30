@@ -24,10 +24,7 @@ export default defineConfig({
         },
       },
       settings: {
-        // Generate a hex value for every palette color, gated by
-        // `@supports not (color: oklch(0% 0 0))`, so the example keeps working in
-        // a browser without `oklch()` support. `tests/oklch-fallback.spec.ts`
-        // asserts the gate from the browser.
+        // A hex value for browsers without oklch(); see tests/oklch-fallback.spec.ts.
         color: { formats: { hex: true } },
       },
     },

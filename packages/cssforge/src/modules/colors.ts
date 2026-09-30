@@ -17,13 +17,7 @@ import {
 	withTokenScope,
 } from "../lib.ts";
 
-/**
- * The color's own `atRule` and `selector`, with surrounding whitespace removed.
- * This is the module's single reading of `WithCondition`: the declaration
- * emitter, the scope identity that feeds collision detection, and the fallback
- * emitter all consume it, so a fallback always mirrors a declaration emitted
- * into the same chain. An empty chain means the declaration lands in `:root`.
- */
+/** The color's own `atRule` and `selector`, trimmed. The only reading of `WithCondition`. */
 const readCondition = (settings: WithCondition | undefined) => ({
 	atRule: settings?.atRule?.trim() ?? "",
 	selector: settings?.selector?.trim() ?? "",
@@ -81,21 +75,10 @@ export interface WithCondition {
 	 */
 	atRule?: string;
 }
-/**
- * A color value format emitted alongside the generated `oklch()` value.
- * `"hex"` writes `#rrggbb`, or `#rrggbbaa` for a color with alpha. `"rgb"`
- * writes `rgb(r g b)`, or `rgb(r g b / a)` for a color with alpha.
- */
+/** A color format generated alongside `oklch()`. */
 export type { ColorFormat } from "../lib.ts";
 
-/**
- * The values one color format can produce.
- *
- * `hex` writes `#rrggbb` (or `#rrggbbaa` with alpha), the same digits without
- * `#`, and the digits as a 32-bit number in RGBA byte order (`0xff7f50aa`).
- * `rgb` writes `rgb(r g b)` (or `rgb(r g b / a)` with alpha) and the channels as
- * an array, with a fourth element holding the alpha when the color has one.
- */
+/** The values `hex` can produce, with the alpha byte when the color has one. */
 export interface HexFormatOutputs {
 	/** The CSS value, such as `"#ff7f50"`. */
 	string?: boolean;
@@ -103,12 +86,7 @@ export interface HexFormatOutputs {
 	digits?: boolean;
 	/** The digits as a number, such as `0xff7f50`. */
 	number?: boolean;
-	/**
-	 * Alpha handling for this format. `true` (the default) keeps the alpha the
-	 * color carries, a number between 0 and 1 generates the format at that
-	 * opacity, and `false` rejects a color that carries alpha, with no alpha
-	 * byte in the digits.
-	 */
+	/** `true` keeps the color's alpha, a 0-1 number sets it, `false` rejects it. @default true */
 	alpha?: boolean | number;
 }
 
@@ -118,63 +96,30 @@ export interface RgbFormatOutputs {
 	string?: boolean;
 	/** The channels, such as `[255, 127, 80]`. */
 	array?: boolean;
-	/**
-	 * Alpha handling for this format. `true` (the default) keeps the alpha the
-	 * color carries, a number between 0 and 1 generates the format at that
-	 * opacity, and `false` rejects a color that carries alpha, with no alpha
-	 * channel in the array.
-	 */
+	/** `true` keeps the color's alpha, a 0-1 number sets it, `false` rejects it. @default true */
 	alpha?: boolean | number;
 }
 
-/**
- * Settings for the color values generated next to `oklch()`, shared by the
- * palette and its colors.
- */
+/** Settings for the color values generated next to `oklch()`. */
 export interface ColorFormatConfig {
 	/**
-	 * Formats generated alongside `oklch()`, keyed by format. A format set to
-	 * `true` produces its CSS value; an object selects the representations to
-	 * include, so `{ hex: { digits: true } }` produces only `"ff7f50"`, and
-	 * `alpha` controls the alpha of that format alone.
-	 *
-	 * The palette setting covers every color, and a color replaces it in its own
-	 * `settings`.
-	 *
-	 * @example
-	 * ```ts
-	 * colors: {
-	 *   palette: {
-	 *     value: { coral: { 100: { hex: "#FF7F50" } } },
-	 *     settings: {
-	 *       color: {
-	 *         formats: { hex: { string: true, digits: true }, rgb: true },
-	 *         fallback: "hex",
-	 *       },
-	 *     },
-	 *   },
-	 * }
-	 * ```
+	 * Formats to generate, keyed by format. `true` generates the format's CSS
+	 * value; an object picks the outputs. A color's entry merges into the
+	 * palette's, and `false` removes an inherited format.
 	 */
 	formats?: {
 		hex?: boolean | HexFormatOutputs;
 		rgb?: boolean | RgbFormatOutputs;
 	};
 	/**
-	 * The format emitted as the CSS declaration for browsers without `oklch()`
-	 * support, gated by `@supports not (color: oklch(0% 0 0))`. The format has to
-	 * be generated, and to include its `string` value.
-	 *
-	 * Defaults to the first generated format. `false` emits no declaration, so
-	 * the formats only reach the JSON, TypeScript and Style Dictionary tokens.
+	 * The format whose `string` output becomes the CSS declaration, or `false`
+	 * for none.
+	 * @default the first format that produces a CSS value
 	 */
 	fallback?: ColorFormat | false;
 }
 
-/**
- * Settings for the color values themselves, shared by the palette and its
- * colors.
- */
+/** Settings for the color values themselves, shared by the palette and its colors. */
 export interface ColorSettings {
 	/** Extra color formats generated alongside `oklch()`. */
 	color?: ColorFormatConfig;
@@ -307,10 +252,7 @@ const isColorValueObject = (value: unknown): value is ColorValue =>
 	isRecord(value) &&
 	("hex" in value || "rgb" in value || "hsl" in value || "oklch" in value);
 
-/**
- * Whether a palette entry is written in the explicit form, with a `value` map
- * and optional `settings`, rather than as a bare map of variants.
- */
+/** Whether a palette entry uses the `{ value, settings }` form. */
 const isPaletteColorConfig = (entry: PaletteColorEntry): entry is PaletteColorConfig =>
 	isRecord(entry) && isRecord(entry.value) && !isColorValueObject(entry.value);
 
@@ -367,12 +309,7 @@ function getColorString(value: ColorValue): string {
 /** The condition a format declaration is gated by. */
 const OKLCH_SUPPORT_CONDITION = "@supports not (color: oklch(0% 0 0))";
 
-/**
- * The representations a format can produce, keyed by the name a configuration
- * enables. The accepted representations and the values they generate come from
- * this one table, so a representation cannot be validated without also being
- * implemented.
- */
+/** The representations each format accepts, and the value each produces. */
 type ColorFormatValue = string | number | number[];
 
 /** The CSS value of one format, which is the declaration a browser without `oklch()` support reads. */
@@ -420,12 +357,7 @@ const toChannelByte = (coord: number) =>
 
 const toHexByte = (byte: number) => byte.toString(16).padStart(2, "0");
 
-/**
- * The color channels mapped into the sRGB gamut. The conversion uses the CSS
- * gamut mapping algorithm, which is how a browser maps an out-of-gamut
- * `oklch()` color, so a saturated value stays as close to the modern one as
- * sRGB allows.
- */
+/** The color channels in the sRGB gamut, through the CSS gamut mapping algorithm. */
 const srgbBytes = (color: Color): number[] =>
 	color.to("srgb").toGamut().coords.map(toChannelByte);
 
@@ -451,10 +383,7 @@ const hexDigits = (color: Color) => {
 const readColor = (value: ColorValueOrString): Color =>
 	new Color(typeof value === "string" ? value : getColorString(value));
 
-/**
- * The color as one format generates it. The `oklch()` value keeps the alpha the
- * color carries, and a format applies its own alpha policy on top of it.
- */
+/** The color as one format generates it, with that format's alpha applied. */
 const colorForFormat = (
 	color: Color,
 	{ format, alpha }: GeneratedFormat,
@@ -487,11 +416,7 @@ const colorAlpha = (value: ColorValueOrString): number | undefined => {
 	}
 };
 
-/**
- * Rejects a variant that carries alpha while one of its formats rejects alpha,
- * before generation, so the mistake fails loudly instead of skipping the color
- * with a log line.
- */
+/** Rejects an alpha-carrying variant when one of its formats rejects alpha. */
 const assertOpaqueVariants = (
 	variants: Record<string, ColorValueOrString>,
 	formats: readonly GeneratedFormat[],
@@ -510,13 +435,7 @@ const assertOpaqueVariants = (
 	}
 };
 
-/**
- * Converts a color to the OKLCH value of a generated token.
- * @example
- * ```ts
- * colorToOklch(new Color("#ff0000")); // "oklch(62.796% 0.25768 29.23388)"
- * ```
- */
+/** The `oklch()` value of a generated token. */
 function colorToOklch(color: Color): string {
 	const oklchColor = color.to("oklch");
 	const parsedCoords = oklchColor.coords.map((coord) =>
@@ -537,10 +456,7 @@ interface GeneratedFormat {
 	alpha: boolean | number;
 }
 
-/**
- * Converts a color to every requested representation of every requested format,
- * in the order they are generated.
- */
+/** Converts a color to every requested output of every requested format. */
 const colorToFormats = (
 	color: Color,
 	formats: readonly GeneratedFormat[],
@@ -568,11 +484,7 @@ const colorToDeclaration = (
 	path: string,
 ): string => colorFormatDeclarations[format.format](colorForFormat(color, format, path));
 
-/**
- * The color settings of one level, normalized. A field the level does not set is
- * inherited from the level above it, so a color that only names a fallback keeps
- * the palette's formats.
- */
+/** One level's color settings; a field the level omits is inherited. */
 interface ColorFormatSettings {
 	formats?: GeneratedFormat[];
 	fallback?: ColorFormat | false;
@@ -600,11 +512,7 @@ const colorFormatSettingKeys = ["color", "formats", "fallback", "alpha"] as cons
 const quoted = (values: readonly string[]) =>
 	values.map((value) => `"${value}"`).join(", ");
 
-/**
- * Rejects a key no setting at this level accepts. A JavaScript config is not
- * protected by the types, and an unknown key would otherwise be ignored, so the
- * generated output would quietly miss what the config asked for.
- */
+/** Rejects a key no setting at this level accepts, rather than ignoring it. */
 const assertKnownKeys = (
 	value: object,
 	allowed: readonly string[],
@@ -618,11 +526,7 @@ const assertKnownKeys = (
 	);
 };
 
-/**
- * Rejects color format settings written where generation does not read them.
- * Gradients and themes carry authored values, so their formats come from the
- * palette color they reference, not from settings of their own.
- */
+/** Rejects color format settings on gradients and themes, which keep authored values. */
 const assertNoColorFormatSettings = (settings: unknown, path: string): void => {
 	if (!isRecord(settings)) return;
 
@@ -636,11 +540,7 @@ const assertNoColorFormatSettings = (settings: unknown, path: string): void => {
 	);
 };
 
-/**
- * Reads and validates the `color` settings of one palette level. The values come
- * from a JavaScript object at runtime, so a setting generation would ignore has
- * to fail loudly instead of quietly producing nothing.
- */
+/** Reads and validates the `color` settings of one palette level. */
 function readColorFormatSettings(
 	entry: object,
 	settings: unknown,
@@ -806,11 +706,7 @@ const readFormatAlpha = (value: unknown, path: string): boolean | number => {
 	return value;
 };
 
-/**
- * Merges the formats of one palette level over the palette's, per format. A
- * color can therefore add an output to one format without restating the others,
- * and a format set to `false` removes the inherited one.
- */
+/** Merges a color's formats over the palette's per format; `false` removes one. */
 const mergeFormats = (
 	paletteFormats: readonly GeneratedFormat[] | undefined,
 	colorFormats: readonly GeneratedFormat[] | undefined,
@@ -822,8 +718,7 @@ const mergeFormats = (
 		if (entry.outputs.length === 0) merged.delete(entry.format);
 		else merged.set(entry.format, entry);
 	}
-	// A format no level enables is not generated, so it never reaches a token as
-	// an empty object.
+	// A format no level enables never reaches a token as an empty object.
 	for (const [format, entry] of merged) {
 		if (entry.outputs.length === 0) merged.delete(format);
 	}
@@ -831,11 +726,7 @@ const mergeFormats = (
 	return [...merged.values()];
 };
 
-/**
- * Resolves the settings of one palette color: its formats merge into the
- * palette's, its `fallback` overrides the palette's, and the formats a caller
- * adds are appended.
- */
+/** Resolves one palette color's settings, with the caller's formats appended. */
 const resolveColorFormatSettings = (
 	settings: ColorFormatSettings | undefined,
 	paletteSettings: ColorFormatSettings | undefined,
@@ -854,11 +745,7 @@ const resolveColorFormatSettings = (
 	};
 };
 
-/**
- * The format whose `string` output becomes the CSS declaration. A named fallback
- * has to be generated and to include that output, and the default is the first
- * generated format.
- */
+/** The format whose `string` output becomes the CSS declaration. */
 const resolveDeclarationFormat = (
 	{ formats, fallback }: ResolvedColorFormatSettings,
 	path: string,
@@ -884,24 +771,14 @@ const resolveDeclarationFormat = (
 	return generated;
 };
 
-/**
- * The wrapper chain a fallback declaration is emitted into. The `@supports`
- * condition sits between the color's own at-rule and its selector, mirroring the
- * chain of the declaration it overrides, and an unnamed selector falls back to
- * `:root`, which is where the overridden declaration lives.
- */
+/** The chain a format declaration is emitted into: at-rule, `@supports`, selector. */
 const fallbackWrappers = (settings: WithCondition | undefined): string[] => {
 	const { atRule, selector } = readCondition(settings);
 
 	return [...(atRule ? [atRule] : []), OKLCH_SUPPORT_CONDITION, selector || ROOT_SCOPE];
 };
 
-/**
- * Renders one `@supports` block for every fallback declaration that shares a
- * wrapper chain. The block is emitted at the top level rather than inside the
- * root block, because a browser without `oklch()` support predates CSS nesting
- * and would drop a nested at-rule together with its fallback.
- */
+/** One top-level `@supports` block; a nested one would need CSS nesting. */
 const renderFallbackBlock = (wrappers: string[], declarations: string[]): string[] => {
 	// A palette color without variants contributes only its comment, and a block
 	// holding no declaration would be empty output.
@@ -1279,8 +1156,7 @@ export function processColors(
 		}
 	}
 
-	// Emitted last so the fallback overrides the modern declaration it mirrors
-	// wherever `oklch()` is unsupported.
+	// Last, so a format overrides the modern declaration it mirrors.
 	for (const { wrappers, declarations } of fallbackGroups.values()) {
 		outsideOutput.push(...renderFallbackBlock(wrappers, declarations));
 	}

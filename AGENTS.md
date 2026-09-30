@@ -46,21 +46,18 @@ standard library or writing code from first principles.
 
 ## Configuration settings
 
-Every module takes a `settings` object beside its `value`, and a closed schema is the rule:
+Every module takes a `settings` object beside its `value`.
 
-- A grouped topic key holds settings that belong together, so color output settings live under
-  `settings.color`. A module with a single concern may keep its settings flat, as spacing does
-  with `settings.pxToRem`.
-- A setting is added to the exported type first, with the JSDoc the README section renders, and
-  read at runtime with the configuration path it was written at. Unknown keys, values of the
-  wrong shape, and settings written on a level that does not read them are rejected, because a
-  JavaScript config is not protected by the types and a typo would otherwise generate nothing
-  quietly.
-- A palette color's settings override the palette's per setting. Settings that list things,
-  as `formats` does, merge per key and take `false` to remove an inherited entry.
-- A setting reaches either the token outputs or the generated CSS, and the README section for
-  its module says which. A run-time option such as a CLI flag is a thin adapter over the same
-  resolution, not a second implementation.
+- A grouped topic key holds settings that belong together, as `settings.color` does. A single
+  concern may stay flat, as spacing does with `settings.pxToRem`.
+- A setting is added to the exported type with the JSDoc the README renders, and read at
+  runtime with the path it was written at. Unknown keys, wrong value shapes, and settings
+  written on a level that does not read them are rejected: a JavaScript config is not
+  protected by the types.
+- A color's settings override the palette's per setting. A list setting such as `formats`
+  merges per key and takes `false` to remove an entry.
+- The README section for the module says whether a setting reaches the tokens or the CSS. A
+  CLI flag is an adapter over the same resolution, not a second implementation.
 
 ## Updating the README.md
 

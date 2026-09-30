@@ -8,11 +8,7 @@ export type TokenType =
 
 export type TokenTier = "primitive" | "semantic";
 
-/**
- * A color value format generated alongside the `oklch()` value. `"hex"` writes
- * `#rrggbb`, or `#rrggbbaa` for a color with alpha. `"rgb"` writes
- * `rgb(r g b)`, or `rgb(r g b / a)` for a color with alpha.
- */
+/** A color format generated alongside the `oklch()` value. */
 export type ColorFormat = "hex" | "rgb";
 
 /** The values a token carries for the `hex` format. */
@@ -33,10 +29,7 @@ export interface RgbColorValues {
 	array?: number[];
 }
 
-/**
- * The color values a token carries alongside `oklch()`, keyed by format. Only
- * the formats and representations the configuration asked for are present.
- */
+/** The color values a token carries alongside `oklch()`, keyed by format. */
 export interface TokenColorFormats {
 	hex?: HexColorValues;
 	rgb?: RgbColorValues;

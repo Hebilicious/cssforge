@@ -4,10 +4,7 @@ import type { CSSForgeConfig } from "../src/mod.ts";
 import { defineConfig, generateCSS, generateStyleDictionaryJSON } from "../src/mod.ts";
 import { assert, assertEquals, assertThrows, Deno } from "./vitest-compat.ts";
 
-/**
- * The value declared for `key` inside the generated `@supports` block, read from
- * the block rather than the root declaration above it.
- */
+/** The value declared for `key` inside the generated `@supports` block. */
 const declaredValue = (css: string, key: string): string => {
 	const block = css.slice(css.indexOf("@supports"));
 	const match = new RegExp(`${key}: ([^;]+);`).exec(block);

@@ -12,11 +12,7 @@ const FALLBACK_RULE = "--palette-brand-primary: #1d4ed8";
 const GATED_CONDITION = "not (color: oklch";
 const OPEN_CONDITION = "(color: oklch";
 
-/**
- * Reads the generated `@supports` block from the served stylesheet, so the
- * promise is observed through the browser's own CSSOM rather than the source
- * string the generator produced.
- */
+/** The generated `@supports` block, read through the browser's own CSSOM. */
 const readFallbackRule = (page: import("@playwright/test").Page) =>
   page.evaluate(() => {
     const supportsRules = [...document.styleSheets].flatMap((styleSheet) =>
@@ -54,13 +50,11 @@ test("the oklch fallback is gated on missing support and stays inert where it is
     ).color,
   }));
 
-  // The generated stylesheet carries the fallback for this color.
+  // The served stylesheet carries the fallback for this color.
   expect(fallbackRule?.conditionText).toBe("not (color: oklch(0% 0 0))");
   expect(fallbackRule?.cssText).toContain(FALLBACK_RULE);
 
-  // Chromium supports oklch, so the negated condition keeps the block inert:
-  // the token still computes to the modern value, and the probe still renders
-  // in the modern color space instead of the fallback hex.
+  // Chromium supports oklch, so the negated condition keeps the block inert.
   expect(browser.supportsOklch).toBe(true);
   expect(browser.brandToken).not.toBe(BRAND_PRIMARY_HEX);
   expect(browser.brandToken.startsWith("oklch(")).toBe(true);
@@ -74,8 +68,7 @@ test("the generated fallback applies when the gate is open", async ({ page }) =>
   const gated = await readBrandToken(page);
 
   // Chromium cannot disable oklch support, so the gate is opened on the
-  // generated rule itself: the declarations, their selector and their position
-  // in the cascade are the ones a browser without oklch support would read.
+  // generated rule: same declarations, selector and cascade position.
   const opened = await page.evaluate(
     ({ from, to }) => {
       const rule = [...document.styleSheets]

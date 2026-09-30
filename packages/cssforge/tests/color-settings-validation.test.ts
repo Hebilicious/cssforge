@@ -2,10 +2,7 @@ import type { CSSForgeConfig } from "../src/mod.ts";
 import { defineConfig, generateCSS } from "../src/mod.ts";
 import { assert, assertThrows, Deno } from "./vitest-compat.ts";
 
-/**
- * The configuration settings are read from a JavaScript object at runtime, so
- * these tests cover the values and the placements generation has to reject.
- */
+/** Settings are read from a JavaScript object at runtime, so they are validated. */
 
 Deno.test("generateCSS - rejects a fallback format that is not generated", () => {
 	const config = {

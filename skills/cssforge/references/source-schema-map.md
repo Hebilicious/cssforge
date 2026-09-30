@@ -20,20 +20,19 @@ When README examples are not enough, use source types.
 
 ## Settings
 
-Every module takes a `settings` object beside its `value`. A grouped topic key holds settings
-that belong together, so color output settings live under `settings.color`:
+A `settings` object sits beside each module's `value`, with `settings.color` grouping the
+color output settings.
 
-- Color settings: `ColorSettings`, `ColorFormatConfig`, `HexFormatOutputs`, `RgbFormatOutputs`
-  in `packages/cssforge/src/modules/colors.ts`, re-exported from `mod.ts`.
-- `settings.color.formats` is keyed by format (`hex`, `rgb`). `hex` produces `string`,
-  `digits` and `number`; `rgb` produces `string` and `array`. Each format also takes `alpha`.
+- `ColorSettings`, `ColorFormatConfig`, `HexFormatOutputs` and `RgbFormatOutputs` in
+  `packages/cssforge/src/modules/colors.ts`, re-exported from `mod.ts`.
+- `settings.color.formats` is keyed by format: `hex` produces `string`, `digits` and
+  `number`, `rgb` produces `string` and `array`, and each format takes `alpha`.
 - `settings.color.fallback` names the format whose `string` value becomes the CSS declaration,
   or `false` for none. Without it, the first format that produces a CSS value is used.
-- A palette color's `settings` override the palette's per setting; `formats` merge per format
-  and take `false` to remove an inherited one.
-- Unknown keys, wrong value shapes, and color format settings written on a gradient or a theme
-  are rejected with the configuration path.
-- Spacing and primitives keep flat settings (`PixelSettings`: `pxToRem`, `rem`).
+- A color's `settings` override the palette's per setting; `formats` merge per format and take
+  `false` to remove one.
+- Unknown keys, wrong shapes, and color format settings on a gradient or a theme are rejected
+  with the configuration path. Spacing and primitives keep flat `PixelSettings`.
 
 ## Exposed API entrypoint
 
