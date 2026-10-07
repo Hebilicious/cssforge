@@ -966,7 +966,7 @@ const readColorMix = (
 	}
 	assertMixKeys(mix, mixKeys, mixPath);
 
-	const space = mix.in ?? "oklch";
+	const space = mix.in === undefined ? "oklch" : mix.in;
 	if (typeof space !== "string" || !mixSpaces.includes(space)) {
 		throw new ColorConfigError(
 			`Invalid color mix at "${mixPath}.in": ${JSON.stringify(space)}. Use ${mixSpaces
@@ -975,19 +975,21 @@ const readColorMix = (
 		);
 	}
 
-	const amount = mix.amount;
+	const rawAmount = mix.amount;
 	if (
-		typeof amount !== "number" ||
-		!Number.isFinite(amount) ||
-		amount < 0 ||
-		amount > 100
+		typeof rawAmount !== "number" ||
+		!Number.isFinite(rawAmount) ||
+		rawAmount < 0 ||
+		rawAmount > 100
 	) {
 		throw new ColorConfigError(
 			`Invalid color mix at "${mixPath}.amount": ${JSON.stringify(
-				amount,
+				rawAmount,
 			)}. Use a number from 0 to 100, the percentage of "with".`,
 		);
 	}
+	// Rounded so a tiny amount never stringifies in exponent form, which CSS rejects.
+	const amount = Number(rawAmount.toFixed(4));
 
 	const from = readMixOperand(mix.from, `${mixPath}.from`, context);
 	const other = readMixOperand(mix.with, `${mixPath}.with`, context);

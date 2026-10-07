@@ -410,6 +410,52 @@ Deno.test("generateCSS - rejects an interpolation space other than oklch", () =>
 	);
 });
 
+Deno.test("generateCSS - rejects a null interpolation space", () => {
+	throwsAt(
+		{
+			colors: {
+				palette: {
+					value: {
+						accent: {
+							...accent,
+							hover: {
+								mix: { from: "palette.accent.base", with: "black", amount: 15, in: null },
+							},
+						},
+					},
+				},
+			},
+		},
+		'"palette.accent.hover.mix.in"',
+	);
+});
+
+Deno.test("generateCSS - a tiny amount is written without exponent notation", () => {
+	const css = generateCSS(
+		defineConfig({
+			colors: {
+				palette: {
+					value: {
+						accent: {
+							...accent,
+							tiny: {
+								mix: { from: "palette.accent.base", with: "black", amount: 0.00005 },
+							},
+						},
+					},
+				},
+			},
+		}),
+	);
+
+	assert(
+		css.includes(
+			"--palette-accent-tiny: color-mix(in oklch, var(--palette-accent-base), black 0.0001%);",
+		),
+		css,
+	);
+});
+
 Deno.test("generateCSS - rejects a token path that does not resolve", () => {
 	throwsAt(
 		{
