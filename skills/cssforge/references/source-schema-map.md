@@ -114,7 +114,7 @@ color output settings.
 
 ## Exposed API entrypoint
 
-- `packages/cssforge/src/mod.ts` exports `defineConfig`, `generateCSS`, `getDiagnostics`, the processing helpers,
+- `packages/cssforge/src/mod.ts` exports `defineConfig`, `generateCSS`, `generateStyleDictionaryJSON`, `getDiagnostics`, `InvalidNameError`, `loadConfig`, the processing helpers,
   and the config and token types (`CSSForgeConfig`, `MotionConfig`, `MotionDurationSettings`, `ColorFormatConfig`, `ColorMix`, `HexFormatOutputs`,
   `RgbFormatOutputs`, `ColorSettings`, `ColorThemesSettings`, `LightDarkSettings`,
   `LightDarkColorScheme`, `ColorFormat`, `HexColorValues`, `RgbColorValues`,
