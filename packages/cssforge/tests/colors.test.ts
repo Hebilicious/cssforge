@@ -649,6 +649,8 @@ Deno.test("processColors - achromatic colors emit hue as none", async (t) => {
 							black: { hex: "#000000" },
 							gray: { hex: "#808080" },
 							oklchZeroChroma: { oklch: "oklch(50% 0 180)" },
+							oklchRedHue: { oklch: "oklch(50% 0 0)" },
+							oklchTuple: { oklch: [0.5, 0, 0] },
 						},
 					},
 					chromatic: {
@@ -680,6 +682,14 @@ Deno.test("processColors - achromatic colors emit hue as none", async (t) => {
 	assertEquals(
 		lines.find((l) => l.includes("--palette-achromatic-oklchZeroChroma:"))?.trim(),
 		"--palette-achromatic-oklchZeroChroma: oklch(50% 0 none);",
+	);
+	assertEquals(
+		lines.find((l) => l.includes("--palette-achromatic-oklchRedHue:"))?.trim(),
+		"--palette-achromatic-oklchRedHue: oklch(50% 0 none);",
+	);
+	assertEquals(
+		lines.find((l) => l.includes("--palette-achromatic-oklchTuple:"))?.trim(),
+		"--palette-achromatic-oklchTuple: oklch(50% 0 none);",
 	);
 
 	const redLine = lines.find((l) => l.includes("--palette-chromatic-red:"))?.trim();

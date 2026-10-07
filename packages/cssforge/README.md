@@ -1428,15 +1428,15 @@ A generated token looks like this:
   "palette": {
     "neutral": {
       "900": {
-        "value": "oklch(17.764% 0 0)",
+        "value": "oklch(17.764% 0 none)",
         "type": "color",
         "$tier": "primitive",
-        "$resolvedValue": "oklch(17.764% 0 0)",
+        "$resolvedValue": "oklch(17.764% 0 none)",
         "attributes": {
           "cssVariable": "--palette-neutral-900",
           "cssVariableReference": "var(--palette-neutral-900)",
           "tailwindVariable": "--palette-neutral-900",
-          "resolvedValue": "oklch(17.764% 0 0)",
+          "resolvedValue": "oklch(17.764% 0 none)",
           "sourcePath": "palette.neutral.900"
         }
       }

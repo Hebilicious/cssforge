@@ -7,6 +7,8 @@ exports[`processColors - achromatic colors emit hue as none 1`] = `
 --palette-achromatic-black: oklch(0% 0 none);
 --palette-achromatic-gray: oklch(59.987% 0 none);
 --palette-achromatic-oklchZeroChroma: oklch(50% 0 none);
+--palette-achromatic-oklchRedHue: oklch(50% 0 none);
+--palette-achromatic-oklchTuple: oklch(50% 0 none);
 /* chromatic */
 --palette-chromatic-red: oklch(62.796% 0.25768 29.23388);"
 `;
