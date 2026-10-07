@@ -249,9 +249,9 @@ Deno.test("processSpacing - preserves px values inside calc and var functions", 
 
 	const result = processSpacing(config.spacing);
 	const expected = [
-		"--spacing-size-calc_px: calc(100% - 1rem);",
-		"--spacing-size-var_px: var(--x, 0.25rem);",
-		"--spacing-size-nested: calc(infinity * 0.0625rem);",
+		"--spacing-size-calc_px: calc(100% - 16px);",
+		"--spacing-size-var_px: var(--x, 4px);",
+		"--spacing-size-nested: calc(infinity * 1px);",
 	].join("\n");
 	assertEquals(result.css.root, expected);
 });

@@ -277,7 +277,7 @@ Deno.test("processPrimitives - preserves px in functions with pxToRem enabled", 
 	const result = processPrimitives(config);
 	const expected = [
 		"/* btn */",
-		"--btn-rounded-radius: calc(infinity * 0.0625rem);",
+		"--btn-rounded-radius: calc(infinity * 1px);",
 		"--btn-rounded-border: 0.0625rem solid var(--color, #000);",
 	].join("\n");
 

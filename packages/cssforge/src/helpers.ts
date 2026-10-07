@@ -126,58 +126,34 @@ export function validateCustomLabel(label: string, path: string): void {
 }
 
 /**
- * Converts a pixel value to a rem value.
- * Handles complex values like "4px 8px", "calc(100% - 16px)", "var(--x, 4px)".
- * Tracks parenthesis depth to split only on top-level whitespace, then converts all px values.
+ * Converts each top-level pixel length in a value to rem. Components inside a
+ * CSS function, such as `calc(infinity * 1px)`, are left unchanged.
  * @example
  * ```ts
  * pxToRem({ value: "16px" }); // "1rem"
- * pxToRem({ value: "1rem" }); // "1rem"
- * pxToRem({ value: "32px", rem: 16 }); // "2rem"
  * pxToRem({ value: "4px 8px" }); // "0.25rem 0.5rem"
- * pxToRem({ value: "0 0 4px" }); // "0 0 0.25rem"
- * pxToRem({ value: "calc(100% - 16px)" }); // "calc(100% - 1rem)"
- * pxToRem({ value: "var(--x, 4px)" }); // "var(--x, 0.25rem)"
+ * pxToRem({ value: "calc(infinity * 1px)" }); // "calc(infinity * 1px)"
  * ```
  */
 export function pxToRem({ value, rem = 16 }: { value: string; rem?: number }): string {
-	const pxPattern = /(-?(?:\d+\.?\d*|\.\d+)px)/gi;
-	const components: string[] = [];
-	let currentComponent = "";
-	let parenDepth = 0;
-
-	for (let i = 0; i < value.length; i++) {
-		const char = value[i];
-
-		if (char === "(") {
-			parenDepth++;
-			currentComponent += char;
-		} else if (char === ")") {
-			parenDepth--;
-			currentComponent += char;
-		} else if (/\s/.test(char) && parenDepth === 0) {
-			if (currentComponent) {
-				components.push(currentComponent);
-				currentComponent = "";
-			}
-		} else {
-			currentComponent += char;
-		}
+	let depth = 0;
+	let result = "";
+	let component = "";
+	const flush = () => {
+		const px = /^(-?(?:\d+\.?\d*|\.\d+))px$/i.exec(component);
+		result += px ? `${Number(px[1]) / rem}rem` : component;
+		component = "";
+	};
+	for (const char of value) {
+		if (char === "(") depth++;
+		else if (char === ")") depth--;
+		if (depth === 0 && /\s/.test(char)) {
+			flush();
+			result += char;
+		} else component += char;
 	}
-
-	if (currentComponent) {
-		components.push(currentComponent);
-	}
-
-	const converted = components.map((component) => {
-		return component.replace(pxPattern, (match) => {
-			const pxValue = parseFloat(match.slice(0, -2));
-			const remValue = pxValue / rem;
-			return `${remValue}rem`;
-		});
-	});
-
-	return converted.join(" ");
+	flush();
+	return result;
 }
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
