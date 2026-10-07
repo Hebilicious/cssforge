@@ -8,27 +8,15 @@ description: Use CSS Forge documentation and source schema to create, update, an
 Use this skill when a user wants to use CSS Forge itself: author token configs, generate
 artifacts, resolve variable references, or debug generation issues.
 
-## Design Guidance
-
-Follow **good-css** foundations and motion rules when authoring tokens. Good CSS documents modern CSS techniques that replace breakpoints and scripts—such as OKLCH color with `none` for grays, derived hover colors with `color-mix()`, fluid type in `clamp()`, and motion tokens with no `ease-in`.
-
-- **good-css:** https://good-css.com  
-- **good-css skill:** https://good-css.com/skills/good-css/SKILL.md
-- **good-css foundations reference:** https://good-css.com/references/foundations.md
-- **CSS Forge mapping:** `references/good-css-mapping.md` (how to implement each good-css rule in CSS Forge config)
-
-Read the mapping before authoring colors, typography, spacing, or motion tokens.
-
 ## Source of truth
 
 Always prioritize official project docs and source types:
 
 1. `references/docs-index.md`
 2. `README.md` (project root)
-3. `references/good-css-mapping.md` (design guidance)
-4. `references/source-schema-map.md`
-5. `references/cli-reference.md`
-6. `references/troubleshooting.md`
+3. `references/source-schema-map.md`
+4. `references/cli-reference.md`
+5. `references/troubleshooting.md`
 
 Do not invent schema fields that are not present in docs or source types.
 
