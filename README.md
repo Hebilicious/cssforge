@@ -915,7 +915,8 @@ Instead of repeating every theme token under a selector, pair a light and a dark
 with `theme.settings.lightDark`. Each color is emitted once at `:root` as
 `light-dark(<light>, <dark>)`, and the browser picks the value from the element's
 `color-scheme`. Theme settings sit beside the themes, so this needs the
-`theme: { value, settings }` form:
+`theme: { value, settings }` form. In the short form, where themes are the keys of `theme`,
+`settings` is reserved and cannot name a theme:
 
 <!-- md:generate defineConfig
 export default defineConfig({

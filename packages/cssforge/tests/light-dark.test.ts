@@ -278,7 +278,7 @@ Deno.test("generateCSS - lightDark rejects a paired color named like an unpaired
 	const theme = config.colors.theme as { value: Record<string, unknown> };
 	theme.value.text = { value: { accent: { value: { primary: "red" } } } };
 
-	throwsAt(config, '"theme.light.text"', '"theme.text"');
+	throwsAt(config, '"theme.light.text"', 'the theme "text"');
 });
 
 Deno.test("generateCSS - lightDark settings are validated with their configuration path", () => {

@@ -1576,7 +1576,7 @@ export function processColors(
 					colorName !== dark
 				) {
 					throw new Error(
-						`Invalid configuration at "theme.${light}.${colorName}": the paired token path "theme.${colorName}" is also the theme "theme.${colorName}". Rename the color or the theme.`,
+						`Invalid configuration at "theme.${light}.${colorName}": the paired color "${colorName}" emits its tokens at "theme.${colorName}.<variant>", where the theme "${colorName}" emits "theme.${colorName}.<color>.<variant>", so the JSON and reference paths would mix. Rename the color or the theme.`,
 					);
 				}
 
