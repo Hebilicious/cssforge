@@ -69,7 +69,7 @@ Deno.test("fluid type - the 2.5x error names the step that exceeds it", () => {
 		}),
 	);
 
-	// 16 * 1.2^3 = 27.648px and 20 * 1.6^3 = 81.92px; step 2 grows 2.22x.
+	// Step 3 ("2xl") grows from 16 * 1.2^3 = 27.648px to 20 * 1.6^3 = 81.92px, 2.963x; step 2 grows 2.22x.
 	assert(
 		error.message.includes('"2xl"') && error.message.includes("27.65px"),
 		error.message,
