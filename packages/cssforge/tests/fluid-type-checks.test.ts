@@ -203,3 +203,8 @@ Deno.test("fluid type - diagnostics leave the generated CSS unchanged", () => {
 		generateCSS(typography(singleStep(8, 16), { minLegibleSize: false })),
 	);
 });
+
+Deno.test("fluid type - rejects a step whose size is 0px", () => {
+	const error = assertThrows(() => generateCSS(typography(singleStep(0, 16))));
+	assert(error.message.includes("greater than 0px"), error.message);
+});

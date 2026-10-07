@@ -72,6 +72,11 @@ const changeRatio = ({ minFontSize, maxFontSize }: UtopiaStep) =>
 	Math.max(minFontSize, maxFontSize) / Math.min(minFontSize, maxFontSize);
 
 const assertWcagGrowth = (step: UtopiaStep, label: string, path: string) => {
+	if (!(step.minFontSize > 0) || !(step.maxFontSize > 0)) {
+		throw new Error(
+			`Invalid configuration at "${path}": step "${label}" ranges from ${px(step.minFontSize)} to ${px(step.maxFontSize)}. Every step needs a size greater than 0px; raise minFontSize or reduce negativeSteps.`,
+		);
+	}
 	const growth = step.maxFontSize / step.minFontSize;
 	if (growth <= MAX_FLUID_GROWTH) return;
 	throw new Error(
