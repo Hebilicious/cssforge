@@ -46,11 +46,25 @@ color output settings.
 - Emitted as `color-mix(in oklch, <from>, <with> <amount>%)`. A palette mix with `formats`
   gets its sRGB values from a static OKLCH mix.
 
+## Light/dark themes
+
+- `ColorThemesSettings`, `LightDarkSettings` and `LightDarkColorScheme` in
+  `packages/cssforge/src/modules/colors.ts`, re-exported from `mod.ts`.
+- `colors.theme.settings.lightDark: { light, dark, colorScheme? }` names two themes, and needs
+  the `theme: { value, settings }` form. `colorScheme: { light?, dark? }` takes selectors.
+- Each paired color is emitted once at `:root` as `light-dark(<light>, <dark>)`, keyed
+  `--theme-<color>-<variant>` (or `--<variant>` with `variantNameOnly`) at the path
+  `theme.<color>.<variant>`, with `color-scheme: light dark` and one rule per `colorScheme`
+  selector.
+- Rejected: different color/variant sets, a `selector`/`atRule` on a paired theme,
+  `variantNameOnly` differing between the pair, a paired color named like another theme.
+
 ## Exposed API entrypoint
 
 - `packages/cssforge/src/mod.ts` exports `defineConfig`, `generateCSS`, the processing helpers,
   and the config and token types (`CSSForgeConfig`, `ColorFormatConfig`, `ColorMix`, `HexFormatOutputs`,
-  `RgbFormatOutputs`, `ColorSettings`, `ColorFormat`, `HexColorValues`, `RgbColorValues`,
+  `RgbFormatOutputs`, `ColorSettings`, `ColorThemesSettings`, `LightDarkSettings`,
+  `LightDarkColorScheme`, `ColorFormat`, `HexColorValues`, `RgbColorValues`,
   `TokenColorFormats`, `GenerateOptions`, `StyleDictionaryJSONOptions`).
 
 ## Guidance

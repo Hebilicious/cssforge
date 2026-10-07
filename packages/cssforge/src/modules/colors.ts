@@ -240,6 +240,34 @@ export interface ColorTheme {
 	[themeName: string]: ThemeConfig;
 }
 
+/** Selectors that force one color scheme with `color-scheme`. */
+export interface LightDarkColorScheme {
+	/** Selector that emits `color-scheme: light`, such as `[data-theme="light"]`. */
+	light?: string;
+	/** Selector that emits `color-scheme: dark`, such as `[data-theme="dark"]`. */
+	dark?: string;
+}
+
+/**
+ * Pairs two themes into one `light-dark(<light>, <dark>)` token per color, emitted
+ * at `:root` with `color-scheme: light dark`. Both themes declare the same colors
+ * and variants, and take no `selector` or `atRule`.
+ */
+export interface LightDarkSettings {
+	/** The theme whose values are used in the light color scheme. */
+	light: string;
+	/** The theme whose values are used in the dark color scheme. */
+	dark: string;
+	/** Selectors that force one scheme, emitted as rules after `:root`. */
+	colorScheme?: LightDarkColorScheme;
+}
+
+/** Settings read across every theme. */
+export interface ColorThemesSettings {
+	/** Pairs a light and a dark theme into `light-dark()` tokens. */
+	lightDark?: LightDarkSettings;
+}
+
 /**
  * The main color configuration object.
  */
@@ -273,6 +301,8 @@ export interface ColorConfig {
 				value: {
 					[themeName: string]: ThemeConfig | ThemeConfig["value"];
 				};
+				/** Settings read across every theme. Only this form holds them. */
+				settings?: ColorThemesSettings;
 		  };
 }
 
@@ -303,6 +333,106 @@ const getThemeConfig = (theme: ColorConfig["theme"]): ColorTheme | undefined => 
 				? themeConfig
 				: { value: themeConfig as ThemeConfig["value"] },
 		]),
+	);
+};
+
+/** The validated `theme.settings.lightDark`. */
+interface LightDark {
+	light: string;
+	dark: string;
+	colorScheme: { scheme: "light" | "dark"; selector: string }[];
+}
+
+const quotedList = (values: readonly string[]) =>
+	values.map((value) => `"${value}"`).join(", ");
+
+const readPairedThemeName = (value: unknown, path: string, themes: ColorTheme) => {
+	if (typeof value === "string" && Object.hasOwn(themes, value)) return value;
+	throw new Error(
+		`Invalid configuration at "${path}": expected a theme name, received ${JSON.stringify(
+			value,
+		)}. Use one of ${quotedList(Object.keys(themes))}.`,
+	);
+};
+
+/** Reads `theme.settings`, which only the `{ value, settings }` form of `theme` holds. */
+const readLightDark = (
+	theme: ColorConfig["theme"],
+	themes: ColorTheme,
+): LightDark | undefined => {
+	if (!isRecord(theme)) return undefined;
+	if (!("value" in theme)) {
+		if ("settings" in theme) {
+			throw new Error(
+				`Invalid configuration at "theme.settings": theme settings need the { value, settings } form. Move the themes into "theme.value".`,
+			);
+		}
+		return undefined;
+	}
+	assertKnownKeys(theme, ["value", "settings"], "theme");
+	assertSettingsKeys(theme.settings, ["lightDark"], "theme.settings");
+
+	const path = "theme.settings.lightDark";
+	const lightDark = isRecord(theme.settings) ? theme.settings.lightDark : undefined;
+	if (lightDark === undefined) return undefined;
+	if (!isRecord(lightDark)) {
+		throw new Error(
+			`Invalid configuration at "${path}": expected an object such as { light: "light", dark: "dark" }.`,
+		);
+	}
+	assertKnownKeys(lightDark, ["light", "dark", "colorScheme"], path);
+
+	const light = readPairedThemeName(lightDark.light, `${path}.light`, themes);
+	const dark = readPairedThemeName(lightDark.dark, `${path}.dark`, themes);
+	if (light === dark) {
+		throw new Error(
+			`Invalid configuration at "${path}": "light" and "dark" both name the theme "${light}".`,
+		);
+	}
+
+	const colorSchemePath = `${path}.colorScheme`;
+	assertSettingsKeys(lightDark.colorScheme, ["light", "dark"], colorSchemePath);
+	const colorScheme: LightDark["colorScheme"] = [];
+	if (isRecord(lightDark.colorScheme)) {
+		for (const scheme of ["light", "dark"] as const) {
+			const selector = lightDark.colorScheme[scheme];
+			if (selector === undefined) continue;
+			if (typeof selector !== "string" || selector.trim() === "") {
+				throw new Error(
+					`Invalid configuration at "${colorSchemePath}.${scheme}": expected a selector such as '[data-theme="${scheme}"]'.`,
+				);
+			}
+			colorScheme.push({ scheme, selector: selector.trim() });
+		}
+	}
+
+	return { light, dark, colorScheme };
+};
+
+/** The `color.variant` paths a theme declares. */
+const themeVariantPaths = (theme: ThemeConfig): string[] =>
+	Object.entries(theme.value).flatMap(([colorName, colorInTheme]) =>
+		Object.keys(colorInTheme.value).map((variantName) => `${colorName}.${variantName}`),
+	);
+
+/** Rejects paired themes that do not declare the same colors and variants. */
+const assertSamePairedVariants = (themes: ColorTheme, { light, dark }: LightDark) => {
+	const lightPaths = themeVariantPaths(themes[light]);
+	const darkPaths = themeVariantPaths(themes[dark]);
+	const missing = [
+		...lightPaths
+			.filter((path) => !darkPaths.includes(path))
+			.map((path) => `theme.${dark}.${path}`),
+		...darkPaths
+			.filter((path) => !lightPaths.includes(path))
+			.map((path) => `theme.${light}.${path}`),
+	];
+	if (missing.length === 0) return;
+
+	throw new Error(
+		`Invalid configuration at "theme.settings.lightDark": the paired themes "${light}" and "${dark}" must declare the same colors and variants. Missing: ${quotedList(
+			missing,
+		)}.`,
 	);
 };
 
@@ -1322,6 +1452,7 @@ export function processColors(
 	const themes = getThemeConfig(colors.theme);
 
 	if (themes) {
+		const lightDark = readLightDark(colors.theme, themes);
 		rootOutput.push(`/* Themes */`);
 		const moduleKey = "theme";
 		const palette = {
@@ -1329,7 +1460,7 @@ export function processColors(
 			resolveMap,
 		};
 
-		for (const [themeName, themeConfig] of Object.entries(themes)) {
+		const assertThemeSettings = (themeName: string, themeConfig: ThemeConfig) => {
 			validateName(themeName, `theme.${themeName}`);
 			assertNoColorFormatSettings(themeConfig.settings, `theme.${themeName}.settings`);
 			assertSettingsKeys(
@@ -1337,8 +1468,6 @@ export function processColors(
 				["selector", "atRule"],
 				`theme.${themeName}.settings`,
 			);
-			// Checked outside the try block, so a misplaced setting fails instead of
-			// dropping the theme with a logged line.
 			for (const [colorName, colorInTheme] of Object.entries(themeConfig.value)) {
 				assertNoColorFormatSettings(
 					colorInTheme.settings,
@@ -1350,6 +1479,148 @@ export function processColors(
 					`theme.${themeName}.${colorName}.settings`,
 				);
 			}
+		};
+
+		/**
+		 * Reads one variant of a theme color at a time, so a mix can reference a
+		 * variant declared before it in the same color.
+		 */
+		const themeColorReader = (
+			themeName: string,
+			colorName: string,
+			colorInTheme: ColorInTheme,
+		) => {
+			validateName(colorName, `theme.${themeName}.${colorName}`);
+			validateVariableAliases({
+				aliases: colorInTheme.variables,
+				path: `theme.${themeName}.${colorName}`,
+			});
+			const resolvedMap = getResolvedVariablesMap({
+				variables: colorInTheme.variables,
+				colors: palette,
+			});
+
+			return (variantName: string) => {
+				const variantPath = `theme.${themeName}.${colorName}.${variantName}`;
+				validateName(variantName, variantPath);
+				const variantValue = colorInTheme.value[variantName];
+				return isColorMix(variantValue)
+					? readColorMix(variantValue, variantPath, mixContext)
+					: {
+							value: resolveValue({ map: resolvedMap, value: variantValue }),
+							referencePaths: getReferencePaths({
+								value: variantValue,
+								variables: colorInTheme.variables,
+							}),
+						};
+			};
+		};
+
+		const setThemeToken = (
+			path: string,
+			key: string,
+			value: string,
+			referencePaths: string[] | undefined,
+			scope: string,
+		) => {
+			const variable = `${key}: ${value};`;
+			resolveMap.set(
+				path,
+				withTokenScope(
+					{
+						key,
+						value,
+						variable,
+						sourcePath: path,
+						...(referencePaths ? { referencePaths } : {}),
+						type: "color",
+						tier: referencePaths ? "semantic" : "primitive",
+					},
+					scope,
+				),
+			);
+			return variable;
+		};
+
+		/** Emits the paired themes once at `:root`, as `theme.<color>.<variant>` tokens. */
+		const emitLightDark = (pair: LightDark) => {
+			const { light, dark } = pair;
+			for (const themeName of [light, dark]) {
+				assertThemeSettings(themeName, themes[themeName]);
+				const condition = themes[themeName].settings ?? {};
+				const conflicting = ["selector", "atRule"].filter((key) => key in condition);
+				if (conflicting.length > 0) {
+					throw new Error(
+						`Invalid configuration at "theme.${themeName}.settings": ${quotedList(
+							conflicting,
+						)} does not apply to a theme paired by "theme.settings.lightDark", whose tokens are emitted at :root inside light-dark(). Remove it.`,
+					);
+				}
+			}
+			assertSamePairedVariants(themes, pair);
+
+			rootOutput.push(`/* Theme: light-dark(${light}, ${dark}) */`);
+			rootOutput.push("color-scheme: light dark;");
+
+			for (const [colorName, lightColor] of Object.entries(themes[light].value)) {
+				const darkColor = themes[dark].value[colorName];
+				const variantNameOnly = lightColor.settings?.variantNameOnly ?? false;
+				if ((darkColor.settings?.variantNameOnly ?? false) !== variantNameOnly) {
+					throw new Error(
+						`Invalid configuration at "theme.${dark}.${colorName}.settings.variantNameOnly": a paired color is named once for both schemes, so it must match "theme.${light}.${colorName}".`,
+					);
+				}
+				if (
+					Object.hasOwn(themes, colorName) &&
+					colorName !== light &&
+					colorName !== dark
+				) {
+					throw new Error(
+						`Invalid configuration at "theme.${light}.${colorName}": the paired token path "theme.${colorName}" is also the theme "theme.${colorName}". Rename the color or the theme.`,
+					);
+				}
+
+				rootOutput.push(`/* ${colorName} */`);
+				const readLight = themeColorReader(light, colorName, lightColor);
+				const readDark = themeColorReader(dark, colorName, darkColor);
+				for (const variantName of Object.keys(lightColor.value)) {
+					const lightVariant = readLight(variantName);
+					const darkVariant = readDark(variantName);
+					const references = [
+						...(lightVariant.referencePaths ?? []),
+						...(darkVariant.referencePaths ?? []),
+					];
+					const key = variantNameOnly
+						? `--${variantName}`
+						: `--${moduleKey}-${colorName}-${variantName}`;
+					rootOutput.push(
+						setThemeToken(
+							`${moduleKey}.${colorName}.${variantName}`,
+							key,
+							`light-dark(${lightVariant.value}, ${darkVariant.value})`,
+							references.length > 0 ? [...new Set(references)] : undefined,
+							ROOT_SCOPE,
+						),
+					);
+				}
+			}
+
+			for (const { scheme, selector } of pair.colorScheme) {
+				outsideOutput.push(`${selector} {`, `  color-scheme: ${scheme};`, "}");
+			}
+		};
+
+		let lightDarkEmitted = false;
+		for (const [themeName, themeConfig] of Object.entries(themes)) {
+			if (lightDark && (themeName === lightDark.light || themeName === lightDark.dark)) {
+				if (!lightDarkEmitted) emitLightDark(lightDark);
+				lightDarkEmitted = true;
+				continue;
+			}
+
+			// Checked outside the try block, so a misplaced setting fails instead of
+			// dropping the theme with a logged line.
+			assertThemeSettings(themeName, themeConfig);
 			const handler = conditionalBuilder(
 				themeConfig.settings,
 				`/* Theme: ${themeName} */`,
@@ -1357,54 +1628,21 @@ export function processColors(
 
 			try {
 				for (const [colorName, colorInTheme] of Object.entries(themeConfig.value)) {
-					validateName(colorName, `theme.${themeName}.${colorName}`);
-					const colorComment = `/* ${colorName} */`;
-					handler.addComment(colorComment);
-
-					validateVariableAliases({
-						aliases: colorInTheme.variables,
-						path: `theme.${themeName}.${colorName}`,
-					});
-
-					const resolvedMap = getResolvedVariablesMap({
-						variables: colorInTheme.variables,
-						colors: palette,
-					});
+					handler.addComment(`/* ${colorName} */`);
 
 					const variantNameOnly = colorInTheme.settings?.variantNameOnly ?? false;
-					for (const [variantName, variantValue] of Object.entries(colorInTheme.value)) {
-						const variantPath = `theme.${themeName}.${colorName}.${variantName}`;
-						validateName(variantName, variantPath);
-						const { value: resolvedValue, referencePaths } = isColorMix(variantValue)
-							? readColorMix(variantValue, variantPath, mixContext)
-							: {
-									value: resolveValue({ map: resolvedMap, value: variantValue }),
-									referencePaths: getReferencePaths({
-										value: variantValue,
-										variables: colorInTheme.variables,
-									}),
-								};
-
+					const readVariant = themeColorReader(themeName, colorName, colorInTheme);
+					for (const variantName of Object.keys(colorInTheme.value)) {
+						const { value, referencePaths } = readVariant(variantName);
 						const key = variantNameOnly
 							? `--${variantName}`
 							: `--${moduleKey}-${themeName}-${colorName}-${variantName}`;
-
-						const variable = `${key}: ${resolvedValue};`;
-
-						handler.pushVariable(variable);
-
-						resolveMap.set(
-							`${moduleKey}.${themeName}.${colorName}.${variantName}`,
-							withTokenScope(
-								{
-									key,
-									value: resolvedValue,
-									variable,
-									sourcePath: `${moduleKey}.${themeName}.${colorName}.${variantName}`,
-									...(referencePaths ? { referencePaths } : {}),
-									type: "color",
-									tier: referencePaths ? "semantic" : "primitive",
-								},
+						handler.pushVariable(
+							setThemeToken(
+								`${moduleKey}.${themeName}.${colorName}.${variantName}`,
+								key,
+								value,
+								referencePaths,
 								handler.scope,
 							),
 						);

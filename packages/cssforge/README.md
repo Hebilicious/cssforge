@@ -909,6 +909,153 @@ usually used in combination with `selector` to conditionnally apply themes.
 - VariantOnly Name: `--${variantName}`
 - Path : `theme.${themeName}.${colorName}.${variantName}`
 
+#### Theme: light-dark()
+
+Instead of repeating every theme token under a selector, pair a light and a dark theme
+with `theme.settings.lightDark`. Each color is emitted once at `:root` as
+`light-dark(<light>, <dark>)`, and the browser picks the value from the element's
+`color-scheme`. Theme settings sit beside the themes, so this needs the
+`theme: { value, settings }` form:
+
+<!-- md:generate defineConfig
+export default defineConfig({
+  colors: {
+    palette: {
+      value: {
+        neutral: { white: "#ffffff", ink: "#1a1a1a" },
+      },
+    },
+    theme: {
+      value: {
+        light: {
+          value: {
+            background: {
+              value: { primary: "var(--white)" },
+              variables: { white: "palette.neutral.white" },
+            },
+            text: {
+              value: { body: { mix: { from: "palette.neutral.ink", with: "white", amount: 10 } } },
+            },
+          },
+        },
+        dark: {
+          value: {
+            background: {
+              value: { primary: "var(--ink)" },
+              variables: { ink: "palette.neutral.ink" },
+            },
+            text: {
+              value: { body: { mix: { from: "palette.neutral.white", with: "black", amount: 10 } } },
+            },
+          },
+        },
+      },
+      settings: {
+        lightDark: {
+          light: "light",
+          dark: "dark",
+          colorScheme: { light: '[data-theme="light"]', dark: '[data-theme="dark"]' },
+        },
+      },
+    },
+  },
+});
+-->
+
+```typescript
+export default defineConfig({
+  colors: {
+    palette: {
+      value: {
+        neutral: { white: "#ffffff", ink: "#1a1a1a" },
+      },
+    },
+    theme: {
+      value: {
+        light: {
+          value: {
+            background: {
+              value: { primary: "var(--white)" },
+              variables: { white: "palette.neutral.white" },
+            },
+            text: {
+              value: { body: { mix: { from: "palette.neutral.ink", with: "white", amount: 10 } } },
+            },
+          },
+        },
+        dark: {
+          value: {
+            background: {
+              value: { primary: "var(--ink)" },
+              variables: { ink: "palette.neutral.ink" },
+            },
+            text: {
+              value: { body: { mix: { from: "palette.neutral.white", with: "black", amount: 10 } } },
+            },
+          },
+        },
+      },
+      settings: {
+        lightDark: {
+          light: "light",
+          dark: "dark",
+          colorScheme: { light: '[data-theme="light"]', dark: '[data-theme="dark"]' },
+        },
+      },
+    },
+  },
+});
+```
+
+This will generate the following CSS :
+
+```css
+/*____ CSSForge ____*/
+:root {
+/*____ Colors ____*/
+/* Palette */
+/* neutral */
+--palette-neutral-white: oklch(100% 0 none);
+--palette-neutral-ink: oklch(21.779% 0 none);
+/* Themes */
+/* Theme: light-dark(light, dark) */
+color-scheme: light dark;
+/* background */
+--theme-background-primary: light-dark(var(--palette-neutral-white), var(--palette-neutral-ink));
+/* text */
+--theme-text-body: light-dark(color-mix(in oklch, var(--palette-neutral-ink), white 10%), color-mix(in oklch, var(--palette-neutral-white), black 10%));
+}
+[data-theme="light"] {
+  color-scheme: light;
+}
+[data-theme="dark"] {
+  color-scheme: dark;
+}
+```
+
+<!-- /md:generate -->
+
+- The paired token drops the theme name: `--theme-${colorName}-${variantName}` at the path
+  `theme.${colorName}.${variantName}`, or `--${variantName}` with `variantNameOnly`. A
+  `variantNameOnly` reference keeps working unchanged; a path written as
+  `theme.light.background.primary` becomes `theme.background.primary`, which every scheme
+  now shares. A `mix` can reference a paired token declared before it.
+- Both themes must declare the same colors and variants, and a paired color sets
+  `variantNameOnly` the same way in both. A mismatch is rejected with the missing paths.
+- The paired themes are emitted at `:root`, so a `selector` or `atRule` on either of them is
+  rejected. Other themes keep their own output, and without `lightDark` nothing changes.
+- `:root` gets `color-scheme: light dark`, so the page follows the user's preference.
+  `colorScheme` is optional: each selector it names gets a rule forcing that scheme, placed
+  after `:root`, for a theme switcher.
+- The `light-dark()` value reaches the CSS, the JSON and TypeScript tokens and the Style
+  Dictionary output, whose resolved value substitutes both schemes' colors. The
+  `color-scheme` declarations reach the CSS only.
+- `light-dark()` only accepts colors, so pair color values only.
+- Add `<meta name="color-scheme" content="light dark">` to the page `<head>`, so the
+  browser picks the scheme before the CSS loads.
+- `light-dark()` is supported in Chrome 123, Firefox 120 and Safari 17.5 (Baseline May
+  2024).
+
 ### Spacing
 
 Define custom spacing scale, that can be referenced for other types, such as primitives.
