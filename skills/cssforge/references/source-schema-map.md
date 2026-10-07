@@ -45,6 +45,20 @@ color output settings.
   `typography-below-legibility-floor` per step (path `typography_fluid.<scale>@<label>`) and
   `typography-static-scale` once per scale when every step changes less than 10%.
 
+## Fluid typography output
+
+- `FluidTypeScaleDefinition.settings.output` in `packages/cssforge/src/modules/typography.ts`:
+  `"clamp" | "pow"`, default `"clamp"`. Read at `typography.fluid.<scale>.settings.output`;
+  anything else is rejected.
+- `"pow"` emits `--typography_fluid-<scale>[-<prefix>]-<input>` for `narrow`, `wide`,
+  `size-narrow`, `size-wide`, `ratio-narrow`, `ratio-wide`, `fluid`, `at-narrow` and
+  `at-wide`, with resolve paths `typography_fluid.<scale>.<input>`. Steps keep their clamp
+  names and paths `typography_fluid.<scale>@<label>`.
+- Step `-n` is `step 0 / pow(ratio-narrow, n)` at every width, so its wide end is
+  `maxFontSize / minTypeScale^n`; the checks use those sizes.
+- `value.relativeTo` maps `viewport-width` (default) to `100vw`, `viewport` to `100vi` and
+  `container` to `100cqi`; anything else is rejected in pow mode.
+
 ## Derived colors
 
 - `ColorMix` in `packages/cssforge/src/modules/colors.ts`, re-exported from `mod.ts`:

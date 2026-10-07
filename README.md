@@ -1428,7 +1428,8 @@ This will generate the following CSS :
 #### Fluid Typography Checks
 
 Each fluid step is checked from its smallest and largest size in px, as utopia computes them
-at `minWidth` and `maxWidth`:
+at `minWidth` and `maxWidth` (a [pow](#fluid-typography-with-pow) step below 0 is checked at
+the sizes pow produces):
 
 - **Error: more than 2.5× growth.** A step whose maximum is more than 2.5 times its minimum
   fails the build. Past that ratio, 500% browser zoom cannot double the text at some viewport
@@ -1513,6 +1514,116 @@ This will generate the following CSS :
 Warnings never fail the build. The CLI prints each one to stderr as
 `cssforge: warning: <message>` and still writes the outputs, and `getDiagnostics(config)`
 returns them to programmatic callers (see [Programmatic Usage](#programmatic-usage)).
+
+#### Fluid Typography with pow()
+
+`settings.output` chooses how the steps reach the CSS. The default, `"clamp"`, writes each
+step as a `clamp()` value. `"pow"` writes the six numbers that define the scale and derives
+every step from them with `pow()`, so you can tune the whole scale live in DevTools. Change
+an input on `:root`, where the steps are declared: a step takes its value there, so an input
+set on a descendant changes nothing below it. It needs `pow()`: Chrome 120, Firefox 118,
+Safari 15.4.
+
+In pow mode each scale emits these custom properties, named like its steps
+(`--typography_fluid-<scale>[-<prefix>]-<name>`), so two scales never share one:
+
+- `narrow` and `wide`: `minWidth` and `maxWidth` in rem, as plain numbers. A length divided
+  by a length does not work in Firefox, so the inputs carry no unit.
+- `size-narrow` and `size-wide`: `minFontSize` and `maxFontSize` in rem.
+- `ratio-narrow` and `ratio-wide`: `minTypeScale` and `maxTypeScale`.
+- `fluid`, `at-narrow` and `at-wide`: the helpers the steps are built from.
+
+Step 0 is `at-narrow + at-wide`, and step `n` above it is
+`at-narrow × ratio-narrow^n + at-wide × ratio-wide^n`, which gives utopia's `minFontSize` and
+`maxFontSize` at `minWidth` and `maxWidth`. A step below 0 is step 0 divided by
+`pow(ratio-narrow, n)` at every width. It still grows with step 0, but its largest size is
+`maxFontSize / minTypeScale^n` rather than utopia's `maxFontSize / maxTypeScale^n`, so a small
+size never shrinks as the screen grows. The [checks](#fluid-typography-checks) use the sizes
+each mode actually produces.
+
+The steps keep the names and references of clamp mode, `customLabel` included, so switching
+`output` breaks no reference. The inputs and helpers are tokens too: they appear in the JSON
+and TypeScript outputs, and you can reference them as `typography_fluid.<scale>.<name>`, for
+example `typography_fluid.body.at-narrow`. A step label equal to one of these names is a key
+collision and fails the build.
+
+`relativeTo` sets the width the scale follows: `"viewport-width"` (the default) writes
+`100vw`, `"viewport"` writes `100vi`, and `"container"` writes `100cqi` for a scale that
+follows its container.
+
+<!-- md:generate defineConfig
+export default defineConfig({
+  typography: {
+    fluid: {
+      body: {
+        value: {
+          minWidth: 320,
+          minFontSize: 18,
+          minTypeScale: 1.2,
+          maxWidth: 1240,
+          maxFontSize: 20,
+          maxTypeScale: 1.25,
+          positiveSteps: 2,
+          negativeSteps: 1,
+          relativeTo: "container",
+        },
+        settings: {
+          output: "pow",
+        },
+      },
+    },
+  },
+});
+-->
+
+```typescript
+export default defineConfig({
+  typography: {
+    fluid: {
+      body: {
+        value: {
+          minWidth: 320,
+          minFontSize: 18,
+          minTypeScale: 1.2,
+          maxWidth: 1240,
+          maxFontSize: 20,
+          maxTypeScale: 1.25,
+          positiveSteps: 2,
+          negativeSteps: 1,
+          relativeTo: "container",
+        },
+        settings: {
+          output: "pow",
+        },
+      },
+    },
+  },
+});
+```
+
+This will generate the following CSS :
+
+```css
+/*____ CSSForge ____*/
+:root {
+/*____ Typography ____*/
+--typography_fluid-body-narrow: 20;
+--typography_fluid-body-wide: 77.5;
+--typography_fluid-body-size-narrow: 1.125;
+--typography_fluid-body-size-wide: 1.25;
+--typography_fluid-body-ratio-narrow: 1.2;
+--typography_fluid-body-ratio-wide: 1.25;
+--typography_fluid-body-fluid: clamp(0rem, (100cqi - var(--typography_fluid-body-narrow) * 1rem) / (var(--typography_fluid-body-wide) - var(--typography_fluid-body-narrow)), 1rem);
+--typography_fluid-body-at-narrow: calc(var(--typography_fluid-body-size-narrow) * (1rem - var(--typography_fluid-body-fluid)));
+--typography_fluid-body-at-wide: calc(var(--typography_fluid-body-size-wide) * var(--typography_fluid-body-fluid));
+--typography_fluid-body-xl: calc(var(--typography_fluid-body-at-narrow) * pow(var(--typography_fluid-body-ratio-narrow), 2) + var(--typography_fluid-body-at-wide) * pow(var(--typography_fluid-body-ratio-wide), 2));
+--typography_fluid-body-l: calc(var(--typography_fluid-body-at-narrow) * var(--typography_fluid-body-ratio-narrow) + var(--typography_fluid-body-at-wide) * var(--typography_fluid-body-ratio-wide));
+--typography_fluid-body-m: calc(var(--typography_fluid-body-at-narrow) + var(--typography_fluid-body-at-wide));
+--typography_fluid-body-s: calc(var(--typography_fluid-body-m) / var(--typography_fluid-body-ratio-narrow));
+}
+```
+
+<!-- /md:generate -->
 
 ### Primitives
 
@@ -1696,8 +1807,10 @@ following convention :
 ### Referencing Fluid Typography
 
 To reference fluid typography, use the `@` symbol and the label of the scale; ie:
-`typography_fluid.comicsans@a`. Do not include the prefix in the reference. The labels
-follow the following convention :
+`typography_fluid.comicsans@a`. Do not include the prefix in the reference. A scale with
+`settings.output: "pow"` also exposes its inputs, such as `typography_fluid.comicsans.at-wide`
+(see [Fluid Typography with pow()](#fluid-typography-with-pow)). The labels follow the
+following convention :
 
 - 3xs
 - 2xs
