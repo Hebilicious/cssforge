@@ -206,7 +206,7 @@ Generated CSS:
 --typography_fluid-body-xl: calc(var(--typography_fluid-body-at-narrow) * pow(var(--typography_fluid-body-ratio-narrow), 2) + var(--typography_fluid-body-at-wide) * pow(var(--typography_fluid-body-ratio-wide), 2));
 ```
 
-Set `relativeTo: "container"` to follow a container's width (requires `pow()` for `100cqi`).
+Set `relativeTo: "container"` to size the scale by its container (`cqi`) instead of the viewport. It works in both `clamp` and `pow` output.
 
 ## Spacing
 
