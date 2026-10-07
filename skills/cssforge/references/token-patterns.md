@@ -19,6 +19,9 @@ All patterns below are derived from README configuration examples.
 
 - Static spacing under `spacing.custom`.
 - Fluid spacing under `spacing.fluid` using Utopia inputs.
+- `pxToRem` (enabled by default) converts pixel values to rem, including in shorthand notation
+  and CSS functions like `calc()` and `var()`. Use `calc(infinity * 1px)` to write an
+  infinitely-large pill radius that passes through untouched.
 
 ## Typography
 

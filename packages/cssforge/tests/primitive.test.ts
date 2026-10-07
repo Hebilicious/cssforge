@@ -230,6 +230,60 @@ Deno.test("processPrimitives - uses fluid spacing references", async (t) => {
 	await assertSnapshot(t, Array.from(primitives.resolveMap.entries()));
 });
 
+Deno.test("processPrimitives - converts multiple px values with pxToRem enabled", async () => {
+	const config = defineConfig({
+		primitives: {
+			box: {
+				value: {
+					padded: {
+						value: {
+							padding: "4px 8px",
+							margin: "0 0 4px",
+						},
+						settings: { pxToRem: true },
+					},
+				},
+			},
+		},
+	});
+
+	const result = processPrimitives(config);
+	const expected = [
+		"/* box */",
+		"--box-padded-padding: 0.25rem 0.5rem;",
+		"--box-padded-margin: 0 0 0.25rem;",
+	].join("\n");
+
+	assertEquals(result.css.root, expected);
+});
+
+Deno.test("processPrimitives - preserves px in functions with pxToRem enabled", async () => {
+	const config = defineConfig({
+		primitives: {
+			btn: {
+				value: {
+					rounded: {
+						value: {
+							radius: "calc(infinity * 1px)",
+							border: "1px solid var(--color, #000)",
+						},
+						settings: { pxToRem: true },
+					},
+				},
+			},
+		},
+	});
+
+	const result = processPrimitives(config);
+	const expected = [
+		"/* btn */",
+		"--btn-rounded-radius: calc(infinity * 0.0625rem);",
+		"--btn-rounded-border: 0.0625rem solid var(--color, #000);",
+	].join("\n");
+
+	assertEquals(result.css.root, expected);
+});
+
 Deno.test("processPrimitives - resolves hyphenated aliases with fallbacks end to end", async (t) => {
 	const config = defineConfig({
 		colors: {

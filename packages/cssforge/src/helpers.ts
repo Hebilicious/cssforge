@@ -127,22 +127,57 @@ export function validateCustomLabel(label: string, path: string): void {
 
 /**
  * Converts a pixel value to a rem value.
- * If the value is not in pixels, it returns the original value.
+ * Handles complex values like "4px 8px", "calc(100% - 16px)", "var(--x, 4px)".
+ * Tracks parenthesis depth to split only on top-level whitespace, then converts all px values.
  * @example
  * ```ts
  * pxToRem({ value: "16px" }); // "1rem"
  * pxToRem({ value: "1rem" }); // "1rem"
  * pxToRem({ value: "32px", rem: 16 }); // "2rem"
+ * pxToRem({ value: "4px 8px" }); // "0.25rem 0.5rem"
+ * pxToRem({ value: "0 0 4px" }); // "0 0 0.25rem"
+ * pxToRem({ value: "calc(100% - 16px)" }); // "calc(100% - 1rem)"
+ * pxToRem({ value: "var(--x, 4px)" }); // "var(--x, 0.25rem)"
  * ```
  */
 export function pxToRem({ value, rem = 16 }: { value: string; rem?: number }): string {
-	const pxMatch = value.endsWith("px");
-	if (pxMatch) {
-		const pxValue = parseFloat(value.slice(0, -2));
-		const remValue = pxValue / rem;
-		return `${remValue}rem`;
+	const pxPattern = /(-?(?:\d+\.?\d*|\.\d+)px)/gi;
+	const components: string[] = [];
+	let currentComponent = "";
+	let parenDepth = 0;
+
+	for (let i = 0; i < value.length; i++) {
+		const char = value[i];
+
+		if (char === "(") {
+			parenDepth++;
+			currentComponent += char;
+		} else if (char === ")") {
+			parenDepth--;
+			currentComponent += char;
+		} else if (/\s/.test(char) && parenDepth === 0) {
+			if (currentComponent) {
+				components.push(currentComponent);
+				currentComponent = "";
+			}
+		} else {
+			currentComponent += char;
+		}
 	}
-	return value;
+
+	if (currentComponent) {
+		components.push(currentComponent);
+	}
+
+	const converted = components.map((component) => {
+		return component.replace(pxPattern, (match) => {
+			const pxValue = parseFloat(match.slice(0, -2));
+			const remValue = pxValue / rem;
+			return `${remValue}rem`;
+		});
+	});
+
+	return converted.join(" ");
 }
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
