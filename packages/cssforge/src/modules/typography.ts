@@ -243,7 +243,12 @@ export function processTypography(config: TypographyConfig): Output {
 				}
 
 				const stepZero = scale.find(({ step }) => step === 0);
-				const stepZeroRef = stepZero ? `var(${keyOf(labelOf(stepZero))})` : "";
+				if (!stepZero) {
+					throw new Error(
+						`Invalid configuration at "${scalePath}": the scale has no step 0.`,
+					);
+				}
+				const stepZeroRef = `var(${keyOf(labelOf(stepZero))})`;
 				stepValue = ({ step }) => {
 					if (step === 0) return `calc(${ref("at-narrow")} + ${ref("at-wide")})`;
 					if (step < 0) return `calc(${stepZeroRef} / ${power("ratio-narrow", -step)})`;
