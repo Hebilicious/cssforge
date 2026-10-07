@@ -4,11 +4,19 @@ export default defineConfig({
   colors: {
     palette: {
       value: {
+        neutral: {
+          value: {
+            white: "oklch(100% 0 none)",
+            gray: "oklch(50% 0 none)",
+            black: "oklch(0% 0 none)",
+          },
+        },
         brand: {
           value: {
             primary: "#1d4ed8",
+            primaryHover: { mix: { from: "palette.brand.primary", with: "black", amount: 15 } },
             accent: "#f97316",
-            surface: "#0f172a",
+            accentHover: { mix: { from: "palette.brand.accent", with: "black", amount: 15 } },
           },
         },
       },

@@ -9,6 +9,9 @@ This file maps user requests to official CSS Forge documentation.
 
 ## What to read for each task
 
+- Design guidance and best practices:
+  - `references/good-css-mapping.md` (how to implement good-css rules in CSS Forge)
+  - https://good-css.com (the good-css design guidelines)
 - Installation and setup:
   - `README.md` -> `## Installation`, `## Quick Start`
 - Token schema and examples:
