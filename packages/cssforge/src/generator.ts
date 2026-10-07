@@ -1,5 +1,10 @@
 import type { CSSForgeConfig } from "./config.ts";
-import type { ColorFormat, GenerateOptions, TokenColorFormats } from "./lib.ts";
+import type {
+	ColorFormat,
+	Diagnostic,
+	GenerateOptions,
+	TokenColorFormats,
+} from "./lib.ts";
 import {
 	getTokenScope,
 	type Output,
@@ -160,10 +165,10 @@ const mergeResolveMaps = (
 	return resolveMap;
 };
 
-const collectResolveMap = (
+const processModules = (
 	config: Partial<CSSForgeConfig>,
 	options: GenerateOptions = {},
-): ResolveMap => {
+): { resolveMap: ResolveMap; diagnostics: Diagnostic[] } => {
 	const forge = {
 		colors: config.colors ? processColors(config.colors, options) : undefined,
 		spacing: config.spacing ? processSpacing(config.spacing) : undefined,
@@ -178,10 +183,38 @@ const collectResolveMap = (
 			: undefined,
 	};
 
-	const resolveMap = mergeResolveMaps(Object.values(forge));
+	const outputs = Object.values(forge);
+	const resolveMap = mergeResolveMaps(outputs);
 	assertNoKeyCollisions(resolveMap);
-	return resolveMap;
+	return {
+		resolveMap,
+		diagnostics: outputs.flatMap((output) => output?.diagnostics ?? []),
+	};
 };
+
+const collectResolveMap = (
+	config: Partial<CSSForgeConfig>,
+	options: GenerateOptions = {},
+): ResolveMap => processModules(config, options).resolveMap;
+
+/**
+ * Reports the build warnings for a configuration, such as a fluid type step
+ * below the legibility floor. The configuration is processed as every
+ * generator processes it, so a configuration that cannot be generated throws
+ * here with the same error.
+ * @example
+ * ```ts
+ * for (const diagnostic of getDiagnostics(config)) {
+ *   console.warn(`${diagnostic.path}: ${diagnostic.message}`);
+ * }
+ * ```
+ */
+export function getDiagnostics(
+	config: Partial<CSSForgeConfig>,
+	options: GenerateOptions = {},
+): Diagnostic[] {
+	return processModules(config, options).diagnostics;
+}
 
 /**
  * Creates a nested object structure of design tokens from a configuration.

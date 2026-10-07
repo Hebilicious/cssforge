@@ -19,6 +19,7 @@ import {
 	generateJSON,
 	generateStyleDictionaryJSON,
 	generateTS,
+	getDiagnostics,
 } from "./generator.ts";
 import type { ColorFormat, GenerateOptions } from "./lib.ts";
 import { loadConfig } from "./loader.ts";
@@ -158,6 +159,11 @@ export async function build({
 
 		const { config: userConfig, dependencies } = await loadConfig(config);
 		const generateOptions: GenerateOptions = { colorFormats };
+
+		// Diagnostics are reported before any output is written and never fail the build.
+		for (const diagnostic of getDiagnostics(userConfig, generateOptions)) {
+			console.warn(`cssforge: warning: ${diagnostic.message}`);
+		}
 
 		if (mode === "css" || mode === "all") {
 			await writeFileRecursive(

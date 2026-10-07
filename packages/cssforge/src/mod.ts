@@ -9,7 +9,7 @@
 
 import type { CSSForgeConfig } from "./config.ts";
 import { defineConfig } from "./config.ts";
-import { generateCSS, generateStyleDictionaryJSON } from "./generator.ts";
+import { generateCSS, generateStyleDictionaryJSON, getDiagnostics } from "./generator.ts";
 import { InvalidNameError } from "./helpers.ts";
 import { loadConfig } from "./loader.ts";
 import { processColors } from "./modules/colors.ts";
@@ -23,6 +23,8 @@ export type { CSSForgeConfig };
 export type { StyleDictionaryJSONOptions } from "./generator.ts";
 export type {
 	ColorFormat,
+	Diagnostic,
+	DiagnosticCode,
 	GenerateOptions,
 	HexColorValues,
 	RgbColorValues,
@@ -60,6 +62,14 @@ export {
 	 * @returns The generated Style Dictionary-readable JSON string.
 	 */
 	generateStyleDictionaryJSON,
+	/**
+	 * Reports the build warnings for a CSSForge configuration. Warnings never
+	 * fail generation; a configuration that cannot be generated throws instead.
+	 * @param config The CSSForge configuration.
+	 * @param options The generation options.
+	 * @returns The diagnostics, in module order.
+	 */
+	getDiagnostics,
 	/**
 	 * Thrown when a configuration name cannot produce a valid CSS custom property
 	 * name or reference. Catch it with `instanceof` to handle a name validation

@@ -1425,6 +1425,95 @@ This will generate the following CSS :
 
 <!-- /md:generate -->
 
+#### Fluid Typography Checks
+
+Each fluid step is checked from its smallest and largest size in px, as utopia computes them
+at `minWidth` and `maxWidth`:
+
+- **Error: more than 2.5× growth.** A step whose maximum is more than 2.5 times its minimum
+  fails the build. Past that ratio, 500% browser zoom cannot double the text at some viewport
+  widths ([WCAG 1.4.4 Resize Text](https://www.w3.org/WAI/WCAG22/Understanding/resize-text.html)).
+  Exactly 2.5× passes. Lower `maxFontSize` or `maxTypeScale`, or reduce `positiveSteps`.
+- **Warning: a static scale.** A scale whose every step changes by less than 10% across the
+  viewport range gets one warning, because its `clamp()` values are effectively static. A
+  single static step is normal where a scale crosses over, usually near the base step, so it
+  is not reported on its own.
+- **Warning: below the legibility floor.** A step whose smaller size is under
+  `settings.minLegibleSize` (default `12`, in px) gets one warning. The first example above
+  warns for `s` (11.2px), `xs` (8.96px) and `2xs` (7.17px).
+
+When `maxTypeScale` is larger than `minTypeScale`, small negative steps can shrink as the
+viewport grows. Those steps are checked at their smaller end, and the 2.5× error only applies
+to steps that grow.
+
+`settings.minLegibleSize` takes a number of px greater than 0, or `false` to turn the floor
+off. It only changes the warnings: the tokens and the CSS stay the same.
+
+<!-- md:generate defineConfig
+export default defineConfig({
+  typography: {
+    fluid: {
+      caption: {
+        value: {
+          minWidth: 320,
+          minFontSize: 11,
+          minTypeScale: 1.2,
+          maxWidth: 1280,
+          maxFontSize: 13,
+          maxTypeScale: 1.25,
+          positiveSteps: 1,
+          negativeSteps: 0,
+        },
+        settings: {
+          minLegibleSize: 10,
+        },
+      },
+    },
+  },
+});
+-->
+
+```typescript
+export default defineConfig({
+  typography: {
+    fluid: {
+      caption: {
+        value: {
+          minWidth: 320,
+          minFontSize: 11,
+          minTypeScale: 1.2,
+          maxWidth: 1280,
+          maxFontSize: 13,
+          maxTypeScale: 1.25,
+          positiveSteps: 1,
+          negativeSteps: 0,
+        },
+        settings: {
+          minLegibleSize: 10,
+        },
+      },
+    },
+  },
+});
+```
+
+This will generate the following CSS :
+
+```css
+/*____ CSSForge ____*/
+:root {
+/*____ Typography ____*/
+--typography_fluid-caption-l: clamp(0.825rem, 0.7615rem + 0.3177vw, 1.0156rem);
+--typography_fluid-caption-m: clamp(0.6875rem, 0.6458rem + 0.2083vw, 0.8125rem);
+}
+```
+
+<!-- /md:generate -->
+
+Warnings never fail the build. The CLI prints each one to stderr as
+`cssforge: warning: <message>` and still writes the outputs, and `getDiagnostics(config)`
+returns them to programmatic callers (see [Programmatic Usage](#programmatic-usage)).
+
 ### Primitives
 
 More flexible than other types, primitives allow you to define any type of token by
@@ -1642,6 +1731,10 @@ cssforge --mode style-dictionary --style-dictionary ./dist/design-tokens.sd.json
 cssforge --color-formats hex,rgb
 ```
 
+Build warnings, such as a fluid type step below the legibility floor, are printed to stderr
+before the outputs are written, one line each as `cssforge: warning: <message>`. They do not
+fail the build: the outputs are still written and the exit code stays `0`.
+
 ## Programmatic Usage
 
 You can also use CSS Forge programmatically:
@@ -1661,6 +1754,27 @@ const resolvedTokens = generateStyleDictionaryJSON(config);
 // Keep var(--token) as each token's value for usage matching
 const usageTokens = generateStyleDictionaryJSON(config, { valueMode: "css-reference" });
 ```
+
+### Build diagnostics
+
+`getDiagnostics(config, options?)` returns the build warnings for a configuration without
+generating any output. Each one is a `Diagnostic`:
+
+```typescript
+import { getDiagnostics } from "@hebilicious/cssforge";
+
+for (const { code, severity, path, message } of getDiagnostics(config)) {
+  // code: "typography-below-legibility-floor"
+  // severity: "warning"
+  // path: "typography_fluid.arial@2xs"
+  // message: "Typography step typography_fluid.arial@2xs reaches 7.17px, below ..."
+}
+```
+
+Warnings never change the generated output, and the `generate*` functions do not report
+them. A configuration that cannot be generated, such as a fluid step past 2.5× growth, throws
+from `getDiagnostics` with the same error as from the generators. `processTypography` also
+returns its warnings as `diagnostics` beside `css` and `resolveMap`.
 
 ## Style Dictionary JSON
 
