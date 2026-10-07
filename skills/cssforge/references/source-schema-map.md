@@ -35,10 +35,21 @@ color output settings.
   with the configuration path. Spacing and primitives keep flat `PixelSettings`.
 - A palette token carries `gamutMapped: true` when the color is outside sRGB.
 
+## Derived colors
+
+- `ColorMix` in `packages/cssforge/src/modules/colors.ts`, re-exported from `mod.ts`:
+  `{ mix: { from, with, amount, in? } }`, accepted as a palette variant or a theme value.
+- `from` / `with`: a dotted token path without spaces, parentheses or `#` (the `variables`
+  path syntax, such as `"palette.brand.500"`) naming a color declared earlier, emitted as
+  `var(--…)`; otherwise a CSS color colorjs.io parses, emitted as written.
+- `amount`: 0-100, the percentage of `with`. `in`: only `"oklch"`, the default.
+- Emitted as `color-mix(in oklch, <from>, <with> <amount>%)`. A palette mix with `formats`
+  gets its sRGB values from a static OKLCH mix.
+
 ## Exposed API entrypoint
 
 - `packages/cssforge/src/mod.ts` exports `defineConfig`, `generateCSS`, the processing helpers,
-  and the config and token types (`CSSForgeConfig`, `ColorFormatConfig`, `HexFormatOutputs`,
+  and the config and token types (`CSSForgeConfig`, `ColorFormatConfig`, `ColorMix`, `HexFormatOutputs`,
   `RgbFormatOutputs`, `ColorSettings`, `ColorFormat`, `HexColorValues`, `RgbColorValues`,
   `TokenColorFormats`, `GenerateOptions`, `StyleDictionaryJSONOptions`).
 

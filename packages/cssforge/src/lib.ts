@@ -367,7 +367,7 @@ export const normalizeTokenPath = (varPath: string): string => {
  * // resolved: "--color-red-100"
  * ```
  */
-function resolveVariable({
+export function resolveVariable({
 	varPath,
 	colors,
 	typography,

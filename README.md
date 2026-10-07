@@ -785,6 +785,114 @@ A color outside sRGB is gamut mapped for its sRGB values, and its token carries
 The palette is the only family that converts the colors it is given, so it is the only one
 that generates formats. Themes and gradients keep their authored values.
 
+#### Derived colors with mix
+
+Derive hover, subtle and alpha variants from a base color instead of hand-tuning
+near-duplicates. A `mix` value is accepted wherever a palette variant or a theme value
+takes a color, and is emitted as `color-mix()`:
+
+<!-- md:generate defineConfig
+export default defineConfig({
+  colors: {
+    palette: {
+      value: {
+        accent: {
+          base: "oklch(55% 0.2 264)",
+          hover: { mix: { from: "palette.accent.base", with: "black", amount: 15 } },
+        },
+      },
+      settings: { color: { formats: { hex: true } } },
+    },
+    theme: {
+      light: {
+        value: {
+          action: {
+            value: {
+              subtle: {
+                mix: { from: "palette.accent.base", with: "transparent", amount: 88 },
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+});
+-->
+
+```typescript
+export default defineConfig({
+  colors: {
+    palette: {
+      value: {
+        accent: {
+          base: "oklch(55% 0.2 264)",
+          hover: { mix: { from: "palette.accent.base", with: "black", amount: 15 } },
+        },
+      },
+      settings: { color: { formats: { hex: true } } },
+    },
+    theme: {
+      light: {
+        value: {
+          action: {
+            value: {
+              subtle: {
+                mix: { from: "palette.accent.base", with: "transparent", amount: 88 },
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+});
+```
+
+This will generate the following CSS :
+
+```css
+/*____ CSSForge ____*/
+:root {
+/*____ Colors ____*/
+/* Palette */
+/* accent */
+--palette-accent-base: oklch(55% 0.2 264);
+--palette-accent-hover: color-mix(in oklch, var(--palette-accent-base), black 15%);
+/* Themes */
+/* Theme: light */
+/* action */
+--theme-light-action-subtle: color-mix(in oklch, var(--palette-accent-base), transparent 88%);
+}
+@supports not (color: oklch(0% 0 0)) {
+  :root {
+    /* accent */
+    --palette-accent-base: #3266e4;
+    --palette-accent-hover: #2651b8;
+  }
+}
+```
+
+<!-- /md:generate -->
+
+- `from` and `with` are a token path or a CSS color. A dotted path without spaces,
+  parentheses or `#`, such as `"palette.accent.base"`, is a token path, written like the
+  paths in `variables`, and is emitted as its `var()` reference so overriding the base
+  re-derives the variant. It must name a color declared before the mix. Anything else must
+  be a CSS color colorjs.io parses, such as `"black"`, `"#fff"` or `"transparent"`, and is
+  emitted as written. `currentColor` and system colors have no static value, so they are
+  rejected.
+- `amount` is the percentage of `with`, from 0 to 100. Mixing with `transparent` produces
+  the alpha variant: `amount: 88` keeps the color at 12% opacity.
+- `in` is the interpolation space. Only `"oklch"` is accepted, the default.
+
+The `color-mix()` value reaches the CSS and the tokens; the Style Dictionary resolved value
+substitutes the referenced colors. When a palette mix generates `formats`, its sRGB values
+are computed by mixing the colors in OKLCH the way the browser does, so a browser without
+`oklch()` support still gets a color. An achromatic operand such as white has no hue, so it
+takes the other color's hue instead of drifting. Unknown keys, an amount out of range, an
+unresolvable path and a value that is not a color are rejected with the configuration path.
+
 #### Condition
 
 You can conditionnally apply colors, gradients or themes by setting the `atRule` or the
