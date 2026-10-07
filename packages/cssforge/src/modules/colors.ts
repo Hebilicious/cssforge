@@ -473,15 +473,16 @@ const assertOpaqueVariants = (
 /** The `oklch()` value of a generated token. */
 function colorToOklch(color: Color): string {
 	const oklchColor = color.to("oklch");
-	const parsedCoords = oklchColor.coords.map((coord) =>
-		Number.isNaN(coord) ? 0 : coord,
-	);
-	const l = Number(parsedCoords[0].toFixed(5));
-	const c = Number(parsedCoords[1].toFixed(5));
-	const h = Number(parsedCoords[2].toFixed(5));
+	const l = Number(oklchColor.coords[0].toFixed(5));
+	const c = Number(oklchColor.coords[1].toFixed(5));
+	const h = oklchColor.coords[2];
+
+	const isAchromatic = Number.isNaN(h) || c === 0;
+	const hueValue = isAchromatic ? "none" : Number(h.toFixed(5));
+
 	const alpha =
 		oklchColor.alpha === 1 ? "" : ` / ${Number((oklchColor.alpha * 100).toFixed(1))}%`;
-	return `oklch(${Number((l * 100).toFixed(3))}% ${c} ${h}${alpha})`;
+	return `oklch(${Number((l * 100).toFixed(3))}% ${c} ${hueValue}${alpha})`;
 }
 
 /** One generated format: the format, the representations it produces, and its alpha policy. */

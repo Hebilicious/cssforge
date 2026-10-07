@@ -1,5 +1,16 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
+exports[`processColors - achromatic colors emit hue as none 1`] = `
+"/* Palette */
+/* achromatic */
+--palette-achromatic-white: oklch(100% 0 none);
+--palette-achromatic-black: oklch(0% 0 none);
+--palette-achromatic-gray: oklch(59.987% 0 none);
+--palette-achromatic-oklchZeroChroma: oklch(50% 0 none);
+/* chromatic */
+--palette-chromatic-red: oklch(62.796% 0.25768 29.23388);"
+`;
+
 exports[`processColors - converts hex to oklch 1`] = `
 "/* Palette */
 /* coral */
@@ -174,10 +185,10 @@ exports[`processColors - handles different color formats 2`] = `
 exports[`processColors - handles direct palette groups 1`] = `
 "/* Palette */
 /* basic */
---palette-basic-white: oklch(100% 0 0);
---palette-basic-black: oklch(0% 0 0);
+--palette-basic-white: oklch(100% 0 none);
+--palette-basic-black: oklch(0% 0 none);
 /* gray */
---palette-gray-950: oklch(14.479% 0 0);
+--palette-gray-950: oklch(14.479% 0 none);
 /* Themes */
 /* Theme: light */
 /* content */
@@ -193,8 +204,8 @@ exports[`processColors - handles direct palette groups 2`] = `
       "sourcePath": "palette.basic.white",
       "tier": "primitive",
       "type": "color",
-      "value": "oklch(100% 0 0)",
-      "variable": "--palette-basic-white: oklch(100% 0 0);",
+      "value": "oklch(100% 0 none)",
+      "variable": "--palette-basic-white: oklch(100% 0 none);",
     },
   ],
   [
@@ -204,8 +215,8 @@ exports[`processColors - handles direct palette groups 2`] = `
       "sourcePath": "palette.basic.black",
       "tier": "primitive",
       "type": "color",
-      "value": "oklch(0% 0 0)",
-      "variable": "--palette-basic-black: oklch(0% 0 0);",
+      "value": "oklch(0% 0 none)",
+      "variable": "--palette-basic-black: oklch(0% 0 none);",
     },
   ],
   [
@@ -215,8 +226,8 @@ exports[`processColors - handles direct palette groups 2`] = `
       "sourcePath": "palette.gray.950",
       "tier": "primitive",
       "type": "color",
-      "value": "oklch(14.479% 0 0)",
-      "variable": "--palette-gray-950: oklch(14.479% 0 0);",
+      "value": "oklch(14.479% 0 none)",
+      "variable": "--palette-gray-950: oklch(14.479% 0 none);",
     },
   ],
   [
@@ -280,10 +291,10 @@ exports[`processColors - handles gradients with atRule 2`] = `
 exports[`processColors - handles palette colors with atRule 1`] = `
 "/* Palette */
 /* background */
---palette-background-light: oklch(100% 0 0);
+--palette-background-light: oklch(100% 0 none);
 /* backgroundDark */
 @media (prefers-color-scheme: dark) {
-  --palette-backgroundDark-dark: oklch(0% 0 0);
+  --palette-backgroundDark-dark: oklch(0% 0 none);
 }"
 `;
 
@@ -296,8 +307,8 @@ exports[`processColors - handles palette colors with atRule 2`] = `
       "sourcePath": "palette.background.light",
       "tier": "primitive",
       "type": "color",
-      "value": "oklch(100% 0 0)",
-      "variable": "--palette-background-light: oklch(100% 0 0);",
+      "value": "oklch(100% 0 none)",
+      "variable": "--palette-background-light: oklch(100% 0 none);",
     },
   ],
   [
@@ -307,8 +318,8 @@ exports[`processColors - handles palette colors with atRule 2`] = `
       "sourcePath": "palette.backgroundDark.dark",
       "tier": "primitive",
       "type": "color",
-      "value": "oklch(0% 0 0)",
-      "variable": "--palette-backgroundDark-dark: oklch(0% 0 0);",
+      "value": "oklch(0% 0 none)",
+      "variable": "--palette-backgroundDark-dark: oklch(0% 0 none);",
     },
   ],
 ]
@@ -361,8 +372,8 @@ exports[`processColors - handles selector + atRule 2`] = `
 exports[`processColors - handles string values 1`] = `
 "/* Palette */
 /* simple */
---palette-simple-white: oklch(100% 0 0);
---palette-simple-black: oklch(0% 0 0);"
+--palette-simple-white: oklch(100% 0 none);
+--palette-simple-black: oklch(0% 0 none);"
 `;
 
 exports[`processColors - handles string values 2`] = `
@@ -374,8 +385,8 @@ exports[`processColors - handles string values 2`] = `
       "sourcePath": "palette.simple.white",
       "tier": "primitive",
       "type": "color",
-      "value": "oklch(100% 0 0)",
-      "variable": "--palette-simple-white: oklch(100% 0 0);",
+      "value": "oklch(100% 0 none)",
+      "variable": "--palette-simple-white: oklch(100% 0 none);",
     },
   ],
   [
@@ -385,8 +396,8 @@ exports[`processColors - handles string values 2`] = `
       "sourcePath": "palette.simple.black",
       "tier": "primitive",
       "type": "color",
-      "value": "oklch(0% 0 0)",
-      "variable": "--palette-simple-black: oklch(0% 0 0);",
+      "value": "oklch(0% 0 none)",
+      "variable": "--palette-simple-black: oklch(0% 0 none);",
     },
   ],
 ]
@@ -395,8 +406,8 @@ exports[`processColors - handles string values 2`] = `
 exports[`processColors - handles theme variantNameOnly 1`] = `
 "/* Palette */
 /* simple */
---palette-simple-white: oklch(100% 0 0);
---palette-simple-black: oklch(0% 0 0);
+--palette-simple-white: oklch(100% 0 none);
+--palette-simple-black: oklch(0% 0 none);
 /* Themes */
 /* Theme: light */
 /* background */
@@ -413,8 +424,8 @@ exports[`processColors - handles theme variantNameOnly 2`] = `
       "sourcePath": "palette.simple.white",
       "tier": "primitive",
       "type": "color",
-      "value": "oklch(100% 0 0)",
-      "variable": "--palette-simple-white: oklch(100% 0 0);",
+      "value": "oklch(100% 0 none)",
+      "variable": "--palette-simple-white: oklch(100% 0 none);",
     },
   ],
   [
@@ -424,8 +435,8 @@ exports[`processColors - handles theme variantNameOnly 2`] = `
       "sourcePath": "palette.simple.black",
       "tier": "primitive",
       "type": "color",
-      "value": "oklch(0% 0 0)",
-      "variable": "--palette-simple-black: oklch(0% 0 0);",
+      "value": "oklch(0% 0 none)",
+      "variable": "--palette-simple-black: oklch(0% 0 none);",
     },
   ],
   [
@@ -462,8 +473,8 @@ exports[`processColors - handles theme variantNameOnly 2`] = `
 exports[`processColors - handles themes 1`] = `
 "/* Palette */
 /* simple */
---palette-simple-white: oklch(100% 0 0);
---palette-simple-black: oklch(0% 0 0);
+--palette-simple-white: oklch(100% 0 none);
+--palette-simple-black: oklch(0% 0 none);
 /* Themes */
 /* Theme: light */
 /* background */
@@ -480,8 +491,8 @@ exports[`processColors - handles themes 2`] = `
       "sourcePath": "palette.simple.white",
       "tier": "primitive",
       "type": "color",
-      "value": "oklch(100% 0 0)",
-      "variable": "--palette-simple-white: oklch(100% 0 0);",
+      "value": "oklch(100% 0 none)",
+      "variable": "--palette-simple-white: oklch(100% 0 none);",
     },
   ],
   [
@@ -491,8 +502,8 @@ exports[`processColors - handles themes 2`] = `
       "sourcePath": "palette.simple.black",
       "tier": "primitive",
       "type": "color",
-      "value": "oklch(0% 0 0)",
-      "variable": "--palette-simple-black: oklch(0% 0 0);",
+      "value": "oklch(0% 0 none)",
+      "variable": "--palette-simple-black: oklch(0% 0 none);",
     },
   ],
   [
@@ -628,8 +639,8 @@ exports[`processColors - handles themes with selector 2`] = `
 exports[`processColors - handles transparency 1`] = `
 "/* Palette */
 /* alpha */
---palette-alpha-softGray1: oklch(14.48% 0 0 / 12%);
---palette-alpha-softGray2: oklch(14.48% 0 0 / 24%);"
+--palette-alpha-softGray1: oklch(14.48% 0 none / 12%);
+--palette-alpha-softGray2: oklch(14.48% 0 none / 24%);"
 `;
 
 exports[`processColors - handles transparency 2`] = `
@@ -641,8 +652,8 @@ exports[`processColors - handles transparency 2`] = `
       "sourcePath": "palette.alpha.softGray1",
       "tier": "primitive",
       "type": "color",
-      "value": "oklch(14.48% 0 0 / 12%)",
-      "variable": "--palette-alpha-softGray1: oklch(14.48% 0 0 / 12%);",
+      "value": "oklch(14.48% 0 none / 12%)",
+      "variable": "--palette-alpha-softGray1: oklch(14.48% 0 none / 12%);",
     },
   ],
   [
@@ -652,8 +663,8 @@ exports[`processColors - handles transparency 2`] = `
       "sourcePath": "palette.alpha.softGray2",
       "tier": "primitive",
       "type": "color",
-      "value": "oklch(14.48% 0 0 / 24%)",
-      "variable": "--palette-alpha-softGray2: oklch(14.48% 0 0 / 24%);",
+      "value": "oklch(14.48% 0 none / 24%)",
+      "variable": "--palette-alpha-softGray2: oklch(14.48% 0 none / 24%);",
     },
   ],
 ]

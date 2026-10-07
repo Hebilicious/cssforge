@@ -614,8 +614,8 @@ This will generate the following CSS :
 /*____ Colors ____*/
 /* Palette */
 /* simple */
---palette-simple-white: oklch(100% 0 0);
---palette-simple-black: oklch(0% 0 0);
+--palette-simple-white: oklch(100% 0 none);
+--palette-simple-black: oklch(0% 0 none);
 --palette-simple-green: oklch(86.644% 0.29483 142.49535);
 --palette-simple-blue: oklch(45.201% 0.31321 264.05202);
 --palette-simple-violet: oklch(70% 0.2 270);

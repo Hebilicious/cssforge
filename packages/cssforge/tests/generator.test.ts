@@ -76,7 +76,10 @@ Deno.test("generateStyleDictionaryJSON - preserves references and resolved value
 	);
 	assertEquals(result.theme.light.content.primary.$tier, "semantic");
 	assertEquals(result.theme.light.content.primary.$reference, "palette.neutral.900");
-	assertEquals(result.theme.light.content.primary.$resolvedValue, "oklch(17.764% 0 0)");
+	assertEquals(
+		result.theme.light.content.primary.$resolvedValue,
+		"oklch(17.764% 0 none)",
+	);
 	assertEquals(
 		result.theme.light.content.primary.attributes.cssVariable,
 		"--theme-light-content-primary",
@@ -86,7 +89,7 @@ Deno.test("generateStyleDictionaryJSON - preserves references and resolved value
 	]);
 	assertEquals(
 		result.primitives.button.default.color.attributes.resolvedValue,
-		"oklch(17.764% 0 0)",
+		"oklch(17.764% 0 none)",
 	);
 	assertEquals(
 		result.primitives.button.default.padding.attributes.resolvedValue,
@@ -149,7 +152,7 @@ Deno.test("generateStyleDictionaryJSON - resolves hyphenated CSSForge aliases", 
 		generateStyleDictionaryJSON(config, { valueMode: "resolved" }),
 	);
 
-	assertEquals(result.primitives.button.default.color.value, "oklch(17.764% 0 0)");
+	assertEquals(result.primitives.button.default.color.value, "oklch(17.764% 0 none)");
 	assertEquals(result.primitives.button.default.color.attributes.referencePaths, [
 		"palette.neutral.900",
 	]);
@@ -263,7 +266,7 @@ Deno.test("generateStyleDictionaryJSON - anchors tokens for var() usage matching
 
 	assertEquals(token.attributes.cssVariable, "--theme-light-content-primary");
 	assertEquals(token.attributes.tailwindVariable, token.attributes.cssVariable);
-	assertEquals(token.value, "oklch(17.764% 0 0)");
+	assertEquals(token.value, "oklch(17.764% 0 none)");
 });
 
 Deno.test("generateStyleDictionaryJSON - types tokens by value kind when the module type is coarse", () => {
@@ -363,7 +366,7 @@ Deno.test("generateStyleDictionaryJSON - keeps the module type when the value co
 	const control = result.primitives.control.rounded;
 
 	// Every leaf name matches a rule, but no value has the expected shape.
-	assertEquals(control.radius.value, "oklch(17.764% 0 0)");
+	assertEquals(control.radius.value, "oklch(17.764% 0 none)");
 	assertEquals(control.radius.type, "component");
 	assertEquals(control["font-family"].type, "component");
 	assertEquals(control.opacity.type, "component");
