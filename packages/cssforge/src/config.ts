@@ -1,4 +1,5 @@
 import type { ColorConfig } from "./modules/colors.ts";
+import type { MotionConfig } from "./modules/motion.ts";
 import type { PrimitiveConfig } from "./modules/primitive.ts";
 import type { SpacingConfig } from "./modules/spacing.ts";
 import type { TypographyConfig } from "./modules/typography.ts";
@@ -19,6 +20,10 @@ export interface CSSForgeConfig {
 	 * Spacing configuration for creating spacing scales.
 	 */
 	spacing: SpacingConfig;
+	/**
+	 * Motion configuration for transition durations and easing functions.
+	 */
+	motion: MotionConfig;
 	/**
 	 * Primitive configuration for creating custom design tokens.
 	 */

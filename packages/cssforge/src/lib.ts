@@ -3,6 +3,8 @@ export type TokenType =
 	| "gradient"
 	| "spacing"
 	| "typography"
+	| "duration"
+	| "easing"
 	| "primitive"
 	| "component";
 
@@ -123,7 +125,9 @@ export type ResolveMap = Map<string, ResolvedToken>;
 /** A stable identifier for each kind of build diagnostic. */
 export type DiagnosticCode =
 	| "typography-static-scale"
-	| "typography-below-legibility-floor";
+	| "typography-below-legibility-floor"
+	| "motion-long-duration"
+	| "motion-ease-in";
 
 /**
  * A build warning about a configuration that generates, but likely not as
@@ -339,6 +343,7 @@ interface Modules {
 	colors?: Output | null;
 	typography?: Output | null;
 	spacing?: Output | null;
+	motion?: Output | null;
 }
 
 interface ResolveVariableParams extends Modules {
@@ -369,7 +374,12 @@ export const normalizeTokenPath = (varPath: string): string => {
 		return [module, parts[0], parts[1], ...parts.slice(3)].join(".");
 	}
 
-	if (module === "typography" && parts[0] === "weight" && parts[2] === "value") {
+	if (
+		(module === "typography" && parts[0] === "weight" && parts[2] === "value") ||
+		(module === "motion" &&
+			(parts[0] === "duration" || parts[0] === "easing") &&
+			parts[2] === "value")
+	) {
 		return [module, parts[0], parts[1], ...parts.slice(3)].join(".");
 	}
 
@@ -395,6 +405,7 @@ export function resolveVariable({
 	colors,
 	typography,
 	spacing,
+	motion,
 }: ResolveVariableParams) {
 	const normalizedPath = normalizeTokenPath(varPath);
 	const path = normalizedPath.split(".");
@@ -408,6 +419,7 @@ export function resolveVariable({
 		typography_fluid: "typography_fluid",
 		spacing: "spacing",
 		spacing_fluid: "spacing_fluid",
+		motion: "motion",
 	};
 	switch (module) {
 		case keyMap.palette:
@@ -450,6 +462,18 @@ export function resolveVariable({
 			}
 			return result.key;
 		}
+		case keyMap.motion: {
+			if (!motion) throw new Error("The motion object must be passed.");
+			const result = motion.resolveMap.get(normalizedPath);
+			if (!result) {
+				throw new Error(
+					`The motion path ${varPath} could not be resolved. Map contains ${Array.from(
+						motion.resolveMap.keys(),
+					).map((key) => `\n${key}`)}`,
+				);
+			}
+			return result.key;
+		}
 		default:
 			throw new Error(`${module} is not implemented and can't be resolved.`);
 	}
@@ -457,7 +481,7 @@ export function resolveVariable({
 
 /**
  * Generates a map of resolved CSS variable names from a variables object.
- * It uses the provided modules (colors, typography, spacing) to resolve the paths.
+ * It uses the provided modules (colors, typography, spacing, motion) to resolve the paths.
  */
 export const getResolvedVariablesMap = ({
 	variables,

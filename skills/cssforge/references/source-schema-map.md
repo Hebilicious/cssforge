@@ -9,6 +9,7 @@ When README examples are not enough, use source types.
   - `colors: ColorConfig`
   - `typography: TypographyConfig`
   - `spacing: SpacingConfig`
+  - `motion: MotionConfig`
   - `primitives: PrimitiveConfig`
 
 ## Module type sources
@@ -16,6 +17,7 @@ When README examples are not enough, use source types.
 - Colors schema: `packages/cssforge/src/modules/colors.ts`
 - Spacing schema: `packages/cssforge/src/modules/spacing.ts`
 - Typography schema: `packages/cssforge/src/modules/typography.ts`
+- Motion schema: `packages/cssforge/src/modules/motion.ts`
 - Primitives schema: `packages/cssforge/src/modules/primitive.ts`
 
 ## Settings
@@ -70,6 +72,24 @@ color output settings.
 - `value.relativeTo` maps `viewport-width` (default) to `vw`, `viewport` to `vi` and
   `container` to `cqi` in both representations; anything else is rejected.
 
+## Motion
+
+- `MotionConfig` and `MotionDurationSettings` in `packages/cssforge/src/modules/motion.ts`,
+  re-exported from `mod.ts`: `motion.duration.<group>.value.<name>` and
+  `motion.easing.<group>.value.<name>`, emitted as `--motion-duration-<group>-<name>` and
+  `--motion-easing-<group>-<name>`, with resolve paths `motion.duration.<group>.<name>` and
+  `motion.easing.<group>.<name>`.
+- A duration is a non-negative number with `ms` or `s` (`0ms` passes, a bare `0` is rejected).
+  An easing is `linear`, `ease`, `ease-in`, `ease-out`, `ease-in-out`, `step-start`,
+  `step-end`, `cubic-bezier()` with x1 and x2 in [0, 1], `steps()` or `linear()`.
+- `settings.long` (boolean, duration groups only; easing groups take no settings) raises the
+  duration warning threshold from 300ms to 500ms for modals and drawers.
+- Warnings: `motion-long-duration` per duration over the threshold and `motion-ease-in` per
+  `ease-in` or ease-in shaped `cubic-bezier()` (slope at the start below 1 and at the end
+  above 1), with the token path as `path`.
+- `goodCssEasings` (`out`, `inOut`) is an exported preset to spread into an easing group's
+  `value`; nothing is added unless spread.
+
 ## Derived colors
 
 - `ColorMix` in `packages/cssforge/src/modules/colors.ts`, re-exported from `mod.ts`:
@@ -96,8 +116,8 @@ color output settings.
 
 ## Exposed API entrypoint
 
-- `packages/cssforge/src/mod.ts` exports `defineConfig`, `generateCSS`, `getDiagnostics`, the processing helpers,
-  and the config and token types (`CSSForgeConfig`, `ColorFormatConfig`, `ColorMix`, `HexFormatOutputs`,
+- `packages/cssforge/src/mod.ts` exports `defineConfig`, `generateCSS`, `getDiagnostics`, `goodCssEasings`, the processing helpers,
+  and the config and token types (`CSSForgeConfig`, `MotionConfig`, `MotionDurationSettings`, `ColorFormatConfig`, `ColorMix`, `HexFormatOutputs`,
   `RgbFormatOutputs`, `ColorSettings`, `ColorThemesSettings`, `LightDarkSettings`,
   `LightDarkColorScheme`, `ColorFormat`, `HexColorValues`, `RgbColorValues`,
   `TokenColorFormats`, `Diagnostic`, `DiagnosticCode`, `GenerateOptions`, `StyleDictionaryJSONOptions`).
