@@ -215,6 +215,9 @@ Deno.test("processSpacing - handles multiple px values in a single spacing value
 						inline: "4px 8px",
 						block: "0 0 4px",
 						negative: "-8px",
+						plus: "+4px",
+						exponent: "1e2px",
+						shadow: "0 0 4px red, 0 0 8px blue",
 					},
 					settings: { pxToRem: true },
 				},
@@ -227,6 +230,9 @@ Deno.test("processSpacing - handles multiple px values in a single spacing value
 		"--spacing-pad-inline: 0.25rem 0.5rem;",
 		"--spacing-pad-block: 0 0 0.25rem;",
 		"--spacing-pad-negative: -0.5rem;",
+		"--spacing-pad-plus: 0.25rem;",
+		"--spacing-pad-exponent: 6.25rem;",
+		"--spacing-pad-shadow: 0 0 0.25rem red, 0 0 0.5rem blue;",
 	].join("\n");
 	assertEquals(result.css.root, expected);
 });
