@@ -33,7 +33,10 @@ export type {
 	ColorFormatConfig,
 	ColorMix,
 	ColorSettings,
+	ColorThemesSettings,
 	HexFormatOutputs,
+	LightDarkColorScheme,
+	LightDarkSettings,
 	PaletteColorSettings,
 	RgbFormatOutputs,
 } from "./modules/colors.ts";
