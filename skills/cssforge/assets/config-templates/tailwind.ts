@@ -1,4 +1,4 @@
-import { defineConfig, goodCssEasings } from "@hebilicious/cssforge";
+import { defineConfig, uiEasings } from "@hebilicious/cssforge";
 
 export default defineConfig({
   colors: {
@@ -97,7 +97,7 @@ export default defineConfig({
       },
     },
     easing: {
-      ui: { value: { ...goodCssEasings } },
+      ui: { value: { ...uiEasings } },
     },
   },
 });
