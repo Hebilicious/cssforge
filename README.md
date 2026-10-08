@@ -1697,10 +1697,9 @@ holds its tokens under `value`, emitted as `--motion-duration-<group>-<name>` an
 
 Anything else fails the build with the token's configuration path.
 
-`uiEasings`, exported from `@hebilicious/cssforge`, holds the two curves recommended for UI motion: `out`,
-`cubic-bezier(0.23, 1, 0.32, 1)`, for things entering or reacting, and `inOut`,
-`cubic-bezier(0.77, 0, 0.175, 1)`, for things moving on screen. Spread it into an easing
-group; nothing is added unless you do.
+Two curves work well for UI motion: an ease-out, `cubic-bezier(0.23, 1, 0.32, 1)`, for things
+entering or reacting, and an ease-in-out, `cubic-bezier(0.77, 0, 0.175, 1)`, for things moving
+on screen.
 
 <!-- md:generate defineConfig
 export default defineConfig({
@@ -1710,7 +1709,12 @@ export default defineConfig({
       overlay: { value: { drawer: "400ms" }, settings: { long: true } },
     },
     easing: {
-      ui: { value: { ...uiEasings } },
+      ui: {
+        value: {
+          out: "cubic-bezier(0.23, 1, 0.32, 1)",
+          inOut: "cubic-bezier(0.77, 0, 0.175, 1)",
+        },
+      },
     },
   },
 });
@@ -1724,7 +1728,12 @@ export default defineConfig({
       overlay: { value: { drawer: "400ms" }, settings: { long: true } },
     },
     easing: {
-      ui: { value: { ...uiEasings } },
+      ui: {
+        value: {
+          out: "cubic-bezier(0.23, 1, 0.32, 1)",
+          inOut: "cubic-bezier(0.77, 0, 0.175, 1)",
+        },
+      },
     },
   },
 });

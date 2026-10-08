@@ -13,7 +13,7 @@ import { generateCSS, generateStyleDictionaryJSON, getDiagnostics } from "./gene
 import { InvalidNameError } from "./helpers.ts";
 import { loadConfig } from "./loader.ts";
 import { processColors } from "./modules/colors.ts";
-import { processMotion, uiEasings } from "./modules/motion.ts";
+import { processMotion } from "./modules/motion.ts";
 import { processPrimitives } from "./modules/primitive.ts";
 import { processSpacing } from "./modules/spacing.ts";
 import { processTypography } from "./modules/typography.ts";
@@ -72,15 +72,6 @@ export {
 	 * @returns The diagnostics, in module order.
 	 */
 	getDiagnostics,
-	/**
-	 * The two easing curves recommended for UI motion, to spread into an
-	 * easing group's `value`. They are not added unless a config spreads them.
-	 * @example
-	 * ```ts
-	 * defineConfig({ motion: { easing: { ui: { value: { ...uiEasings } } } } });
-	 * ```
-	 */
-	uiEasings,
 	/**
 	 * Thrown when a configuration name cannot produce a valid CSS custom property
 	 * name or reference. Catch it with `instanceof` to handle a name validation
