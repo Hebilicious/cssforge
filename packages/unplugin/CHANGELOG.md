@@ -1,5 +1,18 @@
 # @hebilicious/cssforge-unplugin
 
+## 0.1.2
+
+### Patch Changes
+
+- Updated dependencies [f83df72]
+- Updated dependencies [b364d08]
+- Updated dependencies [5d7cdd2]
+- Updated dependencies [34a7f87]
+- Updated dependencies [84ac160]
+- Updated dependencies [b2636df]
+- Updated dependencies [f316382]
+  - @hebilicious/cssforge@0.10.0
+
 ## 0.1.1
 
 ### Patch Changes
