@@ -85,8 +85,8 @@ Deno.test("processColors - handles string values", async (t) => {
 	const { css, resolveMap } = processColors(config.colors);
 	const combined = combine(css);
 	const lines = getLines(combined);
-	assertEquals(lines[2].trim(), "--palette-simple-white: oklch(100% 0 0);");
-	assertEquals(lines[3].trim(), "--palette-simple-black: oklch(0% 0 0);");
+	assertEquals(lines[2].trim(), "--palette-simple-white: oklch(100% 0 none);");
+	assertEquals(lines[3].trim(), "--palette-simple-black: oklch(0% 0 none);");
 	assertEquals(Array.from(resolveMap.keys()), [
 		"palette.simple.white",
 		"palette.simple.black",
@@ -129,8 +129,8 @@ Deno.test("processColors - handles direct palette groups", async (t) => {
 	const { css, resolveMap } = processColors(config.colors);
 	const combined = combine(css);
 
-	assertEquals(combined.includes("--palette-basic-white: oklch(100% 0 0);"), true);
-	assertEquals(combined.includes("--palette-gray-950: oklch(14.479% 0 0);"), true);
+	assertEquals(combined.includes("--palette-basic-white: oklch(100% 0 none);"), true);
+	assertEquals(combined.includes("--palette-gray-950: oklch(14.479% 0 none);"), true);
 	assertEquals(
 		combined.includes("--theme-light-content-primary: var(--palette-gray-950);"),
 		true,
@@ -215,8 +215,8 @@ Deno.test("processColors - handles transparency", async (t) => {
 	const { css, resolveMap } = processColors(config.colors);
 	const combined = combine(css);
 	const lines = getLines(combined);
-	assertEquals(lines[2].trim(), "--palette-alpha-softGray1: oklch(14.48% 0 0 / 12%);");
-	assertEquals(lines[3].trim(), "--palette-alpha-softGray2: oklch(14.48% 0 0 / 24%);");
+	assertEquals(lines[2].trim(), "--palette-alpha-softGray1: oklch(14.48% 0 none / 12%);");
+	assertEquals(lines[3].trim(), "--palette-alpha-softGray2: oklch(14.48% 0 none / 24%);");
 	assertEquals(Array.from(resolveMap.keys()), [
 		"palette.alpha.softGray1",
 		"palette.alpha.softGray2",
@@ -437,7 +437,7 @@ Deno.test("processColors - handles palette colors with atRule", async (t) => {
 	const combined = combine(css);
 	const lines = getLines(combined);
 
-	assertEquals(lines[2].trim(), "--palette-background-light: oklch(100% 0 0);");
+	assertEquals(lines[2].trim(), "--palette-background-light: oklch(100% 0 none);");
 
 	const mediaQueryIndex = lines.findIndex((line) =>
 		line.includes("@media (prefers-color-scheme: dark)"),
@@ -451,7 +451,7 @@ Deno.test("processColors - handles palette colors with atRule", async (t) => {
 
 	assertEquals(
 		lines[darkVarIndex].trim(),
-		"--palette-backgroundDark-dark: oklch(0% 0 0);",
+		"--palette-backgroundDark-dark: oklch(0% 0 none);",
 	);
 
 	const closingBraceIndex = lines.findIndex(
@@ -636,4 +636,65 @@ Deno.test("processColors - handles theme variantNameOnly", async (t) => {
 
 	await assertSnapshot(t, combined);
 	await assertSnapshot(t, Array.from(resolveMap.entries()));
+});
+
+Deno.test("processColors - achromatic colors emit hue as none", async (t) => {
+	const config = defineConfig({
+		colors: {
+			palette: {
+				value: {
+					achromatic: {
+						value: {
+							white: { hex: "#FFFFFF" },
+							black: { hex: "#000000" },
+							gray: { hex: "#808080" },
+							oklchZeroChroma: { oklch: "oklch(50% 0 180)" },
+							oklchRedHue: { oklch: "oklch(50% 0 0)" },
+							oklchTuple: { oklch: [0.5, 0, 0] },
+						},
+					},
+					chromatic: {
+						value: {
+							red: { hex: "#FF0000" },
+						},
+					},
+				},
+			},
+		},
+	});
+
+	const { css, resolveMap } = processColors(config.colors);
+	const combined = combine(css);
+	const lines = getLines(combined);
+
+	assertEquals(
+		lines.find((l) => l.includes("--palette-achromatic-white:"))?.trim(),
+		"--palette-achromatic-white: oklch(100% 0 none);",
+	);
+	assertEquals(
+		lines.find((l) => l.includes("--palette-achromatic-black:"))?.trim(),
+		"--palette-achromatic-black: oklch(0% 0 none);",
+	);
+	assertEquals(
+		lines.find((l) => l.includes("--palette-achromatic-gray:"))?.trim(),
+		"--palette-achromatic-gray: oklch(59.987% 0 none);",
+	);
+	assertEquals(
+		lines.find((l) => l.includes("--palette-achromatic-oklchZeroChroma:"))?.trim(),
+		"--palette-achromatic-oklchZeroChroma: oklch(50% 0 none);",
+	);
+	assertEquals(
+		lines.find((l) => l.includes("--palette-achromatic-oklchRedHue:"))?.trim(),
+		"--palette-achromatic-oklchRedHue: oklch(50% 0 none);",
+	);
+	assertEquals(
+		lines.find((l) => l.includes("--palette-achromatic-oklchTuple:"))?.trim(),
+		"--palette-achromatic-oklchTuple: oklch(50% 0 none);",
+	);
+
+	const redLine = lines.find((l) => l.includes("--palette-chromatic-red:"))?.trim();
+	assert(redLine?.includes("oklch("));
+	assert(!redLine?.includes("none"), "chromatic colors should have a numeric hue");
+
+	await assertSnapshot(t, combined);
 });

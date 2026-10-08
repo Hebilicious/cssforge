@@ -5,12 +5,12 @@ exports[`generateStyleDictionaryJSON - preserves references and resolved values 
   "palette": {
     "neutral": {
       "0": {
-        "$resolvedValue": "oklch(100% 0 0)",
+        "$resolvedValue": "oklch(100% 0 none)",
         "$tier": "primitive",
         "attributes": {
           "cssVariable": "--palette-neutral-0",
           "cssVariableReference": "var(--palette-neutral-0)",
-          "resolvedValue": "oklch(100% 0 0)",
+          "resolvedValue": "oklch(100% 0 none)",
           "sourcePath": "palette.neutral.0",
           "tailwindVariable": "--palette-neutral-0",
         },
@@ -18,12 +18,12 @@ exports[`generateStyleDictionaryJSON - preserves references and resolved values 
         "value": "var(--palette-neutral-0)",
       },
       "900": {
-        "$resolvedValue": "oklch(17.764% 0 0)",
+        "$resolvedValue": "oklch(17.764% 0 none)",
         "$tier": "primitive",
         "attributes": {
           "cssVariable": "--palette-neutral-900",
           "cssVariableReference": "var(--palette-neutral-900)",
-          "resolvedValue": "oklch(17.764% 0 0)",
+          "resolvedValue": "oklch(17.764% 0 none)",
           "sourcePath": "palette.neutral.900",
           "tailwindVariable": "--palette-neutral-900",
         },
@@ -37,7 +37,7 @@ exports[`generateStyleDictionaryJSON - preserves references and resolved values 
       "default": {
         "color": {
           "$reference": "theme.light.content.primary",
-          "$resolvedValue": "oklch(17.764% 0 0)",
+          "$resolvedValue": "oklch(17.764% 0 none)",
           "$tier": "semantic",
           "attributes": {
             "cssVariable": "--button-default-color",
@@ -45,7 +45,7 @@ exports[`generateStyleDictionaryJSON - preserves references and resolved values 
             "referencePaths": [
               "theme.light.content.primary",
             ],
-            "resolvedValue": "oklch(17.764% 0 0)",
+            "resolvedValue": "oklch(17.764% 0 none)",
             "sourcePath": "primitives.button.default.color",
             "tailwindVariable": "--button-default-color",
           },
@@ -96,7 +96,7 @@ exports[`generateStyleDictionaryJSON - preserves references and resolved values 
       "content": {
         "primary": {
           "$reference": "palette.neutral.900",
-          "$resolvedValue": "oklch(17.764% 0 0)",
+          "$resolvedValue": "oklch(17.764% 0 none)",
           "$tier": "semantic",
           "attributes": {
             "cssVariable": "--theme-light-content-primary",
@@ -104,7 +104,7 @@ exports[`generateStyleDictionaryJSON - preserves references and resolved values 
             "referencePaths": [
               "palette.neutral.900",
             ],
-            "resolvedValue": "oklch(17.764% 0 0)",
+            "resolvedValue": "oklch(17.764% 0 none)",
             "sourcePath": "theme.light.content.primary",
             "tailwindVariable": "--theme-light-content-primary",
           },

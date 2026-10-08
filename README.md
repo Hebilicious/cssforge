@@ -614,8 +614,8 @@ This will generate the following CSS :
 /*____ Colors ____*/
 /* Palette */
 /* simple */
---palette-simple-white: oklch(100% 0 0);
---palette-simple-black: oklch(0% 0 0);
+--palette-simple-white: oklch(100% 0 none);
+--palette-simple-black: oklch(0% 0 none);
 --palette-simple-green: oklch(86.644% 0.29483 142.49535);
 --palette-simple-blue: oklch(45.201% 0.31321 264.05202);
 --palette-simple-violet: oklch(70% 0.2 270);
@@ -1428,15 +1428,15 @@ A generated token looks like this:
   "palette": {
     "neutral": {
       "900": {
-        "value": "oklch(17.764% 0 0)",
+        "value": "oklch(17.764% 0 none)",
         "type": "color",
         "$tier": "primitive",
-        "$resolvedValue": "oklch(17.764% 0 0)",
+        "$resolvedValue": "oklch(17.764% 0 none)",
         "attributes": {
           "cssVariable": "--palette-neutral-900",
           "cssVariableReference": "var(--palette-neutral-900)",
           "tailwindVariable": "--palette-neutral-900",
-          "resolvedValue": "oklch(17.764% 0 0)",
+          "resolvedValue": "oklch(17.764% 0 none)",
           "sourcePath": "palette.neutral.900"
         }
       }

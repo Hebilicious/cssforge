@@ -165,7 +165,7 @@ Deno.test("generateJSON - a format generates at the alpha it sets", () => {
 
 	// The value keeps the alpha the color carries, and only the format that
 	// asked for an alpha is generated at that opacity.
-	assertEquals(token.value, "oklch(0% 0 0)");
+	assertEquals(token.value, "oklch(0% 0 none)");
 	assertEquals(token.color, {
 		hex: { string: "#00000080", digits: "00000080" },
 		rgb: { string: "rgb(0 0 0)", array: [0, 0, 0] },
@@ -656,7 +656,7 @@ Deno.test("generateCSS - a shorthand color may keep a variant named color", () =
 	});
 
 	assertEquals(
-		generateCSS(config).includes("--palette-coral-color: oklch(100% 0 0);"),
+		generateCSS(config).includes("--palette-coral-color: oklch(100% 0 none);"),
 		true,
 	);
 });
