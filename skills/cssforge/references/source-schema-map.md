@@ -57,15 +57,15 @@ color output settings.
   (identical to utopia for step 0 and above). Primitive tier.
 - pow tokens under a `pow` segment: inputs and helpers
   `--typography_fluid-<scale>[-<prefix>]-pow-<name>` at `typography_fluid.<scale>.pow.<name>`
-  for `narrow`, `wide`, `size-narrow`, `size-wide`, `ratio-narrow`, `ratio-wide` (plain
-  numbers, primitive tier), `fluid`, `at-narrow`, `at-wide`; steps
+  for `min-width`, `max-width`, `min-font-size`, `max-font-size`, `min-type-scale`, `max-type-scale` (plain
+  numbers, primitive tier), `progress`, `at-min`, `at-max`; steps
   `--typography_fluid-<scale>[-<prefix>]-pow-<label>` at `typography_fluid.<scale>.pow@<label>`.
   Helpers and steps carry `referencePaths` to the pow tokens they use and the semantic tier.
-  Step `-n` is `calc(<pow step 0> / pow(ratio-narrow, n))`.
+  Step `-n` is `calc(<pow step 0> / pow(min-type-scale, n))`.
 - References use these paths from `variables`, for example
-  `typography_fluid.body.pow@l` or `typography_fluid.body.pow.ratio-wide`; the prefix is not part
+  `typography_fluid.body.pow@l` or `typography_fluid.body.pow.max-type-scale`; the prefix is not part
   of the path.
-- A label that gives a pow key (`narrow`, `pow-narrow`, ...) fails the key collision check.
+- A label that gives a pow key (`min-width`, `pow-min-width`, ...) fails the key collision check.
   The label `pow` is rejected, as it is the segment that holds the pow tokens.
 - `value.relativeTo` maps `viewport-width` (default) to `vw`, `viewport` to `vi` and
   `container` to `cqi` in both representations; anything else is rejected.

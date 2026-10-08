@@ -9,22 +9,22 @@ exports[`processTypography - can process weights 1`] = `
 --typography_fluid-arial-s: clamp(0.7rem, 0.6713rem + 0.1435vw, 0.8rem);
 --typography_fluid-arial-xs: clamp(0.56rem, 0.537rem + 0.1148vw, 0.64rem);
 --typography_fluid-arial-2xs: clamp(0.448rem, 0.4296rem + 0.0918vw, 0.512rem);
---typography_fluid-arial-pow-narrow: 20;
---typography_fluid-arial-pow-wide: 89.6875;
---typography_fluid-arial-pow-size-narrow: 0.875;
---typography_fluid-arial-pow-size-wide: 1;
---typography_fluid-arial-pow-ratio-narrow: 1.25;
---typography_fluid-arial-pow-ratio-wide: 1.25;
---typography_fluid-arial-pow-fluid: clamp(0rem, (100vw - var(--typography_fluid-arial-pow-narrow) * 1rem) / (var(--typography_fluid-arial-pow-wide) - var(--typography_fluid-arial-pow-narrow)), 1rem);
---typography_fluid-arial-pow-at-narrow: calc(var(--typography_fluid-arial-pow-size-narrow) * (1rem - var(--typography_fluid-arial-pow-fluid)));
---typography_fluid-arial-pow-at-wide: calc(var(--typography_fluid-arial-pow-size-wide) * var(--typography_fluid-arial-pow-fluid));
---typography_fluid-arial-pow-2xl: calc(var(--typography_fluid-arial-pow-at-narrow) * pow(var(--typography_fluid-arial-pow-ratio-narrow), 3) + var(--typography_fluid-arial-pow-at-wide) * pow(var(--typography_fluid-arial-pow-ratio-wide), 3));
---typography_fluid-arial-pow-xl: calc(var(--typography_fluid-arial-pow-at-narrow) * pow(var(--typography_fluid-arial-pow-ratio-narrow), 2) + var(--typography_fluid-arial-pow-at-wide) * pow(var(--typography_fluid-arial-pow-ratio-wide), 2));
---typography_fluid-arial-pow-l: calc(var(--typography_fluid-arial-pow-at-narrow) * var(--typography_fluid-arial-pow-ratio-narrow) + var(--typography_fluid-arial-pow-at-wide) * var(--typography_fluid-arial-pow-ratio-wide));
---typography_fluid-arial-pow-m: calc(var(--typography_fluid-arial-pow-at-narrow) + var(--typography_fluid-arial-pow-at-wide));
---typography_fluid-arial-pow-s: calc(var(--typography_fluid-arial-pow-m) / var(--typography_fluid-arial-pow-ratio-narrow));
---typography_fluid-arial-pow-xs: calc(var(--typography_fluid-arial-pow-m) / pow(var(--typography_fluid-arial-pow-ratio-narrow), 2));
---typography_fluid-arial-pow-2xs: calc(var(--typography_fluid-arial-pow-m) / pow(var(--typography_fluid-arial-pow-ratio-narrow), 3));
+--typography_fluid-arial-pow-min-width: 20;
+--typography_fluid-arial-pow-max-width: 89.6875;
+--typography_fluid-arial-pow-min-font-size: 0.875;
+--typography_fluid-arial-pow-max-font-size: 1;
+--typography_fluid-arial-pow-min-type-scale: 1.25;
+--typography_fluid-arial-pow-max-type-scale: 1.25;
+--typography_fluid-arial-pow-progress: clamp(0rem, (100vw - var(--typography_fluid-arial-pow-min-width) * 1rem) / (var(--typography_fluid-arial-pow-max-width) - var(--typography_fluid-arial-pow-min-width)), 1rem);
+--typography_fluid-arial-pow-at-min: calc(var(--typography_fluid-arial-pow-min-font-size) * (1rem - var(--typography_fluid-arial-pow-progress)));
+--typography_fluid-arial-pow-at-max: calc(var(--typography_fluid-arial-pow-max-font-size) * var(--typography_fluid-arial-pow-progress));
+--typography_fluid-arial-pow-2xl: calc(var(--typography_fluid-arial-pow-at-min) * pow(var(--typography_fluid-arial-pow-min-type-scale), 3) + var(--typography_fluid-arial-pow-at-max) * pow(var(--typography_fluid-arial-pow-max-type-scale), 3));
+--typography_fluid-arial-pow-xl: calc(var(--typography_fluid-arial-pow-at-min) * pow(var(--typography_fluid-arial-pow-min-type-scale), 2) + var(--typography_fluid-arial-pow-at-max) * pow(var(--typography_fluid-arial-pow-max-type-scale), 2));
+--typography_fluid-arial-pow-l: calc(var(--typography_fluid-arial-pow-at-min) * var(--typography_fluid-arial-pow-min-type-scale) + var(--typography_fluid-arial-pow-at-max) * var(--typography_fluid-arial-pow-max-type-scale));
+--typography_fluid-arial-pow-m: calc(var(--typography_fluid-arial-pow-at-min) + var(--typography_fluid-arial-pow-at-max));
+--typography_fluid-arial-pow-s: calc(var(--typography_fluid-arial-pow-m) / var(--typography_fluid-arial-pow-min-type-scale));
+--typography_fluid-arial-pow-xs: calc(var(--typography_fluid-arial-pow-m) / pow(var(--typography_fluid-arial-pow-min-type-scale), 2));
+--typography_fluid-arial-pow-2xs: calc(var(--typography_fluid-arial-pow-m) / pow(var(--typography_fluid-arial-pow-min-type-scale), 3));
 --typography-weight-arial-regular: 500;",
 }
 `;
@@ -109,114 +109,114 @@ exports[`processTypography - can process weights 2`] = `
     },
   ],
   [
-    "typography_fluid.arial.pow.narrow",
+    "typography_fluid.arial.pow.min-width",
     {
-      "key": "--typography_fluid-arial-pow-narrow",
-      "sourcePath": "typography_fluid.arial.pow.narrow",
+      "key": "--typography_fluid-arial-pow-min-width",
+      "sourcePath": "typography_fluid.arial.pow.min-width",
       "tier": "primitive",
       "type": "typography",
       "value": "20",
-      "variable": "--typography_fluid-arial-pow-narrow: 20;",
+      "variable": "--typography_fluid-arial-pow-min-width: 20;",
     },
   ],
   [
-    "typography_fluid.arial.pow.wide",
+    "typography_fluid.arial.pow.max-width",
     {
-      "key": "--typography_fluid-arial-pow-wide",
-      "sourcePath": "typography_fluid.arial.pow.wide",
+      "key": "--typography_fluid-arial-pow-max-width",
+      "sourcePath": "typography_fluid.arial.pow.max-width",
       "tier": "primitive",
       "type": "typography",
       "value": "89.6875",
-      "variable": "--typography_fluid-arial-pow-wide: 89.6875;",
+      "variable": "--typography_fluid-arial-pow-max-width: 89.6875;",
     },
   ],
   [
-    "typography_fluid.arial.pow.size-narrow",
+    "typography_fluid.arial.pow.min-font-size",
     {
-      "key": "--typography_fluid-arial-pow-size-narrow",
-      "sourcePath": "typography_fluid.arial.pow.size-narrow",
+      "key": "--typography_fluid-arial-pow-min-font-size",
+      "sourcePath": "typography_fluid.arial.pow.min-font-size",
       "tier": "primitive",
       "type": "typography",
       "value": "0.875",
-      "variable": "--typography_fluid-arial-pow-size-narrow: 0.875;",
+      "variable": "--typography_fluid-arial-pow-min-font-size: 0.875;",
     },
   ],
   [
-    "typography_fluid.arial.pow.size-wide",
+    "typography_fluid.arial.pow.max-font-size",
     {
-      "key": "--typography_fluid-arial-pow-size-wide",
-      "sourcePath": "typography_fluid.arial.pow.size-wide",
+      "key": "--typography_fluid-arial-pow-max-font-size",
+      "sourcePath": "typography_fluid.arial.pow.max-font-size",
       "tier": "primitive",
       "type": "typography",
       "value": "1",
-      "variable": "--typography_fluid-arial-pow-size-wide: 1;",
+      "variable": "--typography_fluid-arial-pow-max-font-size: 1;",
     },
   ],
   [
-    "typography_fluid.arial.pow.ratio-narrow",
+    "typography_fluid.arial.pow.min-type-scale",
     {
-      "key": "--typography_fluid-arial-pow-ratio-narrow",
-      "sourcePath": "typography_fluid.arial.pow.ratio-narrow",
+      "key": "--typography_fluid-arial-pow-min-type-scale",
+      "sourcePath": "typography_fluid.arial.pow.min-type-scale",
       "tier": "primitive",
       "type": "typography",
       "value": "1.25",
-      "variable": "--typography_fluid-arial-pow-ratio-narrow: 1.25;",
+      "variable": "--typography_fluid-arial-pow-min-type-scale: 1.25;",
     },
   ],
   [
-    "typography_fluid.arial.pow.ratio-wide",
+    "typography_fluid.arial.pow.max-type-scale",
     {
-      "key": "--typography_fluid-arial-pow-ratio-wide",
-      "sourcePath": "typography_fluid.arial.pow.ratio-wide",
+      "key": "--typography_fluid-arial-pow-max-type-scale",
+      "sourcePath": "typography_fluid.arial.pow.max-type-scale",
       "tier": "primitive",
       "type": "typography",
       "value": "1.25",
-      "variable": "--typography_fluid-arial-pow-ratio-wide: 1.25;",
+      "variable": "--typography_fluid-arial-pow-max-type-scale: 1.25;",
     },
   ],
   [
-    "typography_fluid.arial.pow.fluid",
+    "typography_fluid.arial.pow.progress",
     {
-      "key": "--typography_fluid-arial-pow-fluid",
+      "key": "--typography_fluid-arial-pow-progress",
       "referencePaths": [
-        "typography_fluid.arial.pow.narrow",
-        "typography_fluid.arial.pow.wide",
+        "typography_fluid.arial.pow.min-width",
+        "typography_fluid.arial.pow.max-width",
       ],
-      "sourcePath": "typography_fluid.arial.pow.fluid",
+      "sourcePath": "typography_fluid.arial.pow.progress",
       "tier": "semantic",
       "type": "typography",
-      "value": "clamp(0rem, (100vw - var(--typography_fluid-arial-pow-narrow) * 1rem) / (var(--typography_fluid-arial-pow-wide) - var(--typography_fluid-arial-pow-narrow)), 1rem)",
-      "variable": "--typography_fluid-arial-pow-fluid: clamp(0rem, (100vw - var(--typography_fluid-arial-pow-narrow) * 1rem) / (var(--typography_fluid-arial-pow-wide) - var(--typography_fluid-arial-pow-narrow)), 1rem);",
+      "value": "clamp(0rem, (100vw - var(--typography_fluid-arial-pow-min-width) * 1rem) / (var(--typography_fluid-arial-pow-max-width) - var(--typography_fluid-arial-pow-min-width)), 1rem)",
+      "variable": "--typography_fluid-arial-pow-progress: clamp(0rem, (100vw - var(--typography_fluid-arial-pow-min-width) * 1rem) / (var(--typography_fluid-arial-pow-max-width) - var(--typography_fluid-arial-pow-min-width)), 1rem);",
     },
   ],
   [
-    "typography_fluid.arial.pow.at-narrow",
+    "typography_fluid.arial.pow.at-min",
     {
-      "key": "--typography_fluid-arial-pow-at-narrow",
+      "key": "--typography_fluid-arial-pow-at-min",
       "referencePaths": [
-        "typography_fluid.arial.pow.size-narrow",
-        "typography_fluid.arial.pow.fluid",
+        "typography_fluid.arial.pow.min-font-size",
+        "typography_fluid.arial.pow.progress",
       ],
-      "sourcePath": "typography_fluid.arial.pow.at-narrow",
+      "sourcePath": "typography_fluid.arial.pow.at-min",
       "tier": "semantic",
       "type": "typography",
-      "value": "calc(var(--typography_fluid-arial-pow-size-narrow) * (1rem - var(--typography_fluid-arial-pow-fluid)))",
-      "variable": "--typography_fluid-arial-pow-at-narrow: calc(var(--typography_fluid-arial-pow-size-narrow) * (1rem - var(--typography_fluid-arial-pow-fluid)));",
+      "value": "calc(var(--typography_fluid-arial-pow-min-font-size) * (1rem - var(--typography_fluid-arial-pow-progress)))",
+      "variable": "--typography_fluid-arial-pow-at-min: calc(var(--typography_fluid-arial-pow-min-font-size) * (1rem - var(--typography_fluid-arial-pow-progress)));",
     },
   ],
   [
-    "typography_fluid.arial.pow.at-wide",
+    "typography_fluid.arial.pow.at-max",
     {
-      "key": "--typography_fluid-arial-pow-at-wide",
+      "key": "--typography_fluid-arial-pow-at-max",
       "referencePaths": [
-        "typography_fluid.arial.pow.size-wide",
-        "typography_fluid.arial.pow.fluid",
+        "typography_fluid.arial.pow.max-font-size",
+        "typography_fluid.arial.pow.progress",
       ],
-      "sourcePath": "typography_fluid.arial.pow.at-wide",
+      "sourcePath": "typography_fluid.arial.pow.at-max",
       "tier": "semantic",
       "type": "typography",
-      "value": "calc(var(--typography_fluid-arial-pow-size-wide) * var(--typography_fluid-arial-pow-fluid))",
-      "variable": "--typography_fluid-arial-pow-at-wide: calc(var(--typography_fluid-arial-pow-size-wide) * var(--typography_fluid-arial-pow-fluid));",
+      "value": "calc(var(--typography_fluid-arial-pow-max-font-size) * var(--typography_fluid-arial-pow-progress))",
+      "variable": "--typography_fluid-arial-pow-at-max: calc(var(--typography_fluid-arial-pow-max-font-size) * var(--typography_fluid-arial-pow-progress));",
     },
   ],
   [
@@ -224,16 +224,16 @@ exports[`processTypography - can process weights 2`] = `
     {
       "key": "--typography_fluid-arial-pow-2xl",
       "referencePaths": [
-        "typography_fluid.arial.pow.at-narrow",
-        "typography_fluid.arial.pow.ratio-narrow",
-        "typography_fluid.arial.pow.at-wide",
-        "typography_fluid.arial.pow.ratio-wide",
+        "typography_fluid.arial.pow.at-min",
+        "typography_fluid.arial.pow.min-type-scale",
+        "typography_fluid.arial.pow.at-max",
+        "typography_fluid.arial.pow.max-type-scale",
       ],
       "sourcePath": "typography_fluid.arial.pow@2xl",
       "tier": "semantic",
       "type": "typography",
-      "value": "calc(var(--typography_fluid-arial-pow-at-narrow) * pow(var(--typography_fluid-arial-pow-ratio-narrow), 3) + var(--typography_fluid-arial-pow-at-wide) * pow(var(--typography_fluid-arial-pow-ratio-wide), 3))",
-      "variable": "--typography_fluid-arial-pow-2xl: calc(var(--typography_fluid-arial-pow-at-narrow) * pow(var(--typography_fluid-arial-pow-ratio-narrow), 3) + var(--typography_fluid-arial-pow-at-wide) * pow(var(--typography_fluid-arial-pow-ratio-wide), 3));",
+      "value": "calc(var(--typography_fluid-arial-pow-at-min) * pow(var(--typography_fluid-arial-pow-min-type-scale), 3) + var(--typography_fluid-arial-pow-at-max) * pow(var(--typography_fluid-arial-pow-max-type-scale), 3))",
+      "variable": "--typography_fluid-arial-pow-2xl: calc(var(--typography_fluid-arial-pow-at-min) * pow(var(--typography_fluid-arial-pow-min-type-scale), 3) + var(--typography_fluid-arial-pow-at-max) * pow(var(--typography_fluid-arial-pow-max-type-scale), 3));",
     },
   ],
   [
@@ -241,16 +241,16 @@ exports[`processTypography - can process weights 2`] = `
     {
       "key": "--typography_fluid-arial-pow-xl",
       "referencePaths": [
-        "typography_fluid.arial.pow.at-narrow",
-        "typography_fluid.arial.pow.ratio-narrow",
-        "typography_fluid.arial.pow.at-wide",
-        "typography_fluid.arial.pow.ratio-wide",
+        "typography_fluid.arial.pow.at-min",
+        "typography_fluid.arial.pow.min-type-scale",
+        "typography_fluid.arial.pow.at-max",
+        "typography_fluid.arial.pow.max-type-scale",
       ],
       "sourcePath": "typography_fluid.arial.pow@xl",
       "tier": "semantic",
       "type": "typography",
-      "value": "calc(var(--typography_fluid-arial-pow-at-narrow) * pow(var(--typography_fluid-arial-pow-ratio-narrow), 2) + var(--typography_fluid-arial-pow-at-wide) * pow(var(--typography_fluid-arial-pow-ratio-wide), 2))",
-      "variable": "--typography_fluid-arial-pow-xl: calc(var(--typography_fluid-arial-pow-at-narrow) * pow(var(--typography_fluid-arial-pow-ratio-narrow), 2) + var(--typography_fluid-arial-pow-at-wide) * pow(var(--typography_fluid-arial-pow-ratio-wide), 2));",
+      "value": "calc(var(--typography_fluid-arial-pow-at-min) * pow(var(--typography_fluid-arial-pow-min-type-scale), 2) + var(--typography_fluid-arial-pow-at-max) * pow(var(--typography_fluid-arial-pow-max-type-scale), 2))",
+      "variable": "--typography_fluid-arial-pow-xl: calc(var(--typography_fluid-arial-pow-at-min) * pow(var(--typography_fluid-arial-pow-min-type-scale), 2) + var(--typography_fluid-arial-pow-at-max) * pow(var(--typography_fluid-arial-pow-max-type-scale), 2));",
     },
   ],
   [
@@ -258,16 +258,16 @@ exports[`processTypography - can process weights 2`] = `
     {
       "key": "--typography_fluid-arial-pow-l",
       "referencePaths": [
-        "typography_fluid.arial.pow.at-narrow",
-        "typography_fluid.arial.pow.ratio-narrow",
-        "typography_fluid.arial.pow.at-wide",
-        "typography_fluid.arial.pow.ratio-wide",
+        "typography_fluid.arial.pow.at-min",
+        "typography_fluid.arial.pow.min-type-scale",
+        "typography_fluid.arial.pow.at-max",
+        "typography_fluid.arial.pow.max-type-scale",
       ],
       "sourcePath": "typography_fluid.arial.pow@l",
       "tier": "semantic",
       "type": "typography",
-      "value": "calc(var(--typography_fluid-arial-pow-at-narrow) * var(--typography_fluid-arial-pow-ratio-narrow) + var(--typography_fluid-arial-pow-at-wide) * var(--typography_fluid-arial-pow-ratio-wide))",
-      "variable": "--typography_fluid-arial-pow-l: calc(var(--typography_fluid-arial-pow-at-narrow) * var(--typography_fluid-arial-pow-ratio-narrow) + var(--typography_fluid-arial-pow-at-wide) * var(--typography_fluid-arial-pow-ratio-wide));",
+      "value": "calc(var(--typography_fluid-arial-pow-at-min) * var(--typography_fluid-arial-pow-min-type-scale) + var(--typography_fluid-arial-pow-at-max) * var(--typography_fluid-arial-pow-max-type-scale))",
+      "variable": "--typography_fluid-arial-pow-l: calc(var(--typography_fluid-arial-pow-at-min) * var(--typography_fluid-arial-pow-min-type-scale) + var(--typography_fluid-arial-pow-at-max) * var(--typography_fluid-arial-pow-max-type-scale));",
     },
   ],
   [
@@ -275,14 +275,14 @@ exports[`processTypography - can process weights 2`] = `
     {
       "key": "--typography_fluid-arial-pow-m",
       "referencePaths": [
-        "typography_fluid.arial.pow.at-narrow",
-        "typography_fluid.arial.pow.at-wide",
+        "typography_fluid.arial.pow.at-min",
+        "typography_fluid.arial.pow.at-max",
       ],
       "sourcePath": "typography_fluid.arial.pow@m",
       "tier": "semantic",
       "type": "typography",
-      "value": "calc(var(--typography_fluid-arial-pow-at-narrow) + var(--typography_fluid-arial-pow-at-wide))",
-      "variable": "--typography_fluid-arial-pow-m: calc(var(--typography_fluid-arial-pow-at-narrow) + var(--typography_fluid-arial-pow-at-wide));",
+      "value": "calc(var(--typography_fluid-arial-pow-at-min) + var(--typography_fluid-arial-pow-at-max))",
+      "variable": "--typography_fluid-arial-pow-m: calc(var(--typography_fluid-arial-pow-at-min) + var(--typography_fluid-arial-pow-at-max));",
     },
   ],
   [
@@ -291,13 +291,13 @@ exports[`processTypography - can process weights 2`] = `
       "key": "--typography_fluid-arial-pow-s",
       "referencePaths": [
         "typography_fluid.arial.pow@m",
-        "typography_fluid.arial.pow.ratio-narrow",
+        "typography_fluid.arial.pow.min-type-scale",
       ],
       "sourcePath": "typography_fluid.arial.pow@s",
       "tier": "semantic",
       "type": "typography",
-      "value": "calc(var(--typography_fluid-arial-pow-m) / var(--typography_fluid-arial-pow-ratio-narrow))",
-      "variable": "--typography_fluid-arial-pow-s: calc(var(--typography_fluid-arial-pow-m) / var(--typography_fluid-arial-pow-ratio-narrow));",
+      "value": "calc(var(--typography_fluid-arial-pow-m) / var(--typography_fluid-arial-pow-min-type-scale))",
+      "variable": "--typography_fluid-arial-pow-s: calc(var(--typography_fluid-arial-pow-m) / var(--typography_fluid-arial-pow-min-type-scale));",
     },
   ],
   [
@@ -306,13 +306,13 @@ exports[`processTypography - can process weights 2`] = `
       "key": "--typography_fluid-arial-pow-xs",
       "referencePaths": [
         "typography_fluid.arial.pow@m",
-        "typography_fluid.arial.pow.ratio-narrow",
+        "typography_fluid.arial.pow.min-type-scale",
       ],
       "sourcePath": "typography_fluid.arial.pow@xs",
       "tier": "semantic",
       "type": "typography",
-      "value": "calc(var(--typography_fluid-arial-pow-m) / pow(var(--typography_fluid-arial-pow-ratio-narrow), 2))",
-      "variable": "--typography_fluid-arial-pow-xs: calc(var(--typography_fluid-arial-pow-m) / pow(var(--typography_fluid-arial-pow-ratio-narrow), 2));",
+      "value": "calc(var(--typography_fluid-arial-pow-m) / pow(var(--typography_fluid-arial-pow-min-type-scale), 2))",
+      "variable": "--typography_fluid-arial-pow-xs: calc(var(--typography_fluid-arial-pow-m) / pow(var(--typography_fluid-arial-pow-min-type-scale), 2));",
     },
   ],
   [
@@ -321,13 +321,13 @@ exports[`processTypography - can process weights 2`] = `
       "key": "--typography_fluid-arial-pow-2xs",
       "referencePaths": [
         "typography_fluid.arial.pow@m",
-        "typography_fluid.arial.pow.ratio-narrow",
+        "typography_fluid.arial.pow.min-type-scale",
       ],
       "sourcePath": "typography_fluid.arial.pow@2xs",
       "tier": "semantic",
       "type": "typography",
-      "value": "calc(var(--typography_fluid-arial-pow-m) / pow(var(--typography_fluid-arial-pow-ratio-narrow), 3))",
-      "variable": "--typography_fluid-arial-pow-2xs: calc(var(--typography_fluid-arial-pow-m) / pow(var(--typography_fluid-arial-pow-ratio-narrow), 3));",
+      "value": "calc(var(--typography_fluid-arial-pow-m) / pow(var(--typography_fluid-arial-pow-min-type-scale), 3))",
+      "variable": "--typography_fluid-arial-pow-2xs: calc(var(--typography_fluid-arial-pow-m) / pow(var(--typography_fluid-arial-pow-min-type-scale), 3));",
     },
   ],
   [
@@ -355,24 +355,24 @@ exports[`processTypography - generates correct CSS variables 1`] = `
 --typography_fluid-arial-s: clamp(0.7rem, 0.6713rem + 0.1435vw, 0.8rem);
 --typography_fluid-arial-xs: clamp(0.56rem, 0.537rem + 0.1148vw, 0.64rem);
 --typography_fluid-arial-2xs: clamp(0.448rem, 0.4296rem + 0.0918vw, 0.512rem);
---typography_fluid-arial-pow-narrow: 20;
---typography_fluid-arial-pow-wide: 89.6875;
---typography_fluid-arial-pow-size-narrow: 0.875;
---typography_fluid-arial-pow-size-wide: 1;
---typography_fluid-arial-pow-ratio-narrow: 1.25;
---typography_fluid-arial-pow-ratio-wide: 1.25;
---typography_fluid-arial-pow-fluid: clamp(0rem, (100vw - var(--typography_fluid-arial-pow-narrow) * 1rem) / (var(--typography_fluid-arial-pow-wide) - var(--typography_fluid-arial-pow-narrow)), 1rem);
---typography_fluid-arial-pow-at-narrow: calc(var(--typography_fluid-arial-pow-size-narrow) * (1rem - var(--typography_fluid-arial-pow-fluid)));
---typography_fluid-arial-pow-at-wide: calc(var(--typography_fluid-arial-pow-size-wide) * var(--typography_fluid-arial-pow-fluid));
---typography_fluid-arial-pow-4xl: calc(var(--typography_fluid-arial-pow-at-narrow) * pow(var(--typography_fluid-arial-pow-ratio-narrow), 5) + var(--typography_fluid-arial-pow-at-wide) * pow(var(--typography_fluid-arial-pow-ratio-wide), 5));
---typography_fluid-arial-pow-3xl: calc(var(--typography_fluid-arial-pow-at-narrow) * pow(var(--typography_fluid-arial-pow-ratio-narrow), 4) + var(--typography_fluid-arial-pow-at-wide) * pow(var(--typography_fluid-arial-pow-ratio-wide), 4));
---typography_fluid-arial-pow-2xl: calc(var(--typography_fluid-arial-pow-at-narrow) * pow(var(--typography_fluid-arial-pow-ratio-narrow), 3) + var(--typography_fluid-arial-pow-at-wide) * pow(var(--typography_fluid-arial-pow-ratio-wide), 3));
---typography_fluid-arial-pow-xl: calc(var(--typography_fluid-arial-pow-at-narrow) * pow(var(--typography_fluid-arial-pow-ratio-narrow), 2) + var(--typography_fluid-arial-pow-at-wide) * pow(var(--typography_fluid-arial-pow-ratio-wide), 2));
---typography_fluid-arial-pow-l: calc(var(--typography_fluid-arial-pow-at-narrow) * var(--typography_fluid-arial-pow-ratio-narrow) + var(--typography_fluid-arial-pow-at-wide) * var(--typography_fluid-arial-pow-ratio-wide));
---typography_fluid-arial-pow-m: calc(var(--typography_fluid-arial-pow-at-narrow) + var(--typography_fluid-arial-pow-at-wide));
---typography_fluid-arial-pow-s: calc(var(--typography_fluid-arial-pow-m) / var(--typography_fluid-arial-pow-ratio-narrow));
---typography_fluid-arial-pow-xs: calc(var(--typography_fluid-arial-pow-m) / pow(var(--typography_fluid-arial-pow-ratio-narrow), 2));
---typography_fluid-arial-pow-2xs: calc(var(--typography_fluid-arial-pow-m) / pow(var(--typography_fluid-arial-pow-ratio-narrow), 3));",
+--typography_fluid-arial-pow-min-width: 20;
+--typography_fluid-arial-pow-max-width: 89.6875;
+--typography_fluid-arial-pow-min-font-size: 0.875;
+--typography_fluid-arial-pow-max-font-size: 1;
+--typography_fluid-arial-pow-min-type-scale: 1.25;
+--typography_fluid-arial-pow-max-type-scale: 1.25;
+--typography_fluid-arial-pow-progress: clamp(0rem, (100vw - var(--typography_fluid-arial-pow-min-width) * 1rem) / (var(--typography_fluid-arial-pow-max-width) - var(--typography_fluid-arial-pow-min-width)), 1rem);
+--typography_fluid-arial-pow-at-min: calc(var(--typography_fluid-arial-pow-min-font-size) * (1rem - var(--typography_fluid-arial-pow-progress)));
+--typography_fluid-arial-pow-at-max: calc(var(--typography_fluid-arial-pow-max-font-size) * var(--typography_fluid-arial-pow-progress));
+--typography_fluid-arial-pow-4xl: calc(var(--typography_fluid-arial-pow-at-min) * pow(var(--typography_fluid-arial-pow-min-type-scale), 5) + var(--typography_fluid-arial-pow-at-max) * pow(var(--typography_fluid-arial-pow-max-type-scale), 5));
+--typography_fluid-arial-pow-3xl: calc(var(--typography_fluid-arial-pow-at-min) * pow(var(--typography_fluid-arial-pow-min-type-scale), 4) + var(--typography_fluid-arial-pow-at-max) * pow(var(--typography_fluid-arial-pow-max-type-scale), 4));
+--typography_fluid-arial-pow-2xl: calc(var(--typography_fluid-arial-pow-at-min) * pow(var(--typography_fluid-arial-pow-min-type-scale), 3) + var(--typography_fluid-arial-pow-at-max) * pow(var(--typography_fluid-arial-pow-max-type-scale), 3));
+--typography_fluid-arial-pow-xl: calc(var(--typography_fluid-arial-pow-at-min) * pow(var(--typography_fluid-arial-pow-min-type-scale), 2) + var(--typography_fluid-arial-pow-at-max) * pow(var(--typography_fluid-arial-pow-max-type-scale), 2));
+--typography_fluid-arial-pow-l: calc(var(--typography_fluid-arial-pow-at-min) * var(--typography_fluid-arial-pow-min-type-scale) + var(--typography_fluid-arial-pow-at-max) * var(--typography_fluid-arial-pow-max-type-scale));
+--typography_fluid-arial-pow-m: calc(var(--typography_fluid-arial-pow-at-min) + var(--typography_fluid-arial-pow-at-max));
+--typography_fluid-arial-pow-s: calc(var(--typography_fluid-arial-pow-m) / var(--typography_fluid-arial-pow-min-type-scale));
+--typography_fluid-arial-pow-xs: calc(var(--typography_fluid-arial-pow-m) / pow(var(--typography_fluid-arial-pow-min-type-scale), 2));
+--typography_fluid-arial-pow-2xs: calc(var(--typography_fluid-arial-pow-m) / pow(var(--typography_fluid-arial-pow-min-type-scale), 3));",
 }
 `;
 
@@ -478,114 +478,114 @@ exports[`processTypography - generates correct CSS variables 2`] = `
     },
   ],
   [
-    "typography_fluid.arial.pow.narrow",
+    "typography_fluid.arial.pow.min-width",
     {
-      "key": "--typography_fluid-arial-pow-narrow",
-      "sourcePath": "typography_fluid.arial.pow.narrow",
+      "key": "--typography_fluid-arial-pow-min-width",
+      "sourcePath": "typography_fluid.arial.pow.min-width",
       "tier": "primitive",
       "type": "typography",
       "value": "20",
-      "variable": "--typography_fluid-arial-pow-narrow: 20;",
+      "variable": "--typography_fluid-arial-pow-min-width: 20;",
     },
   ],
   [
-    "typography_fluid.arial.pow.wide",
+    "typography_fluid.arial.pow.max-width",
     {
-      "key": "--typography_fluid-arial-pow-wide",
-      "sourcePath": "typography_fluid.arial.pow.wide",
+      "key": "--typography_fluid-arial-pow-max-width",
+      "sourcePath": "typography_fluid.arial.pow.max-width",
       "tier": "primitive",
       "type": "typography",
       "value": "89.6875",
-      "variable": "--typography_fluid-arial-pow-wide: 89.6875;",
+      "variable": "--typography_fluid-arial-pow-max-width: 89.6875;",
     },
   ],
   [
-    "typography_fluid.arial.pow.size-narrow",
+    "typography_fluid.arial.pow.min-font-size",
     {
-      "key": "--typography_fluid-arial-pow-size-narrow",
-      "sourcePath": "typography_fluid.arial.pow.size-narrow",
+      "key": "--typography_fluid-arial-pow-min-font-size",
+      "sourcePath": "typography_fluid.arial.pow.min-font-size",
       "tier": "primitive",
       "type": "typography",
       "value": "0.875",
-      "variable": "--typography_fluid-arial-pow-size-narrow: 0.875;",
+      "variable": "--typography_fluid-arial-pow-min-font-size: 0.875;",
     },
   ],
   [
-    "typography_fluid.arial.pow.size-wide",
+    "typography_fluid.arial.pow.max-font-size",
     {
-      "key": "--typography_fluid-arial-pow-size-wide",
-      "sourcePath": "typography_fluid.arial.pow.size-wide",
+      "key": "--typography_fluid-arial-pow-max-font-size",
+      "sourcePath": "typography_fluid.arial.pow.max-font-size",
       "tier": "primitive",
       "type": "typography",
       "value": "1",
-      "variable": "--typography_fluid-arial-pow-size-wide: 1;",
+      "variable": "--typography_fluid-arial-pow-max-font-size: 1;",
     },
   ],
   [
-    "typography_fluid.arial.pow.ratio-narrow",
+    "typography_fluid.arial.pow.min-type-scale",
     {
-      "key": "--typography_fluid-arial-pow-ratio-narrow",
-      "sourcePath": "typography_fluid.arial.pow.ratio-narrow",
+      "key": "--typography_fluid-arial-pow-min-type-scale",
+      "sourcePath": "typography_fluid.arial.pow.min-type-scale",
       "tier": "primitive",
       "type": "typography",
       "value": "1.25",
-      "variable": "--typography_fluid-arial-pow-ratio-narrow: 1.25;",
+      "variable": "--typography_fluid-arial-pow-min-type-scale: 1.25;",
     },
   ],
   [
-    "typography_fluid.arial.pow.ratio-wide",
+    "typography_fluid.arial.pow.max-type-scale",
     {
-      "key": "--typography_fluid-arial-pow-ratio-wide",
-      "sourcePath": "typography_fluid.arial.pow.ratio-wide",
+      "key": "--typography_fluid-arial-pow-max-type-scale",
+      "sourcePath": "typography_fluid.arial.pow.max-type-scale",
       "tier": "primitive",
       "type": "typography",
       "value": "1.25",
-      "variable": "--typography_fluid-arial-pow-ratio-wide: 1.25;",
+      "variable": "--typography_fluid-arial-pow-max-type-scale: 1.25;",
     },
   ],
   [
-    "typography_fluid.arial.pow.fluid",
+    "typography_fluid.arial.pow.progress",
     {
-      "key": "--typography_fluid-arial-pow-fluid",
+      "key": "--typography_fluid-arial-pow-progress",
       "referencePaths": [
-        "typography_fluid.arial.pow.narrow",
-        "typography_fluid.arial.pow.wide",
+        "typography_fluid.arial.pow.min-width",
+        "typography_fluid.arial.pow.max-width",
       ],
-      "sourcePath": "typography_fluid.arial.pow.fluid",
+      "sourcePath": "typography_fluid.arial.pow.progress",
       "tier": "semantic",
       "type": "typography",
-      "value": "clamp(0rem, (100vw - var(--typography_fluid-arial-pow-narrow) * 1rem) / (var(--typography_fluid-arial-pow-wide) - var(--typography_fluid-arial-pow-narrow)), 1rem)",
-      "variable": "--typography_fluid-arial-pow-fluid: clamp(0rem, (100vw - var(--typography_fluid-arial-pow-narrow) * 1rem) / (var(--typography_fluid-arial-pow-wide) - var(--typography_fluid-arial-pow-narrow)), 1rem);",
+      "value": "clamp(0rem, (100vw - var(--typography_fluid-arial-pow-min-width) * 1rem) / (var(--typography_fluid-arial-pow-max-width) - var(--typography_fluid-arial-pow-min-width)), 1rem)",
+      "variable": "--typography_fluid-arial-pow-progress: clamp(0rem, (100vw - var(--typography_fluid-arial-pow-min-width) * 1rem) / (var(--typography_fluid-arial-pow-max-width) - var(--typography_fluid-arial-pow-min-width)), 1rem);",
     },
   ],
   [
-    "typography_fluid.arial.pow.at-narrow",
+    "typography_fluid.arial.pow.at-min",
     {
-      "key": "--typography_fluid-arial-pow-at-narrow",
+      "key": "--typography_fluid-arial-pow-at-min",
       "referencePaths": [
-        "typography_fluid.arial.pow.size-narrow",
-        "typography_fluid.arial.pow.fluid",
+        "typography_fluid.arial.pow.min-font-size",
+        "typography_fluid.arial.pow.progress",
       ],
-      "sourcePath": "typography_fluid.arial.pow.at-narrow",
+      "sourcePath": "typography_fluid.arial.pow.at-min",
       "tier": "semantic",
       "type": "typography",
-      "value": "calc(var(--typography_fluid-arial-pow-size-narrow) * (1rem - var(--typography_fluid-arial-pow-fluid)))",
-      "variable": "--typography_fluid-arial-pow-at-narrow: calc(var(--typography_fluid-arial-pow-size-narrow) * (1rem - var(--typography_fluid-arial-pow-fluid)));",
+      "value": "calc(var(--typography_fluid-arial-pow-min-font-size) * (1rem - var(--typography_fluid-arial-pow-progress)))",
+      "variable": "--typography_fluid-arial-pow-at-min: calc(var(--typography_fluid-arial-pow-min-font-size) * (1rem - var(--typography_fluid-arial-pow-progress)));",
     },
   ],
   [
-    "typography_fluid.arial.pow.at-wide",
+    "typography_fluid.arial.pow.at-max",
     {
-      "key": "--typography_fluid-arial-pow-at-wide",
+      "key": "--typography_fluid-arial-pow-at-max",
       "referencePaths": [
-        "typography_fluid.arial.pow.size-wide",
-        "typography_fluid.arial.pow.fluid",
+        "typography_fluid.arial.pow.max-font-size",
+        "typography_fluid.arial.pow.progress",
       ],
-      "sourcePath": "typography_fluid.arial.pow.at-wide",
+      "sourcePath": "typography_fluid.arial.pow.at-max",
       "tier": "semantic",
       "type": "typography",
-      "value": "calc(var(--typography_fluid-arial-pow-size-wide) * var(--typography_fluid-arial-pow-fluid))",
-      "variable": "--typography_fluid-arial-pow-at-wide: calc(var(--typography_fluid-arial-pow-size-wide) * var(--typography_fluid-arial-pow-fluid));",
+      "value": "calc(var(--typography_fluid-arial-pow-max-font-size) * var(--typography_fluid-arial-pow-progress))",
+      "variable": "--typography_fluid-arial-pow-at-max: calc(var(--typography_fluid-arial-pow-max-font-size) * var(--typography_fluid-arial-pow-progress));",
     },
   ],
   [
@@ -593,16 +593,16 @@ exports[`processTypography - generates correct CSS variables 2`] = `
     {
       "key": "--typography_fluid-arial-pow-4xl",
       "referencePaths": [
-        "typography_fluid.arial.pow.at-narrow",
-        "typography_fluid.arial.pow.ratio-narrow",
-        "typography_fluid.arial.pow.at-wide",
-        "typography_fluid.arial.pow.ratio-wide",
+        "typography_fluid.arial.pow.at-min",
+        "typography_fluid.arial.pow.min-type-scale",
+        "typography_fluid.arial.pow.at-max",
+        "typography_fluid.arial.pow.max-type-scale",
       ],
       "sourcePath": "typography_fluid.arial.pow@4xl",
       "tier": "semantic",
       "type": "typography",
-      "value": "calc(var(--typography_fluid-arial-pow-at-narrow) * pow(var(--typography_fluid-arial-pow-ratio-narrow), 5) + var(--typography_fluid-arial-pow-at-wide) * pow(var(--typography_fluid-arial-pow-ratio-wide), 5))",
-      "variable": "--typography_fluid-arial-pow-4xl: calc(var(--typography_fluid-arial-pow-at-narrow) * pow(var(--typography_fluid-arial-pow-ratio-narrow), 5) + var(--typography_fluid-arial-pow-at-wide) * pow(var(--typography_fluid-arial-pow-ratio-wide), 5));",
+      "value": "calc(var(--typography_fluid-arial-pow-at-min) * pow(var(--typography_fluid-arial-pow-min-type-scale), 5) + var(--typography_fluid-arial-pow-at-max) * pow(var(--typography_fluid-arial-pow-max-type-scale), 5))",
+      "variable": "--typography_fluid-arial-pow-4xl: calc(var(--typography_fluid-arial-pow-at-min) * pow(var(--typography_fluid-arial-pow-min-type-scale), 5) + var(--typography_fluid-arial-pow-at-max) * pow(var(--typography_fluid-arial-pow-max-type-scale), 5));",
     },
   ],
   [
@@ -610,16 +610,16 @@ exports[`processTypography - generates correct CSS variables 2`] = `
     {
       "key": "--typography_fluid-arial-pow-3xl",
       "referencePaths": [
-        "typography_fluid.arial.pow.at-narrow",
-        "typography_fluid.arial.pow.ratio-narrow",
-        "typography_fluid.arial.pow.at-wide",
-        "typography_fluid.arial.pow.ratio-wide",
+        "typography_fluid.arial.pow.at-min",
+        "typography_fluid.arial.pow.min-type-scale",
+        "typography_fluid.arial.pow.at-max",
+        "typography_fluid.arial.pow.max-type-scale",
       ],
       "sourcePath": "typography_fluid.arial.pow@3xl",
       "tier": "semantic",
       "type": "typography",
-      "value": "calc(var(--typography_fluid-arial-pow-at-narrow) * pow(var(--typography_fluid-arial-pow-ratio-narrow), 4) + var(--typography_fluid-arial-pow-at-wide) * pow(var(--typography_fluid-arial-pow-ratio-wide), 4))",
-      "variable": "--typography_fluid-arial-pow-3xl: calc(var(--typography_fluid-arial-pow-at-narrow) * pow(var(--typography_fluid-arial-pow-ratio-narrow), 4) + var(--typography_fluid-arial-pow-at-wide) * pow(var(--typography_fluid-arial-pow-ratio-wide), 4));",
+      "value": "calc(var(--typography_fluid-arial-pow-at-min) * pow(var(--typography_fluid-arial-pow-min-type-scale), 4) + var(--typography_fluid-arial-pow-at-max) * pow(var(--typography_fluid-arial-pow-max-type-scale), 4))",
+      "variable": "--typography_fluid-arial-pow-3xl: calc(var(--typography_fluid-arial-pow-at-min) * pow(var(--typography_fluid-arial-pow-min-type-scale), 4) + var(--typography_fluid-arial-pow-at-max) * pow(var(--typography_fluid-arial-pow-max-type-scale), 4));",
     },
   ],
   [
@@ -627,16 +627,16 @@ exports[`processTypography - generates correct CSS variables 2`] = `
     {
       "key": "--typography_fluid-arial-pow-2xl",
       "referencePaths": [
-        "typography_fluid.arial.pow.at-narrow",
-        "typography_fluid.arial.pow.ratio-narrow",
-        "typography_fluid.arial.pow.at-wide",
-        "typography_fluid.arial.pow.ratio-wide",
+        "typography_fluid.arial.pow.at-min",
+        "typography_fluid.arial.pow.min-type-scale",
+        "typography_fluid.arial.pow.at-max",
+        "typography_fluid.arial.pow.max-type-scale",
       ],
       "sourcePath": "typography_fluid.arial.pow@2xl",
       "tier": "semantic",
       "type": "typography",
-      "value": "calc(var(--typography_fluid-arial-pow-at-narrow) * pow(var(--typography_fluid-arial-pow-ratio-narrow), 3) + var(--typography_fluid-arial-pow-at-wide) * pow(var(--typography_fluid-arial-pow-ratio-wide), 3))",
-      "variable": "--typography_fluid-arial-pow-2xl: calc(var(--typography_fluid-arial-pow-at-narrow) * pow(var(--typography_fluid-arial-pow-ratio-narrow), 3) + var(--typography_fluid-arial-pow-at-wide) * pow(var(--typography_fluid-arial-pow-ratio-wide), 3));",
+      "value": "calc(var(--typography_fluid-arial-pow-at-min) * pow(var(--typography_fluid-arial-pow-min-type-scale), 3) + var(--typography_fluid-arial-pow-at-max) * pow(var(--typography_fluid-arial-pow-max-type-scale), 3))",
+      "variable": "--typography_fluid-arial-pow-2xl: calc(var(--typography_fluid-arial-pow-at-min) * pow(var(--typography_fluid-arial-pow-min-type-scale), 3) + var(--typography_fluid-arial-pow-at-max) * pow(var(--typography_fluid-arial-pow-max-type-scale), 3));",
     },
   ],
   [
@@ -644,16 +644,16 @@ exports[`processTypography - generates correct CSS variables 2`] = `
     {
       "key": "--typography_fluid-arial-pow-xl",
       "referencePaths": [
-        "typography_fluid.arial.pow.at-narrow",
-        "typography_fluid.arial.pow.ratio-narrow",
-        "typography_fluid.arial.pow.at-wide",
-        "typography_fluid.arial.pow.ratio-wide",
+        "typography_fluid.arial.pow.at-min",
+        "typography_fluid.arial.pow.min-type-scale",
+        "typography_fluid.arial.pow.at-max",
+        "typography_fluid.arial.pow.max-type-scale",
       ],
       "sourcePath": "typography_fluid.arial.pow@xl",
       "tier": "semantic",
       "type": "typography",
-      "value": "calc(var(--typography_fluid-arial-pow-at-narrow) * pow(var(--typography_fluid-arial-pow-ratio-narrow), 2) + var(--typography_fluid-arial-pow-at-wide) * pow(var(--typography_fluid-arial-pow-ratio-wide), 2))",
-      "variable": "--typography_fluid-arial-pow-xl: calc(var(--typography_fluid-arial-pow-at-narrow) * pow(var(--typography_fluid-arial-pow-ratio-narrow), 2) + var(--typography_fluid-arial-pow-at-wide) * pow(var(--typography_fluid-arial-pow-ratio-wide), 2));",
+      "value": "calc(var(--typography_fluid-arial-pow-at-min) * pow(var(--typography_fluid-arial-pow-min-type-scale), 2) + var(--typography_fluid-arial-pow-at-max) * pow(var(--typography_fluid-arial-pow-max-type-scale), 2))",
+      "variable": "--typography_fluid-arial-pow-xl: calc(var(--typography_fluid-arial-pow-at-min) * pow(var(--typography_fluid-arial-pow-min-type-scale), 2) + var(--typography_fluid-arial-pow-at-max) * pow(var(--typography_fluid-arial-pow-max-type-scale), 2));",
     },
   ],
   [
@@ -661,16 +661,16 @@ exports[`processTypography - generates correct CSS variables 2`] = `
     {
       "key": "--typography_fluid-arial-pow-l",
       "referencePaths": [
-        "typography_fluid.arial.pow.at-narrow",
-        "typography_fluid.arial.pow.ratio-narrow",
-        "typography_fluid.arial.pow.at-wide",
-        "typography_fluid.arial.pow.ratio-wide",
+        "typography_fluid.arial.pow.at-min",
+        "typography_fluid.arial.pow.min-type-scale",
+        "typography_fluid.arial.pow.at-max",
+        "typography_fluid.arial.pow.max-type-scale",
       ],
       "sourcePath": "typography_fluid.arial.pow@l",
       "tier": "semantic",
       "type": "typography",
-      "value": "calc(var(--typography_fluid-arial-pow-at-narrow) * var(--typography_fluid-arial-pow-ratio-narrow) + var(--typography_fluid-arial-pow-at-wide) * var(--typography_fluid-arial-pow-ratio-wide))",
-      "variable": "--typography_fluid-arial-pow-l: calc(var(--typography_fluid-arial-pow-at-narrow) * var(--typography_fluid-arial-pow-ratio-narrow) + var(--typography_fluid-arial-pow-at-wide) * var(--typography_fluid-arial-pow-ratio-wide));",
+      "value": "calc(var(--typography_fluid-arial-pow-at-min) * var(--typography_fluid-arial-pow-min-type-scale) + var(--typography_fluid-arial-pow-at-max) * var(--typography_fluid-arial-pow-max-type-scale))",
+      "variable": "--typography_fluid-arial-pow-l: calc(var(--typography_fluid-arial-pow-at-min) * var(--typography_fluid-arial-pow-min-type-scale) + var(--typography_fluid-arial-pow-at-max) * var(--typography_fluid-arial-pow-max-type-scale));",
     },
   ],
   [
@@ -678,14 +678,14 @@ exports[`processTypography - generates correct CSS variables 2`] = `
     {
       "key": "--typography_fluid-arial-pow-m",
       "referencePaths": [
-        "typography_fluid.arial.pow.at-narrow",
-        "typography_fluid.arial.pow.at-wide",
+        "typography_fluid.arial.pow.at-min",
+        "typography_fluid.arial.pow.at-max",
       ],
       "sourcePath": "typography_fluid.arial.pow@m",
       "tier": "semantic",
       "type": "typography",
-      "value": "calc(var(--typography_fluid-arial-pow-at-narrow) + var(--typography_fluid-arial-pow-at-wide))",
-      "variable": "--typography_fluid-arial-pow-m: calc(var(--typography_fluid-arial-pow-at-narrow) + var(--typography_fluid-arial-pow-at-wide));",
+      "value": "calc(var(--typography_fluid-arial-pow-at-min) + var(--typography_fluid-arial-pow-at-max))",
+      "variable": "--typography_fluid-arial-pow-m: calc(var(--typography_fluid-arial-pow-at-min) + var(--typography_fluid-arial-pow-at-max));",
     },
   ],
   [
@@ -694,13 +694,13 @@ exports[`processTypography - generates correct CSS variables 2`] = `
       "key": "--typography_fluid-arial-pow-s",
       "referencePaths": [
         "typography_fluid.arial.pow@m",
-        "typography_fluid.arial.pow.ratio-narrow",
+        "typography_fluid.arial.pow.min-type-scale",
       ],
       "sourcePath": "typography_fluid.arial.pow@s",
       "tier": "semantic",
       "type": "typography",
-      "value": "calc(var(--typography_fluid-arial-pow-m) / var(--typography_fluid-arial-pow-ratio-narrow))",
-      "variable": "--typography_fluid-arial-pow-s: calc(var(--typography_fluid-arial-pow-m) / var(--typography_fluid-arial-pow-ratio-narrow));",
+      "value": "calc(var(--typography_fluid-arial-pow-m) / var(--typography_fluid-arial-pow-min-type-scale))",
+      "variable": "--typography_fluid-arial-pow-s: calc(var(--typography_fluid-arial-pow-m) / var(--typography_fluid-arial-pow-min-type-scale));",
     },
   ],
   [
@@ -709,13 +709,13 @@ exports[`processTypography - generates correct CSS variables 2`] = `
       "key": "--typography_fluid-arial-pow-xs",
       "referencePaths": [
         "typography_fluid.arial.pow@m",
-        "typography_fluid.arial.pow.ratio-narrow",
+        "typography_fluid.arial.pow.min-type-scale",
       ],
       "sourcePath": "typography_fluid.arial.pow@xs",
       "tier": "semantic",
       "type": "typography",
-      "value": "calc(var(--typography_fluid-arial-pow-m) / pow(var(--typography_fluid-arial-pow-ratio-narrow), 2))",
-      "variable": "--typography_fluid-arial-pow-xs: calc(var(--typography_fluid-arial-pow-m) / pow(var(--typography_fluid-arial-pow-ratio-narrow), 2));",
+      "value": "calc(var(--typography_fluid-arial-pow-m) / pow(var(--typography_fluid-arial-pow-min-type-scale), 2))",
+      "variable": "--typography_fluid-arial-pow-xs: calc(var(--typography_fluid-arial-pow-m) / pow(var(--typography_fluid-arial-pow-min-type-scale), 2));",
     },
   ],
   [
@@ -724,13 +724,13 @@ exports[`processTypography - generates correct CSS variables 2`] = `
       "key": "--typography_fluid-arial-pow-2xs",
       "referencePaths": [
         "typography_fluid.arial.pow@m",
-        "typography_fluid.arial.pow.ratio-narrow",
+        "typography_fluid.arial.pow.min-type-scale",
       ],
       "sourcePath": "typography_fluid.arial.pow@2xs",
       "tier": "semantic",
       "type": "typography",
-      "value": "calc(var(--typography_fluid-arial-pow-m) / pow(var(--typography_fluid-arial-pow-ratio-narrow), 3))",
-      "variable": "--typography_fluid-arial-pow-2xs: calc(var(--typography_fluid-arial-pow-m) / pow(var(--typography_fluid-arial-pow-ratio-narrow), 3));",
+      "value": "calc(var(--typography_fluid-arial-pow-m) / pow(var(--typography_fluid-arial-pow-min-type-scale), 3))",
+      "variable": "--typography_fluid-arial-pow-2xs: calc(var(--typography_fluid-arial-pow-m) / pow(var(--typography_fluid-arial-pow-min-type-scale), 3));",
     },
   ],
 ]
@@ -748,25 +748,25 @@ exports[`typography - can handle custom labels and prefixes 1`] = `
 --typography_fluid-arial-text-m: clamp(0.875rem, 0.8391rem + 0.1794vw, 1rem);
 --typography_fluid-arial-text-s: clamp(0.7rem, 0.6713rem + 0.1435vw, 0.8rem);
 --typography_fluid-arial-text-xs: clamp(0.56rem, 0.537rem + 0.1148vw, 0.64rem);
---typography_fluid-arial-text-pow-narrow: 20;
---typography_fluid-arial-text-pow-wide: 89.6875;
---typography_fluid-arial-text-pow-size-narrow: 0.875;
---typography_fluid-arial-text-pow-size-wide: 1;
---typography_fluid-arial-text-pow-ratio-narrow: 1.25;
---typography_fluid-arial-text-pow-ratio-wide: 1.25;
---typography_fluid-arial-text-pow-fluid: clamp(0rem, (100vw - var(--typography_fluid-arial-text-pow-narrow) * 1rem) / (var(--typography_fluid-arial-text-pow-wide) - var(--typography_fluid-arial-text-pow-narrow)), 1rem);
---typography_fluid-arial-text-pow-at-narrow: calc(var(--typography_fluid-arial-text-pow-size-narrow) * (1rem - var(--typography_fluid-arial-text-pow-fluid)));
---typography_fluid-arial-text-pow-at-wide: calc(var(--typography_fluid-arial-text-pow-size-wide) * var(--typography_fluid-arial-text-pow-fluid));
---typography_fluid-arial-text-pow-h1: calc(var(--typography_fluid-arial-text-pow-at-narrow) * pow(var(--typography_fluid-arial-text-pow-ratio-narrow), 7) + var(--typography_fluid-arial-text-pow-at-wide) * pow(var(--typography_fluid-arial-text-pow-ratio-wide), 7));
---typography_fluid-arial-text-pow-h2: calc(var(--typography_fluid-arial-text-pow-at-narrow) * pow(var(--typography_fluid-arial-text-pow-ratio-narrow), 6) + var(--typography_fluid-arial-text-pow-at-wide) * pow(var(--typography_fluid-arial-text-pow-ratio-wide), 6));
---typography_fluid-arial-text-pow-h3: calc(var(--typography_fluid-arial-text-pow-at-narrow) * pow(var(--typography_fluid-arial-text-pow-ratio-narrow), 5) + var(--typography_fluid-arial-text-pow-at-wide) * pow(var(--typography_fluid-arial-text-pow-ratio-wide), 5));
---typography_fluid-arial-text-pow-h4: calc(var(--typography_fluid-arial-text-pow-at-narrow) * pow(var(--typography_fluid-arial-text-pow-ratio-narrow), 4) + var(--typography_fluid-arial-text-pow-at-wide) * pow(var(--typography_fluid-arial-text-pow-ratio-wide), 4));
---typography_fluid-arial-text-pow-xxl: calc(var(--typography_fluid-arial-text-pow-at-narrow) * pow(var(--typography_fluid-arial-text-pow-ratio-narrow), 3) + var(--typography_fluid-arial-text-pow-at-wide) * pow(var(--typography_fluid-arial-text-pow-ratio-wide), 3));
---typography_fluid-arial-text-pow-xl: calc(var(--typography_fluid-arial-text-pow-at-narrow) * pow(var(--typography_fluid-arial-text-pow-ratio-narrow), 2) + var(--typography_fluid-arial-text-pow-at-wide) * pow(var(--typography_fluid-arial-text-pow-ratio-wide), 2));
---typography_fluid-arial-text-pow-l: calc(var(--typography_fluid-arial-text-pow-at-narrow) * var(--typography_fluid-arial-text-pow-ratio-narrow) + var(--typography_fluid-arial-text-pow-at-wide) * var(--typography_fluid-arial-text-pow-ratio-wide));
---typography_fluid-arial-text-pow-m: calc(var(--typography_fluid-arial-text-pow-at-narrow) + var(--typography_fluid-arial-text-pow-at-wide));
---typography_fluid-arial-text-pow-s: calc(var(--typography_fluid-arial-text-pow-m) / var(--typography_fluid-arial-text-pow-ratio-narrow));
---typography_fluid-arial-text-pow-xs: calc(var(--typography_fluid-arial-text-pow-m) / pow(var(--typography_fluid-arial-text-pow-ratio-narrow), 2));",
+--typography_fluid-arial-text-pow-min-width: 20;
+--typography_fluid-arial-text-pow-max-width: 89.6875;
+--typography_fluid-arial-text-pow-min-font-size: 0.875;
+--typography_fluid-arial-text-pow-max-font-size: 1;
+--typography_fluid-arial-text-pow-min-type-scale: 1.25;
+--typography_fluid-arial-text-pow-max-type-scale: 1.25;
+--typography_fluid-arial-text-pow-progress: clamp(0rem, (100vw - var(--typography_fluid-arial-text-pow-min-width) * 1rem) / (var(--typography_fluid-arial-text-pow-max-width) - var(--typography_fluid-arial-text-pow-min-width)), 1rem);
+--typography_fluid-arial-text-pow-at-min: calc(var(--typography_fluid-arial-text-pow-min-font-size) * (1rem - var(--typography_fluid-arial-text-pow-progress)));
+--typography_fluid-arial-text-pow-at-max: calc(var(--typography_fluid-arial-text-pow-max-font-size) * var(--typography_fluid-arial-text-pow-progress));
+--typography_fluid-arial-text-pow-h1: calc(var(--typography_fluid-arial-text-pow-at-min) * pow(var(--typography_fluid-arial-text-pow-min-type-scale), 7) + var(--typography_fluid-arial-text-pow-at-max) * pow(var(--typography_fluid-arial-text-pow-max-type-scale), 7));
+--typography_fluid-arial-text-pow-h2: calc(var(--typography_fluid-arial-text-pow-at-min) * pow(var(--typography_fluid-arial-text-pow-min-type-scale), 6) + var(--typography_fluid-arial-text-pow-at-max) * pow(var(--typography_fluid-arial-text-pow-max-type-scale), 6));
+--typography_fluid-arial-text-pow-h3: calc(var(--typography_fluid-arial-text-pow-at-min) * pow(var(--typography_fluid-arial-text-pow-min-type-scale), 5) + var(--typography_fluid-arial-text-pow-at-max) * pow(var(--typography_fluid-arial-text-pow-max-type-scale), 5));
+--typography_fluid-arial-text-pow-h4: calc(var(--typography_fluid-arial-text-pow-at-min) * pow(var(--typography_fluid-arial-text-pow-min-type-scale), 4) + var(--typography_fluid-arial-text-pow-at-max) * pow(var(--typography_fluid-arial-text-pow-max-type-scale), 4));
+--typography_fluid-arial-text-pow-xxl: calc(var(--typography_fluid-arial-text-pow-at-min) * pow(var(--typography_fluid-arial-text-pow-min-type-scale), 3) + var(--typography_fluid-arial-text-pow-at-max) * pow(var(--typography_fluid-arial-text-pow-max-type-scale), 3));
+--typography_fluid-arial-text-pow-xl: calc(var(--typography_fluid-arial-text-pow-at-min) * pow(var(--typography_fluid-arial-text-pow-min-type-scale), 2) + var(--typography_fluid-arial-text-pow-at-max) * pow(var(--typography_fluid-arial-text-pow-max-type-scale), 2));
+--typography_fluid-arial-text-pow-l: calc(var(--typography_fluid-arial-text-pow-at-min) * var(--typography_fluid-arial-text-pow-min-type-scale) + var(--typography_fluid-arial-text-pow-at-max) * var(--typography_fluid-arial-text-pow-max-type-scale));
+--typography_fluid-arial-text-pow-m: calc(var(--typography_fluid-arial-text-pow-at-min) + var(--typography_fluid-arial-text-pow-at-max));
+--typography_fluid-arial-text-pow-s: calc(var(--typography_fluid-arial-text-pow-m) / var(--typography_fluid-arial-text-pow-min-type-scale));
+--typography_fluid-arial-text-pow-xs: calc(var(--typography_fluid-arial-text-pow-m) / pow(var(--typography_fluid-arial-text-pow-min-type-scale), 2));",
 }
 `;
 
@@ -883,114 +883,114 @@ exports[`typography - can handle custom labels and prefixes 2`] = `
     },
   ],
   [
-    "typography_fluid.arial.pow.narrow",
+    "typography_fluid.arial.pow.min-width",
     {
-      "key": "--typography_fluid-arial-text-pow-narrow",
-      "sourcePath": "typography_fluid.arial.pow.narrow",
+      "key": "--typography_fluid-arial-text-pow-min-width",
+      "sourcePath": "typography_fluid.arial.pow.min-width",
       "tier": "primitive",
       "type": "typography",
       "value": "20",
-      "variable": "--typography_fluid-arial-text-pow-narrow: 20;",
+      "variable": "--typography_fluid-arial-text-pow-min-width: 20;",
     },
   ],
   [
-    "typography_fluid.arial.pow.wide",
+    "typography_fluid.arial.pow.max-width",
     {
-      "key": "--typography_fluid-arial-text-pow-wide",
-      "sourcePath": "typography_fluid.arial.pow.wide",
+      "key": "--typography_fluid-arial-text-pow-max-width",
+      "sourcePath": "typography_fluid.arial.pow.max-width",
       "tier": "primitive",
       "type": "typography",
       "value": "89.6875",
-      "variable": "--typography_fluid-arial-text-pow-wide: 89.6875;",
+      "variable": "--typography_fluid-arial-text-pow-max-width: 89.6875;",
     },
   ],
   [
-    "typography_fluid.arial.pow.size-narrow",
+    "typography_fluid.arial.pow.min-font-size",
     {
-      "key": "--typography_fluid-arial-text-pow-size-narrow",
-      "sourcePath": "typography_fluid.arial.pow.size-narrow",
+      "key": "--typography_fluid-arial-text-pow-min-font-size",
+      "sourcePath": "typography_fluid.arial.pow.min-font-size",
       "tier": "primitive",
       "type": "typography",
       "value": "0.875",
-      "variable": "--typography_fluid-arial-text-pow-size-narrow: 0.875;",
+      "variable": "--typography_fluid-arial-text-pow-min-font-size: 0.875;",
     },
   ],
   [
-    "typography_fluid.arial.pow.size-wide",
+    "typography_fluid.arial.pow.max-font-size",
     {
-      "key": "--typography_fluid-arial-text-pow-size-wide",
-      "sourcePath": "typography_fluid.arial.pow.size-wide",
+      "key": "--typography_fluid-arial-text-pow-max-font-size",
+      "sourcePath": "typography_fluid.arial.pow.max-font-size",
       "tier": "primitive",
       "type": "typography",
       "value": "1",
-      "variable": "--typography_fluid-arial-text-pow-size-wide: 1;",
+      "variable": "--typography_fluid-arial-text-pow-max-font-size: 1;",
     },
   ],
   [
-    "typography_fluid.arial.pow.ratio-narrow",
+    "typography_fluid.arial.pow.min-type-scale",
     {
-      "key": "--typography_fluid-arial-text-pow-ratio-narrow",
-      "sourcePath": "typography_fluid.arial.pow.ratio-narrow",
+      "key": "--typography_fluid-arial-text-pow-min-type-scale",
+      "sourcePath": "typography_fluid.arial.pow.min-type-scale",
       "tier": "primitive",
       "type": "typography",
       "value": "1.25",
-      "variable": "--typography_fluid-arial-text-pow-ratio-narrow: 1.25;",
+      "variable": "--typography_fluid-arial-text-pow-min-type-scale: 1.25;",
     },
   ],
   [
-    "typography_fluid.arial.pow.ratio-wide",
+    "typography_fluid.arial.pow.max-type-scale",
     {
-      "key": "--typography_fluid-arial-text-pow-ratio-wide",
-      "sourcePath": "typography_fluid.arial.pow.ratio-wide",
+      "key": "--typography_fluid-arial-text-pow-max-type-scale",
+      "sourcePath": "typography_fluid.arial.pow.max-type-scale",
       "tier": "primitive",
       "type": "typography",
       "value": "1.25",
-      "variable": "--typography_fluid-arial-text-pow-ratio-wide: 1.25;",
+      "variable": "--typography_fluid-arial-text-pow-max-type-scale: 1.25;",
     },
   ],
   [
-    "typography_fluid.arial.pow.fluid",
+    "typography_fluid.arial.pow.progress",
     {
-      "key": "--typography_fluid-arial-text-pow-fluid",
+      "key": "--typography_fluid-arial-text-pow-progress",
       "referencePaths": [
-        "typography_fluid.arial.pow.narrow",
-        "typography_fluid.arial.pow.wide",
+        "typography_fluid.arial.pow.min-width",
+        "typography_fluid.arial.pow.max-width",
       ],
-      "sourcePath": "typography_fluid.arial.pow.fluid",
+      "sourcePath": "typography_fluid.arial.pow.progress",
       "tier": "semantic",
       "type": "typography",
-      "value": "clamp(0rem, (100vw - var(--typography_fluid-arial-text-pow-narrow) * 1rem) / (var(--typography_fluid-arial-text-pow-wide) - var(--typography_fluid-arial-text-pow-narrow)), 1rem)",
-      "variable": "--typography_fluid-arial-text-pow-fluid: clamp(0rem, (100vw - var(--typography_fluid-arial-text-pow-narrow) * 1rem) / (var(--typography_fluid-arial-text-pow-wide) - var(--typography_fluid-arial-text-pow-narrow)), 1rem);",
+      "value": "clamp(0rem, (100vw - var(--typography_fluid-arial-text-pow-min-width) * 1rem) / (var(--typography_fluid-arial-text-pow-max-width) - var(--typography_fluid-arial-text-pow-min-width)), 1rem)",
+      "variable": "--typography_fluid-arial-text-pow-progress: clamp(0rem, (100vw - var(--typography_fluid-arial-text-pow-min-width) * 1rem) / (var(--typography_fluid-arial-text-pow-max-width) - var(--typography_fluid-arial-text-pow-min-width)), 1rem);",
     },
   ],
   [
-    "typography_fluid.arial.pow.at-narrow",
+    "typography_fluid.arial.pow.at-min",
     {
-      "key": "--typography_fluid-arial-text-pow-at-narrow",
+      "key": "--typography_fluid-arial-text-pow-at-min",
       "referencePaths": [
-        "typography_fluid.arial.pow.size-narrow",
-        "typography_fluid.arial.pow.fluid",
+        "typography_fluid.arial.pow.min-font-size",
+        "typography_fluid.arial.pow.progress",
       ],
-      "sourcePath": "typography_fluid.arial.pow.at-narrow",
+      "sourcePath": "typography_fluid.arial.pow.at-min",
       "tier": "semantic",
       "type": "typography",
-      "value": "calc(var(--typography_fluid-arial-text-pow-size-narrow) * (1rem - var(--typography_fluid-arial-text-pow-fluid)))",
-      "variable": "--typography_fluid-arial-text-pow-at-narrow: calc(var(--typography_fluid-arial-text-pow-size-narrow) * (1rem - var(--typography_fluid-arial-text-pow-fluid)));",
+      "value": "calc(var(--typography_fluid-arial-text-pow-min-font-size) * (1rem - var(--typography_fluid-arial-text-pow-progress)))",
+      "variable": "--typography_fluid-arial-text-pow-at-min: calc(var(--typography_fluid-arial-text-pow-min-font-size) * (1rem - var(--typography_fluid-arial-text-pow-progress)));",
     },
   ],
   [
-    "typography_fluid.arial.pow.at-wide",
+    "typography_fluid.arial.pow.at-max",
     {
-      "key": "--typography_fluid-arial-text-pow-at-wide",
+      "key": "--typography_fluid-arial-text-pow-at-max",
       "referencePaths": [
-        "typography_fluid.arial.pow.size-wide",
-        "typography_fluid.arial.pow.fluid",
+        "typography_fluid.arial.pow.max-font-size",
+        "typography_fluid.arial.pow.progress",
       ],
-      "sourcePath": "typography_fluid.arial.pow.at-wide",
+      "sourcePath": "typography_fluid.arial.pow.at-max",
       "tier": "semantic",
       "type": "typography",
-      "value": "calc(var(--typography_fluid-arial-text-pow-size-wide) * var(--typography_fluid-arial-text-pow-fluid))",
-      "variable": "--typography_fluid-arial-text-pow-at-wide: calc(var(--typography_fluid-arial-text-pow-size-wide) * var(--typography_fluid-arial-text-pow-fluid));",
+      "value": "calc(var(--typography_fluid-arial-text-pow-max-font-size) * var(--typography_fluid-arial-text-pow-progress))",
+      "variable": "--typography_fluid-arial-text-pow-at-max: calc(var(--typography_fluid-arial-text-pow-max-font-size) * var(--typography_fluid-arial-text-pow-progress));",
     },
   ],
   [
@@ -998,16 +998,16 @@ exports[`typography - can handle custom labels and prefixes 2`] = `
     {
       "key": "--typography_fluid-arial-text-pow-h1",
       "referencePaths": [
-        "typography_fluid.arial.pow.at-narrow",
-        "typography_fluid.arial.pow.ratio-narrow",
-        "typography_fluid.arial.pow.at-wide",
-        "typography_fluid.arial.pow.ratio-wide",
+        "typography_fluid.arial.pow.at-min",
+        "typography_fluid.arial.pow.min-type-scale",
+        "typography_fluid.arial.pow.at-max",
+        "typography_fluid.arial.pow.max-type-scale",
       ],
       "sourcePath": "typography_fluid.arial.pow@h1",
       "tier": "semantic",
       "type": "typography",
-      "value": "calc(var(--typography_fluid-arial-text-pow-at-narrow) * pow(var(--typography_fluid-arial-text-pow-ratio-narrow), 7) + var(--typography_fluid-arial-text-pow-at-wide) * pow(var(--typography_fluid-arial-text-pow-ratio-wide), 7))",
-      "variable": "--typography_fluid-arial-text-pow-h1: calc(var(--typography_fluid-arial-text-pow-at-narrow) * pow(var(--typography_fluid-arial-text-pow-ratio-narrow), 7) + var(--typography_fluid-arial-text-pow-at-wide) * pow(var(--typography_fluid-arial-text-pow-ratio-wide), 7));",
+      "value": "calc(var(--typography_fluid-arial-text-pow-at-min) * pow(var(--typography_fluid-arial-text-pow-min-type-scale), 7) + var(--typography_fluid-arial-text-pow-at-max) * pow(var(--typography_fluid-arial-text-pow-max-type-scale), 7))",
+      "variable": "--typography_fluid-arial-text-pow-h1: calc(var(--typography_fluid-arial-text-pow-at-min) * pow(var(--typography_fluid-arial-text-pow-min-type-scale), 7) + var(--typography_fluid-arial-text-pow-at-max) * pow(var(--typography_fluid-arial-text-pow-max-type-scale), 7));",
     },
   ],
   [
@@ -1015,16 +1015,16 @@ exports[`typography - can handle custom labels and prefixes 2`] = `
     {
       "key": "--typography_fluid-arial-text-pow-h2",
       "referencePaths": [
-        "typography_fluid.arial.pow.at-narrow",
-        "typography_fluid.arial.pow.ratio-narrow",
-        "typography_fluid.arial.pow.at-wide",
-        "typography_fluid.arial.pow.ratio-wide",
+        "typography_fluid.arial.pow.at-min",
+        "typography_fluid.arial.pow.min-type-scale",
+        "typography_fluid.arial.pow.at-max",
+        "typography_fluid.arial.pow.max-type-scale",
       ],
       "sourcePath": "typography_fluid.arial.pow@h2",
       "tier": "semantic",
       "type": "typography",
-      "value": "calc(var(--typography_fluid-arial-text-pow-at-narrow) * pow(var(--typography_fluid-arial-text-pow-ratio-narrow), 6) + var(--typography_fluid-arial-text-pow-at-wide) * pow(var(--typography_fluid-arial-text-pow-ratio-wide), 6))",
-      "variable": "--typography_fluid-arial-text-pow-h2: calc(var(--typography_fluid-arial-text-pow-at-narrow) * pow(var(--typography_fluid-arial-text-pow-ratio-narrow), 6) + var(--typography_fluid-arial-text-pow-at-wide) * pow(var(--typography_fluid-arial-text-pow-ratio-wide), 6));",
+      "value": "calc(var(--typography_fluid-arial-text-pow-at-min) * pow(var(--typography_fluid-arial-text-pow-min-type-scale), 6) + var(--typography_fluid-arial-text-pow-at-max) * pow(var(--typography_fluid-arial-text-pow-max-type-scale), 6))",
+      "variable": "--typography_fluid-arial-text-pow-h2: calc(var(--typography_fluid-arial-text-pow-at-min) * pow(var(--typography_fluid-arial-text-pow-min-type-scale), 6) + var(--typography_fluid-arial-text-pow-at-max) * pow(var(--typography_fluid-arial-text-pow-max-type-scale), 6));",
     },
   ],
   [
@@ -1032,16 +1032,16 @@ exports[`typography - can handle custom labels and prefixes 2`] = `
     {
       "key": "--typography_fluid-arial-text-pow-h3",
       "referencePaths": [
-        "typography_fluid.arial.pow.at-narrow",
-        "typography_fluid.arial.pow.ratio-narrow",
-        "typography_fluid.arial.pow.at-wide",
-        "typography_fluid.arial.pow.ratio-wide",
+        "typography_fluid.arial.pow.at-min",
+        "typography_fluid.arial.pow.min-type-scale",
+        "typography_fluid.arial.pow.at-max",
+        "typography_fluid.arial.pow.max-type-scale",
       ],
       "sourcePath": "typography_fluid.arial.pow@h3",
       "tier": "semantic",
       "type": "typography",
-      "value": "calc(var(--typography_fluid-arial-text-pow-at-narrow) * pow(var(--typography_fluid-arial-text-pow-ratio-narrow), 5) + var(--typography_fluid-arial-text-pow-at-wide) * pow(var(--typography_fluid-arial-text-pow-ratio-wide), 5))",
-      "variable": "--typography_fluid-arial-text-pow-h3: calc(var(--typography_fluid-arial-text-pow-at-narrow) * pow(var(--typography_fluid-arial-text-pow-ratio-narrow), 5) + var(--typography_fluid-arial-text-pow-at-wide) * pow(var(--typography_fluid-arial-text-pow-ratio-wide), 5));",
+      "value": "calc(var(--typography_fluid-arial-text-pow-at-min) * pow(var(--typography_fluid-arial-text-pow-min-type-scale), 5) + var(--typography_fluid-arial-text-pow-at-max) * pow(var(--typography_fluid-arial-text-pow-max-type-scale), 5))",
+      "variable": "--typography_fluid-arial-text-pow-h3: calc(var(--typography_fluid-arial-text-pow-at-min) * pow(var(--typography_fluid-arial-text-pow-min-type-scale), 5) + var(--typography_fluid-arial-text-pow-at-max) * pow(var(--typography_fluid-arial-text-pow-max-type-scale), 5));",
     },
   ],
   [
@@ -1049,16 +1049,16 @@ exports[`typography - can handle custom labels and prefixes 2`] = `
     {
       "key": "--typography_fluid-arial-text-pow-h4",
       "referencePaths": [
-        "typography_fluid.arial.pow.at-narrow",
-        "typography_fluid.arial.pow.ratio-narrow",
-        "typography_fluid.arial.pow.at-wide",
-        "typography_fluid.arial.pow.ratio-wide",
+        "typography_fluid.arial.pow.at-min",
+        "typography_fluid.arial.pow.min-type-scale",
+        "typography_fluid.arial.pow.at-max",
+        "typography_fluid.arial.pow.max-type-scale",
       ],
       "sourcePath": "typography_fluid.arial.pow@h4",
       "tier": "semantic",
       "type": "typography",
-      "value": "calc(var(--typography_fluid-arial-text-pow-at-narrow) * pow(var(--typography_fluid-arial-text-pow-ratio-narrow), 4) + var(--typography_fluid-arial-text-pow-at-wide) * pow(var(--typography_fluid-arial-text-pow-ratio-wide), 4))",
-      "variable": "--typography_fluid-arial-text-pow-h4: calc(var(--typography_fluid-arial-text-pow-at-narrow) * pow(var(--typography_fluid-arial-text-pow-ratio-narrow), 4) + var(--typography_fluid-arial-text-pow-at-wide) * pow(var(--typography_fluid-arial-text-pow-ratio-wide), 4));",
+      "value": "calc(var(--typography_fluid-arial-text-pow-at-min) * pow(var(--typography_fluid-arial-text-pow-min-type-scale), 4) + var(--typography_fluid-arial-text-pow-at-max) * pow(var(--typography_fluid-arial-text-pow-max-type-scale), 4))",
+      "variable": "--typography_fluid-arial-text-pow-h4: calc(var(--typography_fluid-arial-text-pow-at-min) * pow(var(--typography_fluid-arial-text-pow-min-type-scale), 4) + var(--typography_fluid-arial-text-pow-at-max) * pow(var(--typography_fluid-arial-text-pow-max-type-scale), 4));",
     },
   ],
   [
@@ -1066,16 +1066,16 @@ exports[`typography - can handle custom labels and prefixes 2`] = `
     {
       "key": "--typography_fluid-arial-text-pow-xxl",
       "referencePaths": [
-        "typography_fluid.arial.pow.at-narrow",
-        "typography_fluid.arial.pow.ratio-narrow",
-        "typography_fluid.arial.pow.at-wide",
-        "typography_fluid.arial.pow.ratio-wide",
+        "typography_fluid.arial.pow.at-min",
+        "typography_fluid.arial.pow.min-type-scale",
+        "typography_fluid.arial.pow.at-max",
+        "typography_fluid.arial.pow.max-type-scale",
       ],
       "sourcePath": "typography_fluid.arial.pow@xxl",
       "tier": "semantic",
       "type": "typography",
-      "value": "calc(var(--typography_fluid-arial-text-pow-at-narrow) * pow(var(--typography_fluid-arial-text-pow-ratio-narrow), 3) + var(--typography_fluid-arial-text-pow-at-wide) * pow(var(--typography_fluid-arial-text-pow-ratio-wide), 3))",
-      "variable": "--typography_fluid-arial-text-pow-xxl: calc(var(--typography_fluid-arial-text-pow-at-narrow) * pow(var(--typography_fluid-arial-text-pow-ratio-narrow), 3) + var(--typography_fluid-arial-text-pow-at-wide) * pow(var(--typography_fluid-arial-text-pow-ratio-wide), 3));",
+      "value": "calc(var(--typography_fluid-arial-text-pow-at-min) * pow(var(--typography_fluid-arial-text-pow-min-type-scale), 3) + var(--typography_fluid-arial-text-pow-at-max) * pow(var(--typography_fluid-arial-text-pow-max-type-scale), 3))",
+      "variable": "--typography_fluid-arial-text-pow-xxl: calc(var(--typography_fluid-arial-text-pow-at-min) * pow(var(--typography_fluid-arial-text-pow-min-type-scale), 3) + var(--typography_fluid-arial-text-pow-at-max) * pow(var(--typography_fluid-arial-text-pow-max-type-scale), 3));",
     },
   ],
   [
@@ -1083,16 +1083,16 @@ exports[`typography - can handle custom labels and prefixes 2`] = `
     {
       "key": "--typography_fluid-arial-text-pow-xl",
       "referencePaths": [
-        "typography_fluid.arial.pow.at-narrow",
-        "typography_fluid.arial.pow.ratio-narrow",
-        "typography_fluid.arial.pow.at-wide",
-        "typography_fluid.arial.pow.ratio-wide",
+        "typography_fluid.arial.pow.at-min",
+        "typography_fluid.arial.pow.min-type-scale",
+        "typography_fluid.arial.pow.at-max",
+        "typography_fluid.arial.pow.max-type-scale",
       ],
       "sourcePath": "typography_fluid.arial.pow@xl",
       "tier": "semantic",
       "type": "typography",
-      "value": "calc(var(--typography_fluid-arial-text-pow-at-narrow) * pow(var(--typography_fluid-arial-text-pow-ratio-narrow), 2) + var(--typography_fluid-arial-text-pow-at-wide) * pow(var(--typography_fluid-arial-text-pow-ratio-wide), 2))",
-      "variable": "--typography_fluid-arial-text-pow-xl: calc(var(--typography_fluid-arial-text-pow-at-narrow) * pow(var(--typography_fluid-arial-text-pow-ratio-narrow), 2) + var(--typography_fluid-arial-text-pow-at-wide) * pow(var(--typography_fluid-arial-text-pow-ratio-wide), 2));",
+      "value": "calc(var(--typography_fluid-arial-text-pow-at-min) * pow(var(--typography_fluid-arial-text-pow-min-type-scale), 2) + var(--typography_fluid-arial-text-pow-at-max) * pow(var(--typography_fluid-arial-text-pow-max-type-scale), 2))",
+      "variable": "--typography_fluid-arial-text-pow-xl: calc(var(--typography_fluid-arial-text-pow-at-min) * pow(var(--typography_fluid-arial-text-pow-min-type-scale), 2) + var(--typography_fluid-arial-text-pow-at-max) * pow(var(--typography_fluid-arial-text-pow-max-type-scale), 2));",
     },
   ],
   [
@@ -1100,16 +1100,16 @@ exports[`typography - can handle custom labels and prefixes 2`] = `
     {
       "key": "--typography_fluid-arial-text-pow-l",
       "referencePaths": [
-        "typography_fluid.arial.pow.at-narrow",
-        "typography_fluid.arial.pow.ratio-narrow",
-        "typography_fluid.arial.pow.at-wide",
-        "typography_fluid.arial.pow.ratio-wide",
+        "typography_fluid.arial.pow.at-min",
+        "typography_fluid.arial.pow.min-type-scale",
+        "typography_fluid.arial.pow.at-max",
+        "typography_fluid.arial.pow.max-type-scale",
       ],
       "sourcePath": "typography_fluid.arial.pow@l",
       "tier": "semantic",
       "type": "typography",
-      "value": "calc(var(--typography_fluid-arial-text-pow-at-narrow) * var(--typography_fluid-arial-text-pow-ratio-narrow) + var(--typography_fluid-arial-text-pow-at-wide) * var(--typography_fluid-arial-text-pow-ratio-wide))",
-      "variable": "--typography_fluid-arial-text-pow-l: calc(var(--typography_fluid-arial-text-pow-at-narrow) * var(--typography_fluid-arial-text-pow-ratio-narrow) + var(--typography_fluid-arial-text-pow-at-wide) * var(--typography_fluid-arial-text-pow-ratio-wide));",
+      "value": "calc(var(--typography_fluid-arial-text-pow-at-min) * var(--typography_fluid-arial-text-pow-min-type-scale) + var(--typography_fluid-arial-text-pow-at-max) * var(--typography_fluid-arial-text-pow-max-type-scale))",
+      "variable": "--typography_fluid-arial-text-pow-l: calc(var(--typography_fluid-arial-text-pow-at-min) * var(--typography_fluid-arial-text-pow-min-type-scale) + var(--typography_fluid-arial-text-pow-at-max) * var(--typography_fluid-arial-text-pow-max-type-scale));",
     },
   ],
   [
@@ -1117,14 +1117,14 @@ exports[`typography - can handle custom labels and prefixes 2`] = `
     {
       "key": "--typography_fluid-arial-text-pow-m",
       "referencePaths": [
-        "typography_fluid.arial.pow.at-narrow",
-        "typography_fluid.arial.pow.at-wide",
+        "typography_fluid.arial.pow.at-min",
+        "typography_fluid.arial.pow.at-max",
       ],
       "sourcePath": "typography_fluid.arial.pow@m",
       "tier": "semantic",
       "type": "typography",
-      "value": "calc(var(--typography_fluid-arial-text-pow-at-narrow) + var(--typography_fluid-arial-text-pow-at-wide))",
-      "variable": "--typography_fluid-arial-text-pow-m: calc(var(--typography_fluid-arial-text-pow-at-narrow) + var(--typography_fluid-arial-text-pow-at-wide));",
+      "value": "calc(var(--typography_fluid-arial-text-pow-at-min) + var(--typography_fluid-arial-text-pow-at-max))",
+      "variable": "--typography_fluid-arial-text-pow-m: calc(var(--typography_fluid-arial-text-pow-at-min) + var(--typography_fluid-arial-text-pow-at-max));",
     },
   ],
   [
@@ -1133,13 +1133,13 @@ exports[`typography - can handle custom labels and prefixes 2`] = `
       "key": "--typography_fluid-arial-text-pow-s",
       "referencePaths": [
         "typography_fluid.arial.pow@m",
-        "typography_fluid.arial.pow.ratio-narrow",
+        "typography_fluid.arial.pow.min-type-scale",
       ],
       "sourcePath": "typography_fluid.arial.pow@s",
       "tier": "semantic",
       "type": "typography",
-      "value": "calc(var(--typography_fluid-arial-text-pow-m) / var(--typography_fluid-arial-text-pow-ratio-narrow))",
-      "variable": "--typography_fluid-arial-text-pow-s: calc(var(--typography_fluid-arial-text-pow-m) / var(--typography_fluid-arial-text-pow-ratio-narrow));",
+      "value": "calc(var(--typography_fluid-arial-text-pow-m) / var(--typography_fluid-arial-text-pow-min-type-scale))",
+      "variable": "--typography_fluid-arial-text-pow-s: calc(var(--typography_fluid-arial-text-pow-m) / var(--typography_fluid-arial-text-pow-min-type-scale));",
     },
   ],
   [
@@ -1148,13 +1148,13 @@ exports[`typography - can handle custom labels and prefixes 2`] = `
       "key": "--typography_fluid-arial-text-pow-xs",
       "referencePaths": [
         "typography_fluid.arial.pow@m",
-        "typography_fluid.arial.pow.ratio-narrow",
+        "typography_fluid.arial.pow.min-type-scale",
       ],
       "sourcePath": "typography_fluid.arial.pow@xs",
       "tier": "semantic",
       "type": "typography",
-      "value": "calc(var(--typography_fluid-arial-text-pow-m) / pow(var(--typography_fluid-arial-text-pow-ratio-narrow), 2))",
-      "variable": "--typography_fluid-arial-text-pow-xs: calc(var(--typography_fluid-arial-text-pow-m) / pow(var(--typography_fluid-arial-text-pow-ratio-narrow), 2));",
+      "value": "calc(var(--typography_fluid-arial-text-pow-m) / pow(var(--typography_fluid-arial-text-pow-min-type-scale), 2))",
+      "variable": "--typography_fluid-arial-text-pow-xs: calc(var(--typography_fluid-arial-text-pow-m) / pow(var(--typography_fluid-arial-text-pow-min-type-scale), 2));",
     },
   ],
 ]

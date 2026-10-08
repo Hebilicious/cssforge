@@ -57,22 +57,22 @@ Deno.test("fluid type - every scale is written as clamp() steps and as pow token
 		// Below step 0 the clamp() runs from 18 / 1.2^n px to 20 / 1.2^n px.
 		"--typography_fluid-body-s: clamp(0.9375rem, 0.9013rem + 0.1812vw, 1.0417rem);",
 		"--typography_fluid-body-xs: clamp(0.7813rem, 0.7511rem + 0.151vw, 0.8681rem);",
-		"--typography_fluid-body-pow-narrow: 20;",
-		"--typography_fluid-body-pow-wide: 77.5;",
-		"--typography_fluid-body-pow-size-narrow: 1.125;",
-		"--typography_fluid-body-pow-size-wide: 1.25;",
-		"--typography_fluid-body-pow-ratio-narrow: 1.2;",
-		"--typography_fluid-body-pow-ratio-wide: 1.25;",
-		`--typography_fluid-body-pow-fluid: clamp(0rem, (100vw - ${v("narrow")} * 1rem) / (${v("wide")} - ${v("narrow")}), 1rem);`,
-		`--typography_fluid-body-pow-at-narrow: calc(${v("size-narrow")} * (1rem - ${v("fluid")}));`,
-		`--typography_fluid-body-pow-at-wide: calc(${v("size-wide")} * ${v("fluid")});`,
-		`--typography_fluid-body-pow-3xl: calc(${v("at-narrow")} * pow(${v("ratio-narrow")}, 4) + ${v("at-wide")} * pow(${v("ratio-wide")}, 4));`,
-		`--typography_fluid-body-pow-2xl: calc(${v("at-narrow")} * pow(${v("ratio-narrow")}, 3) + ${v("at-wide")} * pow(${v("ratio-wide")}, 3));`,
-		`--typography_fluid-body-pow-xl: calc(${v("at-narrow")} * pow(${v("ratio-narrow")}, 2) + ${v("at-wide")} * pow(${v("ratio-wide")}, 2));`,
-		`--typography_fluid-body-pow-l: calc(${v("at-narrow")} * ${v("ratio-narrow")} + ${v("at-wide")} * ${v("ratio-wide")});`,
-		`--typography_fluid-body-pow-m: calc(${v("at-narrow")} + ${v("at-wide")});`,
-		`--typography_fluid-body-pow-s: calc(${v("m")} / ${v("ratio-narrow")});`,
-		`--typography_fluid-body-pow-xs: calc(${v("m")} / pow(${v("ratio-narrow")}, 2));`,
+		"--typography_fluid-body-pow-min-width: 20;",
+		"--typography_fluid-body-pow-max-width: 77.5;",
+		"--typography_fluid-body-pow-min-font-size: 1.125;",
+		"--typography_fluid-body-pow-max-font-size: 1.25;",
+		"--typography_fluid-body-pow-min-type-scale: 1.2;",
+		"--typography_fluid-body-pow-max-type-scale: 1.25;",
+		`--typography_fluid-body-pow-progress: clamp(0rem, (100vw - ${v("min-width")} * 1rem) / (${v("max-width")} - ${v("min-width")}), 1rem);`,
+		`--typography_fluid-body-pow-at-min: calc(${v("min-font-size")} * (1rem - ${v("progress")}));`,
+		`--typography_fluid-body-pow-at-max: calc(${v("max-font-size")} * ${v("progress")});`,
+		`--typography_fluid-body-pow-3xl: calc(${v("at-min")} * pow(${v("min-type-scale")}, 4) + ${v("at-max")} * pow(${v("max-type-scale")}, 4));`,
+		`--typography_fluid-body-pow-2xl: calc(${v("at-min")} * pow(${v("min-type-scale")}, 3) + ${v("at-max")} * pow(${v("max-type-scale")}, 3));`,
+		`--typography_fluid-body-pow-xl: calc(${v("at-min")} * pow(${v("min-type-scale")}, 2) + ${v("at-max")} * pow(${v("max-type-scale")}, 2));`,
+		`--typography_fluid-body-pow-l: calc(${v("at-min")} * ${v("min-type-scale")} + ${v("at-max")} * ${v("max-type-scale")});`,
+		`--typography_fluid-body-pow-m: calc(${v("at-min")} + ${v("at-max")});`,
+		`--typography_fluid-body-pow-s: calc(${v("m")} / ${v("min-type-scale")});`,
+		`--typography_fluid-body-pow-xs: calc(${v("m")} / pow(${v("min-type-scale")}, 2));`,
 	]);
 });
 
@@ -211,16 +211,16 @@ Deno.test("fluid type - JSON, TypeScript and Style Dictionary hold both represen
 
 	// Plain values are primitives; a value made of other tokens is semantic and
 	// names them, as a color mix does.
-	assertEquals(sdPow.narrow?.$tier, "primitive");
+	assertEquals(sdPow["min-width"]?.$tier, "primitive");
 	assertEquals(sdClamp.m?.$tier, "primitive");
-	assertEquals(sdPow.fluid?.attributes.referencePaths, [
-		"typography-fluid.body.pow.narrow",
-		"typography-fluid.body.pow.wide",
+	assertEquals(sdPow.progress?.attributes.referencePaths, [
+		"typography-fluid.body.pow.min-width",
+		"typography-fluid.body.pow.max-width",
 	]);
 	assertEquals(sdPow.s?.$tier, "semantic");
 	assertEquals(sdPow.s?.attributes.referencePaths, [
 		"typography-fluid.body.pow.m",
-		"typography-fluid.body.pow.ratio-narrow",
+		"typography-fluid.body.pow.min-type-scale",
 	]);
 	assertEquals(sdPow.s?.$reference, "typography-fluid.body.pow.m");
 });
@@ -241,7 +241,7 @@ Deno.test("fluid type - a primitive references pow tokens like any other token",
 						},
 						variables: {
 							size: "typography_fluid.body.pow@large",
-							ratio: "typography_fluid.body.pow.ratio-wide",
+							ratio: "typography_fluid.body.pow.max-type-scale",
 							clamp: "typography_fluid.body@small",
 						},
 					},
@@ -257,7 +257,7 @@ Deno.test("fluid type - a primitive references pow tokens like any other token",
 	);
 	assertEquals(
 		css.get("--heading-h1-lineHeight"),
-		"calc(var(--typography_fluid-body-text-pow-ratio-wide) * 1.1)",
+		"calc(var(--typography_fluid-body-text-pow-max-type-scale) * 1.1)",
 	);
 	assertEquals(
 		css.get("--heading-h1-padding"),
@@ -265,7 +265,7 @@ Deno.test("fluid type - a primitive references pow tokens like any other token",
 	);
 	assertEquals(
 		css.get("--typography_fluid-body-text-pow-small"),
-		"calc(var(--typography_fluid-body-text-pow-base) / var(--typography_fluid-body-text-pow-ratio-narrow))",
+		"calc(var(--typography_fluid-body-text-pow-base) / var(--typography_fluid-body-text-pow-min-type-scale))",
 	);
 	const json = JSON.parse(generateJSON(config)) as {
 		primitives: { heading: { h1: { fontSize: { value: string } } } };
@@ -281,18 +281,18 @@ Deno.test("fluid type - a step label that takes a pow name fails as a collision"
 		assertThrows(() => generateJSON(scale(example, { customLabel }))).message;
 
 	assertEquals(
-		collision({ "0": "narrow" }),
-		'Token key collision: "typography_fluid.body.pow.narrow" and "typography_fluid.body.pow@narrow" both generate "--typography_fluid-body-pow-narrow". Rename one of the configuration paths.',
+		collision({ "0": "min-width" }),
+		'Token key collision: "typography_fluid.body.pow.min-width" and "typography_fluid.body.pow@min-width" both generate "--typography_fluid-body-pow-min-width". Rename one of the configuration paths.',
 	);
 	assertEquals(
-		collision({ "1": "pow-narrow" }),
-		'Token key collision: "typography_fluid.body@pow-narrow" and "typography_fluid.body.pow.narrow" both generate "--typography_fluid-body-pow-narrow". Rename one of the configuration paths.',
+		collision({ "1": "pow-min-width" }),
+		'Token key collision: "typography_fluid.body@pow-min-width" and "typography_fluid.body.pow.min-width" both generate "--typography_fluid-body-pow-min-width". Rename one of the configuration paths.',
 	);
 	assertEquals(
 		collision({ "0": "pow-l", "1": "l" }),
 		'Token key collision: "typography_fluid.body@pow-l" and "typography_fluid.body.pow@l" both generate "--typography_fluid-body-pow-l". Rename one of the configuration paths.',
 	);
-	assertThrows(() => generateCSS(scale(example, { customLabel: { "0": "narrow" } })));
+	assertThrows(() => generateCSS(scale(example, { customLabel: { "0": "min-width" } })));
 
 	// `pow` is the segment that holds the pow tokens, so no step takes it.
 	const segment = assertThrows(() =>
@@ -315,9 +315,9 @@ Deno.test("fluid type - relativeTo picks the unit of both representations", () =
 		const css = declarations(generateCSS(scale({ ...example, relativeTo })));
 		assert(
 			css
-				.get("--typography_fluid-body-pow-fluid")
+				.get("--typography_fluid-body-pow-progress")
 				?.startsWith(`clamp(0rem, (100${unit} - `),
-			css.get("--typography_fluid-body-pow-fluid"),
+			css.get("--typography_fluid-body-pow-progress"),
 		);
 		for (const label of ["xl", "xs"]) {
 			const clamp = css.get(`--typography_fluid-body-${label}`);
@@ -345,8 +345,8 @@ Deno.test("fluid type - two scales never share a pow name", () => {
 		}),
 	);
 
-	assertEquals(css.get("--typography_fluid-body-pow-narrow"), "20");
-	assertEquals(css.get("--typography_fluid-display-big-pow-narrow"), "20");
+	assertEquals(css.get("--typography_fluid-body-pow-min-width"), "20");
+	assertEquals(css.get("--typography_fluid-display-big-pow-min-width"), "20");
 });
 
 Deno.test("fluid type checks - each step is checked once, at its canonical sizes", () => {

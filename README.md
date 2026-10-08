@@ -1338,24 +1338,24 @@ This will generate the following CSS :
 --typography_fluid-arial-s: clamp(0.7rem, 0.6713rem + 0.1435vw, 0.8rem);
 --typography_fluid-arial-xs: clamp(0.56rem, 0.537rem + 0.1148vw, 0.64rem);
 --typography_fluid-arial-2xs: clamp(0.448rem, 0.4296rem + 0.0918vw, 0.512rem);
---typography_fluid-arial-pow-narrow: 20;
---typography_fluid-arial-pow-wide: 89.6875;
---typography_fluid-arial-pow-size-narrow: 0.875;
---typography_fluid-arial-pow-size-wide: 1;
---typography_fluid-arial-pow-ratio-narrow: 1.25;
---typography_fluid-arial-pow-ratio-wide: 1.25;
---typography_fluid-arial-pow-fluid: clamp(0rem, (100vw - var(--typography_fluid-arial-pow-narrow) * 1rem) / (var(--typography_fluid-arial-pow-wide) - var(--typography_fluid-arial-pow-narrow)), 1rem);
---typography_fluid-arial-pow-at-narrow: calc(var(--typography_fluid-arial-pow-size-narrow) * (1rem - var(--typography_fluid-arial-pow-fluid)));
---typography_fluid-arial-pow-at-wide: calc(var(--typography_fluid-arial-pow-size-wide) * var(--typography_fluid-arial-pow-fluid));
---typography_fluid-arial-pow-4xl: calc(var(--typography_fluid-arial-pow-at-narrow) * pow(var(--typography_fluid-arial-pow-ratio-narrow), 5) + var(--typography_fluid-arial-pow-at-wide) * pow(var(--typography_fluid-arial-pow-ratio-wide), 5));
---typography_fluid-arial-pow-3xl: calc(var(--typography_fluid-arial-pow-at-narrow) * pow(var(--typography_fluid-arial-pow-ratio-narrow), 4) + var(--typography_fluid-arial-pow-at-wide) * pow(var(--typography_fluid-arial-pow-ratio-wide), 4));
---typography_fluid-arial-pow-2xl: calc(var(--typography_fluid-arial-pow-at-narrow) * pow(var(--typography_fluid-arial-pow-ratio-narrow), 3) + var(--typography_fluid-arial-pow-at-wide) * pow(var(--typography_fluid-arial-pow-ratio-wide), 3));
---typography_fluid-arial-pow-xl: calc(var(--typography_fluid-arial-pow-at-narrow) * pow(var(--typography_fluid-arial-pow-ratio-narrow), 2) + var(--typography_fluid-arial-pow-at-wide) * pow(var(--typography_fluid-arial-pow-ratio-wide), 2));
---typography_fluid-arial-pow-l: calc(var(--typography_fluid-arial-pow-at-narrow) * var(--typography_fluid-arial-pow-ratio-narrow) + var(--typography_fluid-arial-pow-at-wide) * var(--typography_fluid-arial-pow-ratio-wide));
---typography_fluid-arial-pow-m: calc(var(--typography_fluid-arial-pow-at-narrow) + var(--typography_fluid-arial-pow-at-wide));
---typography_fluid-arial-pow-s: calc(var(--typography_fluid-arial-pow-m) / var(--typography_fluid-arial-pow-ratio-narrow));
---typography_fluid-arial-pow-xs: calc(var(--typography_fluid-arial-pow-m) / pow(var(--typography_fluid-arial-pow-ratio-narrow), 2));
---typography_fluid-arial-pow-2xs: calc(var(--typography_fluid-arial-pow-m) / pow(var(--typography_fluid-arial-pow-ratio-narrow), 3));
+--typography_fluid-arial-pow-min-width: 20;
+--typography_fluid-arial-pow-max-width: 89.6875;
+--typography_fluid-arial-pow-min-font-size: 0.875;
+--typography_fluid-arial-pow-max-font-size: 1;
+--typography_fluid-arial-pow-min-type-scale: 1.25;
+--typography_fluid-arial-pow-max-type-scale: 1.25;
+--typography_fluid-arial-pow-progress: clamp(0rem, (100vw - var(--typography_fluid-arial-pow-min-width) * 1rem) / (var(--typography_fluid-arial-pow-max-width) - var(--typography_fluid-arial-pow-min-width)), 1rem);
+--typography_fluid-arial-pow-at-min: calc(var(--typography_fluid-arial-pow-min-font-size) * (1rem - var(--typography_fluid-arial-pow-progress)));
+--typography_fluid-arial-pow-at-max: calc(var(--typography_fluid-arial-pow-max-font-size) * var(--typography_fluid-arial-pow-progress));
+--typography_fluid-arial-pow-4xl: calc(var(--typography_fluid-arial-pow-at-min) * pow(var(--typography_fluid-arial-pow-min-type-scale), 5) + var(--typography_fluid-arial-pow-at-max) * pow(var(--typography_fluid-arial-pow-max-type-scale), 5));
+--typography_fluid-arial-pow-3xl: calc(var(--typography_fluid-arial-pow-at-min) * pow(var(--typography_fluid-arial-pow-min-type-scale), 4) + var(--typography_fluid-arial-pow-at-max) * pow(var(--typography_fluid-arial-pow-max-type-scale), 4));
+--typography_fluid-arial-pow-2xl: calc(var(--typography_fluid-arial-pow-at-min) * pow(var(--typography_fluid-arial-pow-min-type-scale), 3) + var(--typography_fluid-arial-pow-at-max) * pow(var(--typography_fluid-arial-pow-max-type-scale), 3));
+--typography_fluid-arial-pow-xl: calc(var(--typography_fluid-arial-pow-at-min) * pow(var(--typography_fluid-arial-pow-min-type-scale), 2) + var(--typography_fluid-arial-pow-at-max) * pow(var(--typography_fluid-arial-pow-max-type-scale), 2));
+--typography_fluid-arial-pow-l: calc(var(--typography_fluid-arial-pow-at-min) * var(--typography_fluid-arial-pow-min-type-scale) + var(--typography_fluid-arial-pow-at-max) * var(--typography_fluid-arial-pow-max-type-scale));
+--typography_fluid-arial-pow-m: calc(var(--typography_fluid-arial-pow-at-min) + var(--typography_fluid-arial-pow-at-max));
+--typography_fluid-arial-pow-s: calc(var(--typography_fluid-arial-pow-m) / var(--typography_fluid-arial-pow-min-type-scale));
+--typography_fluid-arial-pow-xs: calc(var(--typography_fluid-arial-pow-m) / pow(var(--typography_fluid-arial-pow-min-type-scale), 2));
+--typography_fluid-arial-pow-2xs: calc(var(--typography_fluid-arial-pow-m) / pow(var(--typography_fluid-arial-pow-min-type-scale), 3));
 --typography-weight-arial-regular: 600;
 }
 ```
@@ -1440,20 +1440,20 @@ This will generate the following CSS :
 --typography_fluid-comicsans-text-c: clamp(0.875rem, 0.8391rem + 0.1794vw, 1rem);
 --typography_fluid-comicsans-text-b: clamp(0.7rem, 0.6713rem + 0.1435vw, 0.8rem);
 --typography_fluid-comicsans-text-a: clamp(0.56rem, 0.537rem + 0.1148vw, 0.64rem);
---typography_fluid-comicsans-text-pow-narrow: 20;
---typography_fluid-comicsans-text-pow-wide: 89.6875;
---typography_fluid-comicsans-text-pow-size-narrow: 0.875;
---typography_fluid-comicsans-text-pow-size-wide: 1;
---typography_fluid-comicsans-text-pow-ratio-narrow: 1.25;
---typography_fluid-comicsans-text-pow-ratio-wide: 1.25;
---typography_fluid-comicsans-text-pow-fluid: clamp(0rem, (100vw - var(--typography_fluid-comicsans-text-pow-narrow) * 1rem) / (var(--typography_fluid-comicsans-text-pow-wide) - var(--typography_fluid-comicsans-text-pow-narrow)), 1rem);
---typography_fluid-comicsans-text-pow-at-narrow: calc(var(--typography_fluid-comicsans-text-pow-size-narrow) * (1rem - var(--typography_fluid-comicsans-text-pow-fluid)));
---typography_fluid-comicsans-text-pow-at-wide: calc(var(--typography_fluid-comicsans-text-pow-size-wide) * var(--typography_fluid-comicsans-text-pow-fluid));
---typography_fluid-comicsans-text-pow-e: calc(var(--typography_fluid-comicsans-text-pow-at-narrow) * pow(var(--typography_fluid-comicsans-text-pow-ratio-narrow), 2) + var(--typography_fluid-comicsans-text-pow-at-wide) * pow(var(--typography_fluid-comicsans-text-pow-ratio-wide), 2));
---typography_fluid-comicsans-text-pow-d: calc(var(--typography_fluid-comicsans-text-pow-at-narrow) * var(--typography_fluid-comicsans-text-pow-ratio-narrow) + var(--typography_fluid-comicsans-text-pow-at-wide) * var(--typography_fluid-comicsans-text-pow-ratio-wide));
---typography_fluid-comicsans-text-pow-c: calc(var(--typography_fluid-comicsans-text-pow-at-narrow) + var(--typography_fluid-comicsans-text-pow-at-wide));
---typography_fluid-comicsans-text-pow-b: calc(var(--typography_fluid-comicsans-text-pow-c) / var(--typography_fluid-comicsans-text-pow-ratio-narrow));
---typography_fluid-comicsans-text-pow-a: calc(var(--typography_fluid-comicsans-text-pow-c) / pow(var(--typography_fluid-comicsans-text-pow-ratio-narrow), 2));
+--typography_fluid-comicsans-text-pow-min-width: 20;
+--typography_fluid-comicsans-text-pow-max-width: 89.6875;
+--typography_fluid-comicsans-text-pow-min-font-size: 0.875;
+--typography_fluid-comicsans-text-pow-max-font-size: 1;
+--typography_fluid-comicsans-text-pow-min-type-scale: 1.25;
+--typography_fluid-comicsans-text-pow-max-type-scale: 1.25;
+--typography_fluid-comicsans-text-pow-progress: clamp(0rem, (100vw - var(--typography_fluid-comicsans-text-pow-min-width) * 1rem) / (var(--typography_fluid-comicsans-text-pow-max-width) - var(--typography_fluid-comicsans-text-pow-min-width)), 1rem);
+--typography_fluid-comicsans-text-pow-at-min: calc(var(--typography_fluid-comicsans-text-pow-min-font-size) * (1rem - var(--typography_fluid-comicsans-text-pow-progress)));
+--typography_fluid-comicsans-text-pow-at-max: calc(var(--typography_fluid-comicsans-text-pow-max-font-size) * var(--typography_fluid-comicsans-text-pow-progress));
+--typography_fluid-comicsans-text-pow-e: calc(var(--typography_fluid-comicsans-text-pow-at-min) * pow(var(--typography_fluid-comicsans-text-pow-min-type-scale), 2) + var(--typography_fluid-comicsans-text-pow-at-max) * pow(var(--typography_fluid-comicsans-text-pow-max-type-scale), 2));
+--typography_fluid-comicsans-text-pow-d: calc(var(--typography_fluid-comicsans-text-pow-at-min) * var(--typography_fluid-comicsans-text-pow-min-type-scale) + var(--typography_fluid-comicsans-text-pow-at-max) * var(--typography_fluid-comicsans-text-pow-max-type-scale));
+--typography_fluid-comicsans-text-pow-c: calc(var(--typography_fluid-comicsans-text-pow-at-min) + var(--typography_fluid-comicsans-text-pow-at-max));
+--typography_fluid-comicsans-text-pow-b: calc(var(--typography_fluid-comicsans-text-pow-c) / var(--typography_fluid-comicsans-text-pow-min-type-scale));
+--typography_fluid-comicsans-text-pow-a: calc(var(--typography_fluid-comicsans-text-pow-c) / pow(var(--typography_fluid-comicsans-text-pow-min-type-scale), 2));
 }
 ```
 
@@ -1542,17 +1542,17 @@ This will generate the following CSS :
 /*____ Typography ____*/
 --typography_fluid-caption-l: clamp(0.825rem, 0.7615rem + 0.3177vw, 1.0156rem);
 --typography_fluid-caption-m: clamp(0.6875rem, 0.6458rem + 0.2083vw, 0.8125rem);
---typography_fluid-caption-pow-narrow: 20;
---typography_fluid-caption-pow-wide: 80;
---typography_fluid-caption-pow-size-narrow: 0.6875;
---typography_fluid-caption-pow-size-wide: 0.8125;
---typography_fluid-caption-pow-ratio-narrow: 1.2;
---typography_fluid-caption-pow-ratio-wide: 1.25;
---typography_fluid-caption-pow-fluid: clamp(0rem, (100vw - var(--typography_fluid-caption-pow-narrow) * 1rem) / (var(--typography_fluid-caption-pow-wide) - var(--typography_fluid-caption-pow-narrow)), 1rem);
---typography_fluid-caption-pow-at-narrow: calc(var(--typography_fluid-caption-pow-size-narrow) * (1rem - var(--typography_fluid-caption-pow-fluid)));
---typography_fluid-caption-pow-at-wide: calc(var(--typography_fluid-caption-pow-size-wide) * var(--typography_fluid-caption-pow-fluid));
---typography_fluid-caption-pow-l: calc(var(--typography_fluid-caption-pow-at-narrow) * var(--typography_fluid-caption-pow-ratio-narrow) + var(--typography_fluid-caption-pow-at-wide) * var(--typography_fluid-caption-pow-ratio-wide));
---typography_fluid-caption-pow-m: calc(var(--typography_fluid-caption-pow-at-narrow) + var(--typography_fluid-caption-pow-at-wide));
+--typography_fluid-caption-pow-min-width: 20;
+--typography_fluid-caption-pow-max-width: 80;
+--typography_fluid-caption-pow-min-font-size: 0.6875;
+--typography_fluid-caption-pow-max-font-size: 0.8125;
+--typography_fluid-caption-pow-min-type-scale: 1.2;
+--typography_fluid-caption-pow-max-type-scale: 1.25;
+--typography_fluid-caption-pow-progress: clamp(0rem, (100vw - var(--typography_fluid-caption-pow-min-width) * 1rem) / (var(--typography_fluid-caption-pow-max-width) - var(--typography_fluid-caption-pow-min-width)), 1rem);
+--typography_fluid-caption-pow-at-min: calc(var(--typography_fluid-caption-pow-min-font-size) * (1rem - var(--typography_fluid-caption-pow-progress)));
+--typography_fluid-caption-pow-at-max: calc(var(--typography_fluid-caption-pow-max-font-size) * var(--typography_fluid-caption-pow-progress));
+--typography_fluid-caption-pow-l: calc(var(--typography_fluid-caption-pow-at-min) * var(--typography_fluid-caption-pow-min-type-scale) + var(--typography_fluid-caption-pow-at-max) * var(--typography_fluid-caption-pow-max-type-scale));
+--typography_fluid-caption-pow-m: calc(var(--typography_fluid-caption-pow-at-min) + var(--typography_fluid-caption-pow-at-max));
 }
 ```
 
@@ -1589,24 +1589,24 @@ The pow inputs and helpers of each scale are named
 `--typography_fluid-<scale>[-<prefix>]-pow-<name>` and referenced as
 `typography_fluid.<scale>.pow.<name>`:
 
-- `narrow` and `wide`: `minWidth` and `maxWidth` in rem, as plain numbers. A length divided
+- `min-width` and `max-width`: `minWidth` and `maxWidth` in rem, as plain numbers. A length divided
   by a length does not work in Firefox, so the inputs carry no unit.
-- `size-narrow` and `size-wide`: `minFontSize` and `maxFontSize` in rem.
-- `ratio-narrow` and `ratio-wide`: `minTypeScale` and `maxTypeScale`.
-- `fluid`, `at-narrow` and `at-wide`: the helpers the steps are built from.
+- `min-font-size` and `max-font-size`: `minFontSize` and `maxFontSize` in rem.
+- `min-type-scale` and `max-type-scale`: `minTypeScale` and `maxTypeScale`.
+- `progress`, `at-min` and `at-max`: the helpers the steps are built from.
 
-Step 0 is `at-narrow + at-wide`, step `n` above it is
-`at-narrow × pow(ratio-narrow, n) + at-wide × pow(ratio-wide, n)`, and step `-n` is pow step 0
-divided by `pow(ratio-narrow, n)`. The inputs are primitive tokens. The helpers and steps
+Step 0 is `at-min + at-max`, step `n` above it is
+`at-min × pow(min-type-scale, n) + at-max × pow(max-type-scale, n)`, and step `-n` is pow step 0
+divided by `pow(min-type-scale, n)`. The inputs are primitive tokens. The helpers and steps
 reference other tokens, so they are semantic and list those tokens as their reference paths.
 
-A step label that gives a pow name, such as `customLabel` `narrow` (pow step
-`--typography_fluid-<scale>-pow-narrow`) or `pow-narrow`, is a key collision and fails the
+A step label that gives a pow name, such as `customLabel` `min-width` (pow step
+`--typography_fluid-<scale>-pow-min-width`) or `pow-min-width`, is a key collision and fails the
 build. A step cannot be labelled `pow`, the segment that holds the pow tokens.
 
 `relativeTo` sets the width the scale follows: `"viewport-width"` (the default) writes
 `vw`, `"viewport"` writes `vi`, and `"container"` writes `cqi` for a scale that follows its
-container. The `clamp()` steps use it in their slope, and the pow tokens in `fluid`.
+container. The `clamp()` steps use it in their slope, and the pow tokens in `progress`.
 
 <!-- md:generate defineConfig
 export default defineConfig({
@@ -1662,19 +1662,19 @@ This will generate the following CSS :
 --typography_fluid-body-l: clamp(1.35rem, 1.2761rem + 0.3696cqi, 1.5625rem);
 --typography_fluid-body-m: clamp(1.125rem, 1.0815rem + 0.2174cqi, 1.25rem);
 --typography_fluid-body-s: clamp(0.9375rem, 0.9013rem + 0.1812cqi, 1.0417rem);
---typography_fluid-body-pow-narrow: 20;
---typography_fluid-body-pow-wide: 77.5;
---typography_fluid-body-pow-size-narrow: 1.125;
---typography_fluid-body-pow-size-wide: 1.25;
---typography_fluid-body-pow-ratio-narrow: 1.2;
---typography_fluid-body-pow-ratio-wide: 1.25;
---typography_fluid-body-pow-fluid: clamp(0rem, (100cqi - var(--typography_fluid-body-pow-narrow) * 1rem) / (var(--typography_fluid-body-pow-wide) - var(--typography_fluid-body-pow-narrow)), 1rem);
---typography_fluid-body-pow-at-narrow: calc(var(--typography_fluid-body-pow-size-narrow) * (1rem - var(--typography_fluid-body-pow-fluid)));
---typography_fluid-body-pow-at-wide: calc(var(--typography_fluid-body-pow-size-wide) * var(--typography_fluid-body-pow-fluid));
---typography_fluid-body-pow-xl: calc(var(--typography_fluid-body-pow-at-narrow) * pow(var(--typography_fluid-body-pow-ratio-narrow), 2) + var(--typography_fluid-body-pow-at-wide) * pow(var(--typography_fluid-body-pow-ratio-wide), 2));
---typography_fluid-body-pow-l: calc(var(--typography_fluid-body-pow-at-narrow) * var(--typography_fluid-body-pow-ratio-narrow) + var(--typography_fluid-body-pow-at-wide) * var(--typography_fluid-body-pow-ratio-wide));
---typography_fluid-body-pow-m: calc(var(--typography_fluid-body-pow-at-narrow) + var(--typography_fluid-body-pow-at-wide));
---typography_fluid-body-pow-s: calc(var(--typography_fluid-body-pow-m) / var(--typography_fluid-body-pow-ratio-narrow));
+--typography_fluid-body-pow-min-width: 20;
+--typography_fluid-body-pow-max-width: 77.5;
+--typography_fluid-body-pow-min-font-size: 1.125;
+--typography_fluid-body-pow-max-font-size: 1.25;
+--typography_fluid-body-pow-min-type-scale: 1.2;
+--typography_fluid-body-pow-max-type-scale: 1.25;
+--typography_fluid-body-pow-progress: clamp(0rem, (100cqi - var(--typography_fluid-body-pow-min-width) * 1rem) / (var(--typography_fluid-body-pow-max-width) - var(--typography_fluid-body-pow-min-width)), 1rem);
+--typography_fluid-body-pow-at-min: calc(var(--typography_fluid-body-pow-min-font-size) * (1rem - var(--typography_fluid-body-pow-progress)));
+--typography_fluid-body-pow-at-max: calc(var(--typography_fluid-body-pow-max-font-size) * var(--typography_fluid-body-pow-progress));
+--typography_fluid-body-pow-xl: calc(var(--typography_fluid-body-pow-at-min) * pow(var(--typography_fluid-body-pow-min-type-scale), 2) + var(--typography_fluid-body-pow-at-max) * pow(var(--typography_fluid-body-pow-max-type-scale), 2));
+--typography_fluid-body-pow-l: calc(var(--typography_fluid-body-pow-at-min) * var(--typography_fluid-body-pow-min-type-scale) + var(--typography_fluid-body-pow-at-max) * var(--typography_fluid-body-pow-max-type-scale));
+--typography_fluid-body-pow-m: calc(var(--typography_fluid-body-pow-at-min) + var(--typography_fluid-body-pow-at-max));
+--typography_fluid-body-pow-s: calc(var(--typography_fluid-body-pow-m) / var(--typography_fluid-body-pow-min-type-scale));
 }
 ```
 
@@ -1806,24 +1806,24 @@ This will generate the following CSS :
 --typography_fluid-arial-s: clamp(0.7rem, 0.6713rem + 0.1435vw, 0.8rem);
 --typography_fluid-arial-xs: clamp(0.56rem, 0.537rem + 0.1148vw, 0.64rem);
 --typography_fluid-arial-2xs: clamp(0.448rem, 0.4296rem + 0.0918vw, 0.512rem);
---typography_fluid-arial-pow-narrow: 20;
---typography_fluid-arial-pow-wide: 89.6875;
---typography_fluid-arial-pow-size-narrow: 0.875;
---typography_fluid-arial-pow-size-wide: 1;
---typography_fluid-arial-pow-ratio-narrow: 1.25;
---typography_fluid-arial-pow-ratio-wide: 1.25;
---typography_fluid-arial-pow-fluid: clamp(0rem, (100vw - var(--typography_fluid-arial-pow-narrow) * 1rem) / (var(--typography_fluid-arial-pow-wide) - var(--typography_fluid-arial-pow-narrow)), 1rem);
---typography_fluid-arial-pow-at-narrow: calc(var(--typography_fluid-arial-pow-size-narrow) * (1rem - var(--typography_fluid-arial-pow-fluid)));
---typography_fluid-arial-pow-at-wide: calc(var(--typography_fluid-arial-pow-size-wide) * var(--typography_fluid-arial-pow-fluid));
---typography_fluid-arial-pow-4xl: calc(var(--typography_fluid-arial-pow-at-narrow) * pow(var(--typography_fluid-arial-pow-ratio-narrow), 5) + var(--typography_fluid-arial-pow-at-wide) * pow(var(--typography_fluid-arial-pow-ratio-wide), 5));
---typography_fluid-arial-pow-3xl: calc(var(--typography_fluid-arial-pow-at-narrow) * pow(var(--typography_fluid-arial-pow-ratio-narrow), 4) + var(--typography_fluid-arial-pow-at-wide) * pow(var(--typography_fluid-arial-pow-ratio-wide), 4));
---typography_fluid-arial-pow-2xl: calc(var(--typography_fluid-arial-pow-at-narrow) * pow(var(--typography_fluid-arial-pow-ratio-narrow), 3) + var(--typography_fluid-arial-pow-at-wide) * pow(var(--typography_fluid-arial-pow-ratio-wide), 3));
---typography_fluid-arial-pow-xl: calc(var(--typography_fluid-arial-pow-at-narrow) * pow(var(--typography_fluid-arial-pow-ratio-narrow), 2) + var(--typography_fluid-arial-pow-at-wide) * pow(var(--typography_fluid-arial-pow-ratio-wide), 2));
---typography_fluid-arial-pow-l: calc(var(--typography_fluid-arial-pow-at-narrow) * var(--typography_fluid-arial-pow-ratio-narrow) + var(--typography_fluid-arial-pow-at-wide) * var(--typography_fluid-arial-pow-ratio-wide));
---typography_fluid-arial-pow-m: calc(var(--typography_fluid-arial-pow-at-narrow) + var(--typography_fluid-arial-pow-at-wide));
---typography_fluid-arial-pow-s: calc(var(--typography_fluid-arial-pow-m) / var(--typography_fluid-arial-pow-ratio-narrow));
---typography_fluid-arial-pow-xs: calc(var(--typography_fluid-arial-pow-m) / pow(var(--typography_fluid-arial-pow-ratio-narrow), 2));
---typography_fluid-arial-pow-2xs: calc(var(--typography_fluid-arial-pow-m) / pow(var(--typography_fluid-arial-pow-ratio-narrow), 3));
+--typography_fluid-arial-pow-min-width: 20;
+--typography_fluid-arial-pow-max-width: 89.6875;
+--typography_fluid-arial-pow-min-font-size: 0.875;
+--typography_fluid-arial-pow-max-font-size: 1;
+--typography_fluid-arial-pow-min-type-scale: 1.25;
+--typography_fluid-arial-pow-max-type-scale: 1.25;
+--typography_fluid-arial-pow-progress: clamp(0rem, (100vw - var(--typography_fluid-arial-pow-min-width) * 1rem) / (var(--typography_fluid-arial-pow-max-width) - var(--typography_fluid-arial-pow-min-width)), 1rem);
+--typography_fluid-arial-pow-at-min: calc(var(--typography_fluid-arial-pow-min-font-size) * (1rem - var(--typography_fluid-arial-pow-progress)));
+--typography_fluid-arial-pow-at-max: calc(var(--typography_fluid-arial-pow-max-font-size) * var(--typography_fluid-arial-pow-progress));
+--typography_fluid-arial-pow-4xl: calc(var(--typography_fluid-arial-pow-at-min) * pow(var(--typography_fluid-arial-pow-min-type-scale), 5) + var(--typography_fluid-arial-pow-at-max) * pow(var(--typography_fluid-arial-pow-max-type-scale), 5));
+--typography_fluid-arial-pow-3xl: calc(var(--typography_fluid-arial-pow-at-min) * pow(var(--typography_fluid-arial-pow-min-type-scale), 4) + var(--typography_fluid-arial-pow-at-max) * pow(var(--typography_fluid-arial-pow-max-type-scale), 4));
+--typography_fluid-arial-pow-2xl: calc(var(--typography_fluid-arial-pow-at-min) * pow(var(--typography_fluid-arial-pow-min-type-scale), 3) + var(--typography_fluid-arial-pow-at-max) * pow(var(--typography_fluid-arial-pow-max-type-scale), 3));
+--typography_fluid-arial-pow-xl: calc(var(--typography_fluid-arial-pow-at-min) * pow(var(--typography_fluid-arial-pow-min-type-scale), 2) + var(--typography_fluid-arial-pow-at-max) * pow(var(--typography_fluid-arial-pow-max-type-scale), 2));
+--typography_fluid-arial-pow-l: calc(var(--typography_fluid-arial-pow-at-min) * var(--typography_fluid-arial-pow-min-type-scale) + var(--typography_fluid-arial-pow-at-max) * var(--typography_fluid-arial-pow-max-type-scale));
+--typography_fluid-arial-pow-m: calc(var(--typography_fluid-arial-pow-at-min) + var(--typography_fluid-arial-pow-at-max));
+--typography_fluid-arial-pow-s: calc(var(--typography_fluid-arial-pow-m) / var(--typography_fluid-arial-pow-min-type-scale));
+--typography_fluid-arial-pow-xs: calc(var(--typography_fluid-arial-pow-m) / pow(var(--typography_fluid-arial-pow-min-type-scale), 2));
+--typography_fluid-arial-pow-2xs: calc(var(--typography_fluid-arial-pow-m) / pow(var(--typography_fluid-arial-pow-min-type-scale), 3));
 /*____ Primitives ____*/
 /* button */
 --button-small-width: 7.5rem;
@@ -1895,7 +1895,7 @@ follow the following convention :
 
 The pow representation of a step adds a `pow` segment, as in
 `typography_fluid.comicsans.pow@a`, and its inputs and helpers are
-`typography_fluid.comicsans.pow.<name>`, such as `typography_fluid.comicsans.pow.ratio-wide`.
+`typography_fluid.comicsans.pow.<name>`, such as `typography_fluid.comicsans.pow.max-type-scale`.
 
 ## CLI Usage
 

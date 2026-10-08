@@ -240,18 +240,18 @@ export function processTypography(config: TypographyConfig): Output {
 			const power = (name: string, n: number) =>
 				n === 1 ? ref(name) : `pow(${ref(name)}, ${n})`;
 			const powInputs: Array<[string, string]> = [
-				["narrow", `${utopiaConfig.minWidth / REM}`],
-				["wide", `${utopiaConfig.maxWidth / REM}`],
-				["size-narrow", `${utopiaConfig.minFontSize / REM}`],
-				["size-wide", `${utopiaConfig.maxFontSize / REM}`],
-				["ratio-narrow", `${utopiaConfig.minTypeScale}`],
-				["ratio-wide", `${utopiaConfig.maxTypeScale}`],
+				["min-width", `${utopiaConfig.minWidth / REM}`],
+				["max-width", `${utopiaConfig.maxWidth / REM}`],
+				["min-font-size", `${utopiaConfig.minFontSize / REM}`],
+				["max-font-size", `${utopiaConfig.maxFontSize / REM}`],
+				["min-type-scale", `${utopiaConfig.minTypeScale}`],
+				["max-type-scale", `${utopiaConfig.maxTypeScale}`],
 				[
-					"fluid",
-					`clamp(0rem, (100${unit} - ${ref("narrow")} * 1rem) / (${ref("wide")} - ${ref("narrow")}), 1rem)`,
+					"progress",
+					`clamp(0rem, (100${unit} - ${ref("min-width")} * 1rem) / (${ref("max-width")} - ${ref("min-width")}), 1rem)`,
 				],
-				["at-narrow", `calc(${ref("size-narrow")} * (1rem - ${ref("fluid")}))`],
-				["at-wide", `calc(${ref("size-wide")} * ${ref("fluid")})`],
+				["at-min", `calc(${ref("min-font-size")} * (1rem - ${ref("progress")}))`],
+				["at-max", `calc(${ref("max-font-size")} * ${ref("progress")})`],
 			];
 			const stepZero = steps.find(({ step }) => step === 0);
 			if (!stepZero) {
@@ -260,11 +260,11 @@ export function processTypography(config: TypographyConfig): Output {
 				);
 			}
 			const powStep = (step: number) => {
-				if (step === 0) return `calc(${ref("at-narrow")} + ${ref("at-wide")})`;
+				if (step === 0) return `calc(${ref("at-min")} + ${ref("at-max")})`;
 				if (step < 0) {
-					return `calc(${ref(stepZero.label)} / ${power("ratio-narrow", -step)})`;
+					return `calc(${ref(stepZero.label)} / ${power("min-type-scale", -step)})`;
 				}
-				return `calc(${ref("at-narrow")} * ${power("ratio-narrow", step)} + ${ref("at-wide")} * ${power("ratio-wide", step)})`;
+				return `calc(${ref("at-min")} * ${power("min-type-scale", step)} + ${ref("at-max")} * ${power("max-type-scale", step)})`;
 			};
 
 			// The pow values reference each other by key, so the shared resolver
