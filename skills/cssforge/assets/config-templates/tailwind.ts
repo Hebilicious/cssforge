@@ -1,4 +1,4 @@
-import { defineConfig, uiEasings } from "@hebilicious/cssforge";
+import { defineConfig } from "@hebilicious/cssforge";
 
 export default defineConfig({
   colors: {
@@ -97,7 +97,12 @@ export default defineConfig({
       },
     },
     easing: {
-      ui: { value: { ...uiEasings } },
+      ui: {
+        value: {
+          out: "cubic-bezier(0.23, 1, 0.32, 1)",
+          inOut: "cubic-bezier(0.77, 0, 0.175, 1)",
+        },
+      },
     },
   },
 });
