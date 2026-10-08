@@ -23,7 +23,7 @@ Deno.test("processTypography - generates correct CSS variables", async (t) => {
 	});
 
 	const expectedSizes = ["4xl", "3xl", "2xl", "xl", "l", "m", "s", "xs", "2xs"];
-	const result = processTypography(config.typography);
+	const result = processTypography(config.typography, { fluidTypeFunction: "clamp" });
 	const lines = getLines(result.css.root);
 	assertEquals(lines.length, expectedSizes.length);
 
@@ -86,7 +86,7 @@ Deno.test("typography - can handle custom labels and prefixes", async (t) => {
 	});
 
 	const expectedSizes = ["xs", "s", "m", "l", "xl", "xxl", "h4", "h3", "h2", "h1"];
-	const result = processTypography(config.typography);
+	const result = processTypography(config.typography, { fluidTypeFunction: "clamp" });
 	const lines = getLines(result.css.root);
 	assertEquals(lines.length, expectedSizes.length);
 
@@ -138,7 +138,7 @@ Deno.test("processTypography - can process weights", async (t) => {
 		},
 	});
 
-	const result = processTypography(config.typography);
+	const result = processTypography(config.typography, { fluidTypeFunction: "clamp" });
 	const lines = getLines(result.css.root);
 	assertEquals(lines.length, positiveSteps + negativeSteps + 1 + 1); // 1 for base size and 1 for weight
 

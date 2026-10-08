@@ -23,7 +23,7 @@ features:
     link: /tokens/colors
     linkText: Explore colors
   - title: Typography
-    details: Generate fluid typography scales with clamp-based responsive sizing.
+    details: Generate fluid typography scales, written with pow() for live tuning or with clamp().
     icon:
       src: /icons/typography.svg
     link: /tokens/typography

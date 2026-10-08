@@ -47,17 +47,27 @@ color output settings.
 
 ## Fluid typography output
 
-- `FluidTypeScaleDefinition.settings.output` in `packages/cssforge/src/modules/typography.ts`:
-  `"clamp" | "pow"`, default `"clamp"`. Read at `typography.fluid.<scale>.settings.output`;
-  anything else is rejected.
-- `"pow"` emits `--typography_fluid-<scale>[-<prefix>]-<input>` for `narrow`, `wide`,
+- Every step has one canonical size in px at `minWidth` and `maxWidth`
+  (`fluidTypeSteps` in `packages/cssforge/src/modules/typography.ts`). Step 0 and above are
+  utopia-core's. Step `-n` is `step 0 / minTypeScale^n` at every width, so its wide end is
+  `maxFontSize / minTypeScale^n`. The checks, both CSS functions and the tokens use it.
+- The CSS function is a CSS-only generation option, not token config:
+  `GenerateCSSOptions.fluidTypeFunction` in `packages/cssforge/src/lib.ts`, `"pow" | "clamp"`,
+  default `"pow"`. `generateCSS(config, { fluidTypeFunction })` and
+  `processTypography(typography, { fluidTypeFunction })` read it; the CLI flag
+  `--fluid-type-function` sets it. Anything else is rejected.
+- `"pow"` CSS declares `--typography_fluid-<scale>[-<prefix>]-<input>` for `narrow`, `wide`,
   `size-narrow`, `size-wide`, `ratio-narrow`, `ratio-wide`, `fluid`, `at-narrow` and
-  `at-wide`, with resolve paths `typography_fluid.<scale>.<input>`. Steps keep their clamp
-  names and paths `typography_fluid.<scale>@<label>`.
-- Step `-n` is `step 0 / pow(ratio-narrow, n)` at every width, so its wide end is
-  `maxFontSize / minTypeScale^n`; the checks use those sizes.
-- `value.relativeTo` maps `viewport-width` (default) to `100vw`, `viewport` to `100vi` and
-  `container` to `100cqi`; anything else is rejected in pow mode.
+  `at-wide`, and writes each step with `pow()`. These inputs are CSS only (`Output.cssOnly`):
+  they are not tokens and cannot be referenced, but the key collision check covers them, so a
+  step label such as `fluid` fails in pow CSS.
+- `"clamp"` CSS writes each step as its canonical `clamp()`, the value the step token holds in
+  the JSON, TypeScript and Style Dictionary outputs for both functions.
+- Steps keep their names and paths `typography_fluid.<scale>@<label>`; a reference is
+  `var(--typography_fluid-<scale>[-<prefix>]-<label>)`.
+- `value.relativeTo` maps `viewport-width` (default) to `vw`, `viewport` to `vi` and
+  `container` to `cqi` in both functions; anything else is rejected.
+- `settings.output` no longer exists and is rejected as an unknown key.
 
 ## Derived colors
 

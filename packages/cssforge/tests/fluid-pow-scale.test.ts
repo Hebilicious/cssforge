@@ -1,13 +1,20 @@
+import { spawnSync } from "node:child_process";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { calculateTypeScale } from "utopia-core";
-import { generateJSON } from "../src/generator.ts";
-import type { CSSForgeConfig } from "../src/mod.ts";
+import { build } from "../src/cli.ts";
+import { generateJSON, generateTS } from "../src/generator.ts";
+import type { CSSForgeConfig, FluidTypeFunction } from "../src/mod.ts";
 import {
 	defineConfig,
 	generateCSS,
+	generateStyleDictionaryJSON,
 	getDiagnostics,
 	processTypography,
 } from "../src/mod.ts";
-import { getLines } from "./helpers.ts";
+import { childEnv, getLines } from "./helpers.ts";
 import { assert, assertEquals, assertThrows, Deno } from "./vitest-compat.ts";
 
 type FluidScale = NonNullable<CSSForgeConfig["typography"]["fluid"]>[string];
@@ -27,12 +34,76 @@ const example = {
 
 const scale = (
 	value: FluidScale["value"],
-	settings: FluidSettings = { output: "pow" },
-): Partial<CSSForgeConfig> => ({ typography: { fluid: { body: { value, settings } } } });
+	settings?: FluidSettings,
+): Partial<CSSForgeConfig> => ({
+	typography: { fluid: { body: { value, ...(settings ? { settings } : {}) } } },
+});
 
 const v = (name: string) => `var(--typography_fluid-body-${name})`;
 
-Deno.test("pow scale - emits the six inputs, the helpers and the steps", () => {
+/** The value of each `--typography_fluid-body-<label>` declaration in a CSS string. */
+const declarations = (css: string) =>
+	new Map(
+		getLines(css)
+			.map((line) => /^--typography_fluid-body-([\w-]+): (.*);$/.exec(line))
+			.filter((match): match is RegExpExecArray => match !== null)
+			.map(([, name, value]) => [name ?? "", value ?? ""]),
+	);
+
+/** The steps of the example scale in emitted order, with their labels. */
+const steps = [4, 3, 2, 1, 0, -1, -2] as const;
+const labels = { 4: "3xl", 3: "2xl", 2: "xl", 1: "l", 0: "m", [-1]: "s", [-2]: "xs" };
+const orderedLabels = steps.map((step) => labels[step]);
+
+/**
+ * The size of `step` in px at `minWidth` and `maxWidth`, derived from the config
+ * alone: utopia's sizes at and above step 0, and step 0 divided by the narrow
+ * ratio below it, so a small size never shrinks as the screen grows.
+ */
+const expectedSizes = (step: number) =>
+	step >= 0
+		? {
+				narrow: example.minFontSize * example.minTypeScale ** step,
+				wide: example.maxFontSize * example.maxTypeScale ** step,
+			}
+		: {
+				narrow: example.minFontSize / example.minTypeScale ** -step,
+				wide: example.maxFontSize / example.minTypeScale ** -step,
+			};
+
+/** The emitted pow formula transcribed to JS: the size of `step` in px at `width` px. */
+const powSize = (step: number, width: number) => {
+	const rem = 16;
+	const narrow = example.minWidth / rem;
+	const wide = example.maxWidth / rem;
+	const fluid = Math.min(1, Math.max(0, (width / rem - narrow) / (wide - narrow)));
+	const atNarrow = (example.minFontSize / rem) * (1 - fluid);
+	const atWide = (example.maxFontSize / rem) * fluid;
+	const stepZero = atNarrow + atWide;
+	const size =
+		step >= 0
+			? atNarrow * example.minTypeScale ** step + atWide * example.maxTypeScale ** step
+			: stepZero / example.minTypeScale ** -step;
+	return size * rem;
+};
+
+/** Evaluates an emitted `clamp(<min>rem, <a>rem + <b>vw, <max>rem)` in px at `width` px. */
+const clampSize = (clamp: string, width: number) => {
+	const match =
+		/^clamp\((-?[\d.]+)rem, (-?[\d.]+)rem \+ (-?[\d.]+)vw, (-?[\d.]+)rem\)$/.exec(clamp);
+	assert(match, `Unexpected clamp: ${clamp}`);
+	const [min, intercept, slope, max] = (match ?? []).slice(1).map(Number);
+	const preferred = (intercept ?? 0) + ((slope ?? 0) * width) / 100 / 16;
+	return Math.min(max ?? 0, Math.max(min ?? 0, preferred)) * 16;
+};
+
+const near = (actual: number, expected: number, what: string) =>
+	assert(
+		Math.abs(actual - expected) < 0.01,
+		`${what}: ${actual}px, expected ${expected}px`,
+	);
+
+Deno.test("fluid type CSS - pow is the default: six inputs, three helpers and pow() steps", () => {
 	const lines = getLines(processTypography(scale(example).typography ?? {}).css.root);
 
 	assertEquals(lines, [
@@ -53,165 +124,192 @@ Deno.test("pow scale - emits the six inputs, the helpers and the steps", () => {
 		`--typography_fluid-body-s: calc(${v("m")} / ${v("ratio-narrow")});`,
 		`--typography_fluid-body-xs: calc(${v("m")} / pow(${v("ratio-narrow")}, 2));`,
 	]);
+	assertEquals(
+		generateCSS(scale(example)),
+		generateCSS(scale(example), { fluidTypeFunction: "pow" }),
+	);
 });
 
-/**
- * The emitted formula transcribed to JS: the size of `step` in px at a
- * viewport `width` in px, from the inputs derived independently of the module.
- */
-const powSize = (step: number, width: number) => {
-	const rem = 16;
-	const narrow = example.minWidth / rem;
-	const wide = example.maxWidth / rem;
-	const fluid = Math.min(1, Math.max(0, (width / rem - narrow) / (wide - narrow)));
-	const atNarrow = (example.minFontSize / rem) * (1 - fluid);
-	const atWide = (example.maxFontSize / rem) * fluid;
-	const stepZero = atNarrow + atWide;
-	const size =
-		step >= 0
-			? atNarrow * example.minTypeScale ** step + atWide * example.maxTypeScale ** step
-			: stepZero / example.minTypeScale ** -step;
-	return size * rem;
-};
+Deno.test("fluid type CSS - the clamp option writes one clamp() per step and keeps utopia's positive steps", () => {
+	const css = declarations(generateCSS(scale(example), { fluidTypeFunction: "clamp" }));
 
-Deno.test("pow scale - the formula matches utopia at the narrow and wide widths", () => {
-	const utopia = calculateTypeScale(example);
-	const stepZeroWide = utopia.find(({ step }) => step === 0)?.maxFontSize ?? Number.NaN;
+	assertEquals([...css.keys()], orderedLabels);
+	assert(![...css.values()].some((value) => value.includes("pow(")));
+	for (const { step, label, clamp } of calculateTypeScale({
+		...example,
+		labelStyle: "tshirt",
+	})) {
+		if (step >= 0) assertEquals(css.get(label), clamp, `step ${label}`);
+	}
+});
 
-	for (const { step, minFontSize, maxFontSize } of utopia) {
-		const narrow = powSize(step, example.minWidth);
-		const wide = powSize(step, example.maxWidth);
-		assert(Math.abs(narrow - minFontSize) < 1e-3, `step ${step} narrow: ${narrow}`);
-		// Below step 0 the wide end divides step 0 by the narrow ratio, as good-css does.
-		const expectedWide =
-			step >= 0 ? maxFontSize : stepZeroWide / example.minTypeScale ** -step;
-		assert(Math.abs(wide - expectedWide) < 1e-3, `step ${step} wide: ${wide}`);
+Deno.test("fluid type CSS - both functions give the canonical size of every step at both widths", () => {
+	const clamp = declarations(generateCSS(scale(example), { fluidTypeFunction: "clamp" }));
+
+	for (const step of steps) {
+		const label = labels[step];
+		const { narrow, wide } = expectedSizes(step);
+		near(powSize(step, example.minWidth), narrow, `pow ${label} narrow`);
+		near(powSize(step, example.maxWidth), wide, `pow ${label} wide`);
+		near(
+			clampSize(clamp.get(label) ?? "", example.minWidth),
+			narrow,
+			`clamp ${label} narrow`,
+		);
+		near(
+			clampSize(clamp.get(label) ?? "", example.maxWidth),
+			wide,
+			`clamp ${label} wide`,
+		);
 	}
 	// Step xs at the wide end is 20 / 1.2^2 px, not utopia's 20 / 1.25^2 px.
-	assert(Math.abs(powSize(-2, example.maxWidth) - 13.8889) < 1e-3);
+	near(clampSize(clamp.get("xs") ?? "", example.maxWidth), 13.8889, "clamp xs wide");
 	// Outside the range the scale stops at its ends.
 	assertEquals(powSize(2, 100), powSize(2, example.minWidth));
 	assertEquals(powSize(2, 4000), powSize(2, example.maxWidth));
 });
 
-Deno.test("pow scale - clamp stays the default and its output is unchanged", () => {
-	const css = generateCSS(scale(example, {}));
-
-	assertEquals(generateCSS(scale(example, { output: "clamp" })), css);
-	assert(css.includes("--typography_fluid-body-m: clamp("), css);
-	assert(!css.includes("pow(") && !css.includes("-narrow:"), css);
+const buildPaths = (dir: string) => ({
+	config: join(dir, "cssforge.config.ts"),
+	cssOutput: join(dir, "output.css"),
+	jsonOutput: join(dir, "output.json"),
+	tsOutput: join(dir, "output.ts"),
+	styleDictionaryOutput: join(dir, "tokens.sd.json"),
 });
 
-Deno.test("pow scale - steps keep their names and paths with a prefix and custom labels", () => {
-	const value = { ...example, positiveSteps: 1, negativeSteps: 1, prefix: "text" };
-	const customLabel = { "-1": "small", "0": "base", "1": "large" };
-	const config = (output: "clamp" | "pow") =>
-		defineConfig({
-			typography: { fluid: { body: { value, settings: { output, customLabel } } } },
-			primitives: {
-				heading: {
-					value: {
-						h1: {
-							value: { fontSize: "var(--size)" },
-							variables: { size: "typography_fluid.body@large" },
-						},
-					},
-				},
-			},
-		});
+/** The inputs and helpers pow() CSS declares beside the steps. */
+const powInputs = [
+	"narrow",
+	"wide",
+	"size-narrow",
+	"size-wide",
+	"ratio-narrow",
+	"ratio-wide",
+	"fluid",
+	"at-narrow",
+	"at-wide",
+];
 
-	for (const output of ["clamp", "pow"] as const) {
-		const css = generateCSS(config(output));
-		for (const label of ["small", "base", "large"]) {
-			assert(
-				css.includes(`--typography_fluid-body-text-${label}: `),
-				`${output} ${label}`,
-			);
+const exampleSource = `export default ${JSON.stringify(scale(example))};`;
+
+Deno.test("fluid type CSS - JSON, TypeScript and Style Dictionary are the same for both functions and hold no pow tokens", async () => {
+	const dir = await mkdtemp(join(tmpdir(), "cssforge-fluid-type-function-"));
+	try {
+		const outputs = async (fluidTypeFunction: FluidTypeFunction) => {
+			const paths = buildPaths(join(dir, fluidTypeFunction));
+			await mkdir(join(dir, fluidTypeFunction));
+			await writeFile(paths.config, exampleSource, "utf8");
+			const result = await build({ ...paths, mode: "all", fluidTypeFunction });
+			assertEquals(result.success, true, String(result.error));
+			return {
+				css: await readFile(paths.cssOutput, "utf8"),
+				tokens: await Promise.all(
+					[paths.jsonOutput, paths.tsOutput, paths.styleDictionaryOutput].map((path) =>
+						readFile(path, "utf8"),
+					),
+				),
+			};
+		};
+
+		const pow = await outputs("pow");
+		const clamp = await outputs("clamp");
+
+		assert(pow.css.includes("pow("), pow.css);
+		assert(!clamp.css.includes("pow("), clamp.css);
+		assertEquals(pow.tokens, clamp.tokens);
+		for (const tokens of pow.tokens) {
+			assert(!tokens.includes("pow("), tokens);
+			for (const name of powInputs) {
+				for (const text of [`-body-${name}"`, `.${name}"`, `"${name}":`]) {
+					assert(!tokens.includes(text), `${text} in ${tokens}`);
+				}
+			}
 		}
-		assert(
-			css.includes("--heading-h1-fontSize: var(--typography_fluid-body-text-large);"),
-		);
+	} finally {
+		await rm(dir, { recursive: true, force: true });
 	}
-
-	const css = generateCSS(config("pow"));
-	assert(css.includes("--typography_fluid-body-text-narrow: 20;"));
-	assert(
-		css.includes(
-			"--typography_fluid-body-text-small: calc(var(--typography_fluid-body-text-base) / var(--typography_fluid-body-text-ratio-narrow));",
-		),
-	);
 });
 
-Deno.test("pow scale - the inputs and helpers are tokens in the JSON output", () => {
+Deno.test("fluid type CSS - a step token holds the clamp() the clamp option writes", () => {
+	const clamp = declarations(generateCSS(scale(example), { fluidTypeFunction: "clamp" }));
 	type Token = { key: string; value: string; variable: string };
 	const json = JSON.parse(generateJSON(scale(example))) as {
-		typography_fluid: Record<string, Record<string, Token> | Token>;
+		typography_fluid: Record<string, Token>;
 	};
-	const inputs = json.typography_fluid.body as Record<string, Token> | undefined;
-	const stepZero = json.typography_fluid["body@m"] as Token | undefined;
+	const styleDictionary = JSON.parse(generateStyleDictionaryJSON(scale(example))) as {
+		"typography-fluid": { body: Record<string, { value: string }> };
+	};
 
-	assertEquals(inputs?.narrow, {
-		key: "--typography_fluid-body-narrow",
-		value: "20",
-		variable: "--typography_fluid-body-narrow: 20;",
-	});
-	assertEquals(Object.keys(inputs ?? {}), [
-		"narrow",
-		"wide",
-		"size-narrow",
-		"size-wide",
-		"ratio-narrow",
-		"ratio-wide",
-		"fluid",
-		"at-narrow",
-		"at-wide",
-	]);
-	assertEquals(stepZero?.value, `calc(${v("at-narrow")} + ${v("at-wide")})`);
+	assertEquals(
+		Object.keys(json.typography_fluid),
+		orderedLabels.map((label) => `body@${label}`),
+	);
+	for (const label of orderedLabels) {
+		assertEquals(json.typography_fluid[`body@${label}`]?.value, clamp.get(label));
+		assertEquals(
+			styleDictionary["typography-fluid"].body[label]?.value,
+			clamp.get(label),
+		);
+	}
+	assert(generateTS(scale(example)).includes(`"value": "${clamp.get("xs")}"`));
 });
 
-Deno.test("pow scale - the helpers can be referenced to build a pair", () => {
-	const css = generateCSS({
-		...scale(example),
+Deno.test("fluid type CSS - a reference to a step is var() for both functions", () => {
+	const value = { ...example, positiveSteps: 1, negativeSteps: 1, prefix: "text" };
+	const customLabel = { "-1": "small", "0": "base", "1": "large" };
+	const config = defineConfig({
+		typography: { fluid: { body: { value, settings: { customLabel } } } },
 		primitives: {
-			space: {
+			heading: {
 				value: {
-					pair: {
-						value: { gap: "calc(var(--n) + 2 * var(--w))" },
-						variables: {
-							n: "typography_fluid.body.at-narrow",
-							w: "typography_fluid.body.at-wide",
-						},
+					h1: {
+						value: { fontSize: "var(--size)" },
+						variables: { size: "typography_fluid.body@large" },
 					},
 				},
 			},
 		},
 	});
 
+	for (const fluidTypeFunction of ["clamp", "pow"] as const) {
+		const css = generateCSS(config, { fluidTypeFunction });
+		for (const label of ["small", "base", "large"]) {
+			assert(css.includes(`--typography_fluid-body-text-${label}: `), label);
+		}
+		assert(
+			css.includes("--heading-h1-fontSize: var(--typography_fluid-body-text-large);"),
+		);
+	}
 	assert(
-		css.includes(
-			"--space-pair-gap: calc(var(--typography_fluid-body-at-narrow) + 2 * var(--typography_fluid-body-at-wide));",
+		generateCSS(config).includes(
+			"--typography_fluid-body-text-small: calc(var(--typography_fluid-body-text-base) / var(--typography_fluid-body-text-ratio-narrow));",
 		),
 	);
 });
 
-Deno.test("pow scale - relativeTo picks the unit of the fluid width", () => {
-	const fluidLine = (relativeTo?: "viewport" | "viewport-width" | "container") =>
-		getLines(
-			processTypography(scale({ ...example, relativeTo }).typography ?? {}).css.root,
-		).find((line) => line.startsWith("--typography_fluid-body-fluid:"));
-
-	assert(fluidLine()?.includes("(100vw - "));
-	assert(fluidLine("viewport-width")?.includes("(100vw - "));
-	assert(fluidLine("viewport")?.includes("(100vi - "));
-	assert(fluidLine("container")?.includes("(100cqi - "));
+Deno.test("fluid type CSS - relativeTo picks the unit for both functions", () => {
+	for (const [relativeTo, unit] of [
+		[undefined, "vw"],
+		["viewport-width", "vw"],
+		["viewport", "vi"],
+		["container", "cqi"],
+	] as const) {
+		const config = scale({ ...example, relativeTo });
+		const pow = declarations(generateCSS(config));
+		const clamp = declarations(generateCSS(config, { fluidTypeFunction: "clamp" }));
+		assert(pow.get("fluid")?.includes(`(100${unit} - `), pow.get("fluid"));
+		for (const label of ["xl", "xs"]) {
+			assert(clamp.get(label)?.includes(`${unit},`), clamp.get(label));
+		}
+	}
 });
 
-Deno.test("pow scale - two scales never share an input name", () => {
+Deno.test("fluid type CSS - two scales never share an input name", () => {
 	const css = generateCSS({
 		typography: {
 			fluid: {
-				body: { value: example, settings: { output: "pow" } },
-				display: { value: { ...example, prefix: "big" }, settings: { output: "pow" } },
+				body: { value: example },
+				display: { value: { ...example, prefix: "big" } },
 			},
 		},
 	});
@@ -220,30 +318,31 @@ Deno.test("pow scale - two scales never share an input name", () => {
 	assert(css.includes("--typography_fluid-display-big-narrow: 20;"));
 });
 
-Deno.test("pow scale - a step label that takes an input name is a key collision", () => {
-	const error = assertThrows(() =>
-		generateCSS(scale(example, { output: "pow", customLabel: { "1": "fluid" } })),
-	);
+Deno.test("fluid type CSS - a step label that takes a pow input name is a key collision", () => {
+	const config = scale(example, { customLabel: { "0": "fluid" } });
+	const error = assertThrows(() => generateCSS(config));
 
 	assertEquals(
 		error.message,
-		'Token key collision: "typography_fluid.body.fluid" and "typography_fluid.body@fluid" both generate "--typography_fluid-body-fluid". Rename one of the configuration paths.',
+		'Token key collision: "typography_fluid.body@fluid" and "typography_fluid.body.fluid" both generate "--typography_fluid-body-fluid". Rename one of the configuration paths.',
 	);
-	generateCSS(scale(example, { output: "clamp", customLabel: { "1": "fluid" } }));
+	generateCSS(config, { fluidTypeFunction: "clamp" });
 });
 
-Deno.test("pow scale - rejects an unknown output or relativeTo", () => {
-	const output = assertThrows(() =>
-		generateCSS(scale(example, { output: "calc" } as unknown as FluidSettings)),
+Deno.test("fluid type CSS - rejects an unknown function, relativeTo or settings.output", () => {
+	const option = assertThrows(() =>
+		generateCSS(scale(example), {
+			fluidTypeFunction: "calc" as unknown as FluidTypeFunction,
+		}),
 	);
 	assert(
-		output.message.includes('"typography_fluid.body.settings.output"') &&
-			output.message.includes('"clamp" or "pow"'),
-		output.message,
+		option.message.includes("fluidTypeFunction") &&
+			option.message.includes('"pow" or "clamp"'),
+		option.message,
 	);
 
 	const relativeTo = assertThrows(() =>
-		generateCSS(
+		generateJSON(
 			scale({ ...example, relativeTo: "page" } as unknown as FluidScale["value"]),
 		),
 	);
@@ -251,28 +350,26 @@ Deno.test("pow scale - rejects an unknown output or relativeTo", () => {
 		relativeTo.message.includes('"typography_fluid.body.relativeTo"'),
 		relativeTo.message,
 	);
+
+	const output = assertThrows(() =>
+		generateCSS(scale(example, { output: "pow" } as unknown as FluidSettings)),
+	);
+	assert(output.message.includes("output"), output.message);
 });
 
-Deno.test("pow scale - checks negative steps at the sizes pow produces", () => {
-	// Step xs is 17.28 / 1.2^2 = 12px at the narrow end in both modes. At the wide
-	// end clamp gives 20 / 1.6^2 = 7.81px and pow gives 20 / 1.2^2 = 13.89px.
+Deno.test("fluid type checks - negative steps are checked at their canonical sizes", () => {
+	// Step xs is 17.28 / 1.2^2 = 12px at the narrow end. At the wide end it is
+	// 20 / 1.2^2 = 13.89px, where utopia's own scale would give 20 / 1.6^2 = 7.81px.
 	const value = {
 		...example,
 		minFontSize: 17.28,
-		minTypeScale: 1.2,
 		maxTypeScale: 1.6,
 		positiveSteps: 0,
 		negativeSteps: 2,
 	};
 
-	const clamp = getDiagnostics(scale(value, { output: "clamp" }));
-	assertEquals(
-		clamp.map(({ code, path }) => ({ code, path })),
-		[{ code: "typography-below-legibility-floor", path: "typography_fluid.body@xs" }],
-	);
 	assertEquals(getDiagnostics(scale(value)), []);
-
-	const floor = getDiagnostics(scale(value, { output: "pow", minLegibleSize: 13 }));
+	const floor = getDiagnostics(scale(value, { minLegibleSize: 13 }));
 	assertEquals(
 		floor.map(({ path }) => path),
 		["typography_fluid.body@xs"],
@@ -280,13 +377,7 @@ Deno.test("pow scale - checks negative steps at the sizes pow produces", () => {
 	assert(floor[0]?.message.includes("12px"), floor[0]?.message);
 });
 
-Deno.test("pow scale - the 2.5x error and static warning apply as in clamp", () => {
-	const growing = { ...example, maxFontSize: 45.01, positiveSteps: 0, negativeSteps: 0 };
-	for (const output of ["clamp", "pow"] as const) {
-		const error = assertThrows(() => generateCSS(scale(growing, { output })));
-		assert(error.message.includes("2.5"), error.message);
-	}
-
+Deno.test("fluid type checks - the static warning does not name a CSS function", () => {
 	const flat = {
 		...example,
 		maxFontSize: 18.5,
@@ -296,5 +387,47 @@ Deno.test("pow scale - the 2.5x error and static warning apply as in clamp", () 
 	};
 	const [diagnostic] = getDiagnostics(scale(flat));
 	assertEquals(diagnostic?.code, "typography-static-scale");
-	assert(diagnostic?.message.includes("pow()"), diagnostic?.message);
+	assert(
+		!diagnostic?.message.includes("clamp()") && !diagnostic?.message.includes("pow()"),
+		diagnostic?.message,
+	);
+});
+
+const cliPath = fileURLToPath(new URL("../src/cli.ts", import.meta.url));
+
+Deno.test("cli - --fluid-type-function chooses the CSS and rejects an unknown value", async () => {
+	const dir = await mkdtemp(join(tmpdir(), "cssforge-fluid-type-function-cli-"));
+	try {
+		const paths = buildPaths(dir);
+		await writeFile(paths.config, exampleSource, "utf8");
+		const run = (fluidTypeFunction: string) =>
+			spawnSync(
+				process.execPath,
+				[
+					cliPath,
+					"--config",
+					paths.config,
+					"--mode",
+					"css",
+					"--css",
+					paths.cssOutput,
+					"--fluid-type-function",
+					fluidTypeFunction,
+				],
+				{ cwd: dir, encoding: "utf8", env: childEnv },
+			);
+
+		const clamp = run("clamp");
+		assertEquals(clamp.status, 0, clamp.stderr);
+		assertEquals(
+			await readFile(paths.cssOutput, "utf8"),
+			generateCSS(scale(example), { fluidTypeFunction: "clamp" }),
+		);
+
+		const unknown = run("calc");
+		assertEquals(unknown.status, 1);
+		assert(unknown.stderr.includes("calc"), unknown.stderr);
+	} finally {
+		await rm(dir, { recursive: true, force: true });
+	}
 });

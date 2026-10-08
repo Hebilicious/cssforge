@@ -1,6 +1,18 @@
-import { calculateTypeScale, type UtopiaStep, type UtopiaTypeConfig } from "utopia-core";
+import {
+	calculateClamp,
+	calculateTypeScale,
+	type UtopiaStep,
+	type UtopiaTypeConfig,
+} from "utopia-core";
 import { assertSettingsKeys, validateCustomLabel, validateName } from "../helpers.ts";
-import type { Diagnostic, Output, ResolveMap } from "../lib.ts";
+import type {
+	Diagnostic,
+	FluidTypeFunction,
+	GenerateCSSOptions,
+	Output,
+	ResolvedToken,
+	ResolveMap,
+} from "../lib.ts";
 
 export interface FluidTypeScaleDefinition {
 	/**
@@ -26,19 +38,8 @@ export interface FluidTypeScaleDefinition {
 		 * @default 12
 		 */
 		minLegibleSize?: number | false;
-		/**
-		 * How the steps are written. `"clamp"` bakes each step into a `clamp()`
-		 * value. `"pow"` emits the scale's six inputs and derives each step from
-		 * them with `pow()`, so the scale can be tuned in the browser. `pow()`
-		 * needs Chrome 120, Firefox 118 or Safari 15.4.
-		 * @default "clamp"
-		 */
-		output?: FluidTypeOutput;
 	};
 }
-
-/** How a fluid type scale writes its steps. */
-export type FluidTypeOutput = "clamp" | "pow";
 
 interface TypographyWeight {
 	value: {
@@ -80,11 +81,17 @@ const readMinLegibleSize = (value: unknown, path: string): number | false => {
 	);
 };
 
-const readOutput = (value: unknown, path: string): FluidTypeOutput => {
-	if (value === undefined) return "clamp";
-	if (value === "clamp" || value === "pow") return value;
+/** The CSS functions a fluid type scale can write its steps with, default first. */
+export const fluidTypeFunctions: readonly FluidTypeFunction[] = ["pow", "clamp"];
+
+export const isFluidTypeFunction = (value: unknown): value is FluidTypeFunction =>
+	fluidTypeFunctions.some((name) => name === value);
+
+const readFluidTypeFunction = (value: unknown): FluidTypeFunction => {
+	if (value === undefined) return "pow";
+	if (isFluidTypeFunction(value)) return value;
 	throw new Error(
-		`Invalid configuration at "${path}": expected "clamp" or "pow", received ${JSON.stringify(value)}.`,
+		`Invalid fluidTypeFunction option: expected ${fluidTypeFunctions.map((name) => JSON.stringify(name)).join(" or ")}, received ${JSON.stringify(value)}.`,
 	);
 };
 
@@ -101,22 +108,48 @@ const readRelativeUnit = (value: unknown, path: string): string => {
 	);
 };
 
-/** The sizes of a step in px at `minWidth` and `maxWidth`. */
-type StepSizes = Pick<UtopiaStep, "minFontSize" | "maxFontSize">;
+/**
+ * A step of a fluid type scale: its sizes in px at `minWidth` and `maxWidth`,
+ * and the `clamp()` that runs between them.
+ */
+type FluidTypeStep = Pick<
+	UtopiaStep,
+	"step" | "label" | "minFontSize" | "maxFontSize" | "clamp"
+>;
+
+/** Rounds a size to 4 decimals, as utopia-core rounds the sizes it reports. */
+const round = (size: number) => Math.round((size + Number.EPSILON) * 10000) / 10000;
 
 /**
- * The sizes a step is emitted with. A pow step below 0 divides step 0 by the
- * narrow ratio at every width, so its wide end differs from utopia's.
+ * The canonical sizes of every step, which the checks, both CSS functions and
+ * the tokens all use. Step 0 and above are utopia-core's. Step -n is step 0
+ * divided by `minTypeScale^n` at every width, so a small size never shrinks as
+ * the screen grows: it matches utopia at `minWidth`, and is
+ * `maxFontSize / minTypeScale^n` at `maxWidth`.
  */
-const emittedSizes = (
-	step: UtopiaStep,
-	output: FluidTypeOutput,
-	{ maxFontSize, minTypeScale }: UtopiaTypeConfig,
-): StepSizes => {
-	if (output === "clamp" || step.step >= 0) return step;
-	const wide = maxFontSize / minTypeScale ** -step.step;
-	return { minFontSize: step.minFontSize, maxFontSize: Math.round(wide * 10000) / 10000 };
-};
+const fluidTypeSteps = (config: UtopiaTypeConfig): FluidTypeStep[] =>
+	calculateTypeScale(config).map(({ step, label, minFontSize, maxFontSize, clamp }) => {
+		if (step >= 0) return { step, label, minFontSize, maxFontSize, clamp };
+		const divisor = config.minTypeScale ** -step;
+		const narrow = config.minFontSize / divisor;
+		const wide = config.maxFontSize / divisor;
+		return {
+			step,
+			label,
+			minFontSize: round(narrow),
+			maxFontSize: round(wide),
+			clamp: calculateClamp({
+				minSize: narrow,
+				maxSize: wide,
+				minWidth: config.minWidth,
+				maxWidth: config.maxWidth,
+				relativeTo: config.relativeTo,
+			}),
+		};
+	});
+
+/** The sizes of a step in px at `minWidth` and `maxWidth`. */
+type StepSizes = Pick<FluidTypeStep, "minFontSize" | "maxFontSize">;
 
 /** The larger end of a step divided by the smaller one, as a negative step can shrink. */
 const changeRatio = ({ minFontSize, maxFontSize }: StepSizes) =>
@@ -160,11 +193,19 @@ const assertWcagGrowth = (step: StepSizes, label: string, path: string) => {
  * };
  * const { css } = processTypography(typography);
  * ```
+ *
+ * `options.fluidTypeFunction` only changes `css`: the tokens in `resolveMap`
+ * hold each step's `clamp()` either way.
  */
-export function processTypography(config: TypographyConfig): Output {
+export function processTypography(
+	config: TypographyConfig,
+	options: Pick<GenerateCSSOptions, "fluidTypeFunction"> = {},
+): Output {
 	const cssOutput: string[] = [];
 	const resolveMap: ResolveMap = new Map();
+	const cssOnly: ResolvedToken[] = [];
 	const diagnostics: Diagnostic[] = [];
+	const fluidTypeFunction = readFluidTypeFunction(options.fluidTypeFunction);
 
 	if (config.fluid) {
 		const moduleKey = "typography_fluid";
@@ -174,25 +215,25 @@ export function processTypography(config: TypographyConfig): Output {
 			const scalePath = `${moduleKey}.${scaleName}`;
 			assertSettingsKeys(
 				settings,
-				["customLabel", "minLegibleSize", "output"],
+				["customLabel", "minLegibleSize"],
 				`${scalePath}.settings`,
 			);
 			const minLegibleSize = readMinLegibleSize(
 				settings?.minLegibleSize,
 				`${scalePath}.settings.minLegibleSize`,
 			);
-			const output = readOutput(settings?.output, `${scalePath}.settings.output`);
 			const { prefix, ...utopiaConfig } = value;
 			if (prefix) validateName(prefix, `${moduleKey}.${scaleName}.prefix`);
+			const unit = readRelativeUnit(utopiaConfig.relativeTo, `${scalePath}.relativeTo`);
 
-			const scale = calculateTypeScale({
+			const scale = fluidTypeSteps({
 				labelStyle: settings?.customLabel ? "utopia" : "tshirt",
 				...utopiaConfig,
 			});
 
 			const resolvedPrefix = prefix ? `${scaleName}-${prefix}` : scaleName;
 			const keyOf = (name: string) => `--${moduleKey}-${resolvedPrefix}-${name}`;
-			const labelOf = ({ label }: UtopiaStep) => {
+			const labelOf = ({ label }: FluidTypeStep) => {
 				const resolvedLabel = settings?.customLabel
 					? (settings.customLabel[label] ?? label)
 					: label;
@@ -205,25 +246,20 @@ export function processTypography(config: TypographyConfig): Output {
 				);
 				return resolvedLabel;
 			};
-			const emit = (path: string, key: string, tokenValue: string) => {
-				const variable = `${key}: ${tokenValue};`;
-				cssOutput.push(variable);
-				resolveMap.set(path, {
-					variable,
-					key,
-					value: tokenValue,
-					sourcePath: path,
-					type: "typography",
-					tier: "primitive",
-				});
-			};
+			const tokenOf = (path: string, key: string, tokenValue: string): ResolvedToken => ({
+				variable: `${key}: ${tokenValue};`,
+				key,
+				value: tokenValue,
+				sourcePath: path,
+				type: "typography",
+				tier: "primitive",
+			});
 
-			let stepValue = (step: UtopiaStep) => step.clamp;
-			if (output === "pow") {
+			let stepCss = (step: FluidTypeStep) => step.clamp;
+			if (fluidTypeFunction === "pow") {
 				const ref = (name: string) => `var(${keyOf(name)})`;
 				const power = (name: string, n: number) =>
 					n === 1 ? ref(name) : `pow(${ref(name)}, ${n})`;
-				const unit = readRelativeUnit(utopiaConfig.relativeTo, `${scalePath}.relativeTo`);
 				const inputs: Array<[string, string]> = [
 					["narrow", `${utopiaConfig.minWidth / REM}`],
 					["wide", `${utopiaConfig.maxWidth / REM}`],
@@ -239,7 +275,9 @@ export function processTypography(config: TypographyConfig): Output {
 					["at-wide", `calc(${ref("size-wide")} * ${ref("fluid")})`],
 				];
 				for (const [name, inputValue] of inputs) {
-					emit(`${scalePath}.${name}`, keyOf(name), inputValue);
+					const input = tokenOf(`${scalePath}.${name}`, keyOf(name), inputValue);
+					cssOutput.push(input.variable);
+					cssOnly.push(input);
 				}
 
 				const stepZero = scale.find(({ step }) => step === 0);
@@ -249,21 +287,18 @@ export function processTypography(config: TypographyConfig): Output {
 					);
 				}
 				const stepZeroRef = `var(${keyOf(labelOf(stepZero))})`;
-				stepValue = ({ step }) => {
+				stepCss = ({ step }) => {
 					if (step === 0) return `calc(${ref("at-narrow")} + ${ref("at-wide")})`;
 					if (step < 0) return `calc(${stepZeroRef} / ${power("ratio-narrow", -step)})`;
 					return `calc(${ref("at-narrow")} * ${power("ratio-narrow", step)} + ${ref("at-wide")} * ${power("ratio-wide", step)})`;
 				};
 			}
 
-			const checkedSizes: StepSizes[] = [];
 			for (const step of scale) {
 				const resolvedLabel = labelOf(step);
 				const stepPath = `${scalePath}@${resolvedLabel}`;
-				const sizes = emittedSizes(step, output, utopiaConfig);
-				checkedSizes.push(sizes);
-				assertWcagGrowth(sizes, resolvedLabel, scalePath);
-				const smallest = Math.min(sizes.minFontSize, sizes.maxFontSize);
+				assertWcagGrowth(step, resolvedLabel, scalePath);
+				const smallest = Math.min(step.minFontSize, step.maxFontSize);
 				if (minLegibleSize !== false && smallest < minLegibleSize) {
 					diagnostics.push({
 						code: "typography-below-legibility-floor",
@@ -272,18 +307,21 @@ export function processTypography(config: TypographyConfig): Output {
 						message: `Typography step ${stepPath} reaches ${px(smallest)}, below the ${px(minLegibleSize)} legibility floor. Raise minFontSize, lower the type scale or negativeSteps, or set the scale's settings.minLegibleSize.`,
 					});
 				}
-				emit(stepPath, keyOf(resolvedLabel), stepValue(step));
+				const key = keyOf(resolvedLabel);
+				cssOutput.push(`${key}: ${stepCss(step)};`);
+				// The token holds the self-contained clamp() whichever function the CSS uses.
+				resolveMap.set(stepPath, tokenOf(stepPath, key, step.clamp));
 			}
 
 			// One static step is normal where a scale crosses over, so only a scale
 			// that is static at every step is reported, once.
-			const largestChange = Math.max(...checkedSizes.map(changeRatio));
+			const largestChange = Math.max(...scale.map(changeRatio));
 			if (largestChange < MIN_FLUID_CHANGE) {
 				diagnostics.push({
 					code: "typography-static-scale",
 					severity: "warning",
 					path: scalePath,
-					message: `Typography scale ${scalePath} changes by at most ${Number(((largestChange - 1) * 100).toFixed(1))}% across the viewport range, under the ${Math.round((MIN_FLUID_CHANGE - 1) * 100)}% a fluid size needs to be noticeable, so its ${output}() values are effectively static. Widen the gap between minFontSize and maxFontSize or between minTypeScale and maxTypeScale, or use fixed sizes.`,
+					message: `Typography scale ${scalePath} changes by at most ${Number(((largestChange - 1) * 100).toFixed(1))}% across the viewport range, under the ${Math.round((MIN_FLUID_CHANGE - 1) * 100)}% a fluid size needs to be noticeable, so its steps are effectively static. Widen the gap between minFontSize and maxFontSize or between minTypeScale and maxTypeScale, or use fixed sizes.`,
 				});
 			}
 		}
@@ -311,5 +349,5 @@ export function processTypography(config: TypographyConfig): Output {
 		}
 	}
 
-	return { css: { root: cssOutput.join("\n") }, resolveMap, diagnostics };
+	return { css: { root: cssOutput.join("\n") }, resolveMap, diagnostics, cssOnly };
 }
