@@ -2218,6 +2218,13 @@ Check out our examples:
 - [ ] Bundlers Plugin (Vite, Rollup, Webpack ...)
 - [ ] Nuxt Module
 
+## Credits
+
+- [Utopia](https://utopia.fyi) powers the fluid type and space scales.
+- [good-css](https://good-css.com) inspired the `none` hue for grays, `mix` derived colors,
+  `light-dark()` themes, the fluid type checks, the `pow()` scale output, and the motion
+  tokens and checks.
+
 ## License
 
 MIT
