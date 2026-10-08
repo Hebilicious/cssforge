@@ -31,6 +31,7 @@ export type {
 export type { LoadedConfig } from "./loader.ts";
 export type {
 	ColorFormatConfig,
+	ColorMix,
 	ColorSettings,
 	HexFormatOutputs,
 	PaletteColorSettings,

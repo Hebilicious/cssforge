@@ -18,10 +18,12 @@ import type {
 import {
 	getReferencePaths,
 	getResolvedVariablesMap,
+	normalizeTokenPath,
 	type Output,
 	type ResolveMap,
 	ROOT_SCOPE,
 	resolveValue,
+	resolveVariable,
 	withTokenScope,
 } from "../lib.ts";
 
@@ -69,8 +71,30 @@ type ColorValue = ExactlyOne<PossibleColorValues>;
 
 type ColorValueOrString = ColorValue | string;
 
+/**
+ * A color derived from two colors, emitted as
+ * `color-mix(in oklch, <from>, <with> <amount>%)`. An operand written as a dotted
+ * token path, such as `"palette.brand.500"`, is emitted as its `var()` reference;
+ * any other operand is a CSS color, such as `"black"` or `"transparent"`.
+ */
+export interface ColorMix {
+	mix: {
+		/** The base color: a token path declared before this color, or a CSS color. */
+		from: string;
+		/** The color mixed in: a token path declared before this color, or a CSS color. */
+		with: string;
+		/** The percentage of `with`, from 0 to 100. */
+		amount: number;
+		/**
+		 * The interpolation color space.
+		 * @default "oklch"
+		 */
+		in?: "oklch";
+	};
+}
+
 interface ColorVariants {
-	[key: string]: ColorValueOrString;
+	[key: string]: ColorValueOrString | ColorMix;
 }
 
 export interface WithCondition {
@@ -190,7 +214,7 @@ export interface GradientConfig {
 }
 
 interface ColorInThemeValues {
-	[key: string]: string;
+	[key: string]: string | ColorMix;
 }
 
 interface ColorInTheme {
@@ -258,6 +282,9 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 const isColorValueObject = (value: unknown): value is ColorValue =>
 	isRecord(value) &&
 	("hex" in value || "rgb" in value || "hsl" in value || "oklch" in value);
+
+const isColorMix = (value: unknown): value is ColorMix =>
+	isRecord(value) && "mix" in value;
 
 /** Whether a palette entry uses the `{ value, settings }` form. */
 const isPaletteColorConfig = (entry: PaletteColorEntry): entry is PaletteColorConfig =>
@@ -440,8 +467,15 @@ const colorForFormat = (
 	return generated;
 };
 
+/**
+ * A configuration mistake found while a palette color or theme is generated. It
+ * is re-thrown instead of being logged, so the color is not silently dropped.
+ */
+class ColorConfigError extends Error {}
+
 /** The alpha a color value carries, or undefined when the value is not a color. */
-const colorAlpha = (value: ColorValueOrString): number | undefined => {
+const colorAlpha = (value: ColorVariants[string]): number | undefined => {
+	if (isColorMix(value)) return undefined;
 	try {
 		const colorString = typeof value === "string" ? value : getColorString(value);
 		return new Color(colorString).alpha;
@@ -451,33 +485,49 @@ const colorAlpha = (value: ColorValueOrString): number | undefined => {
 	}
 };
 
-/** Rejects an alpha-carrying variant when one of its formats rejects alpha. */
-const assertOpaqueVariants = (
-	variants: Record<string, ColorValueOrString>,
+/** Rejects a color that carries alpha when one of its formats rejects alpha. */
+const assertOpaqueColor = (
+	alpha: number | undefined,
 	formats: readonly GeneratedFormat[],
 	path: string,
 ): void => {
-	const opaque = formats.filter((format) => format.alpha === false);
-	if (opaque.length === 0) return;
+	if (alpha === undefined || alpha === 1) return;
+	const opaque = formats.find((format) => format.alpha === false);
+	if (!opaque) return;
 
+	throw new ColorConfigError(
+		`Invalid color at "${path}": the color carries alpha, but the "${opaque.format}" format sets "alpha" to false.`,
+	);
+};
+
+/** Rejects an alpha-carrying variant when one of its formats rejects alpha. */
+const assertOpaqueVariants = (
+	variants: ColorVariants,
+	formats: readonly GeneratedFormat[],
+	path: string,
+): void => {
 	for (const [variantId, value] of Object.entries(variants)) {
-		const alpha = colorAlpha(value);
-		if (alpha === undefined || alpha === 1) continue;
-
-		throw new Error(
-			`Invalid color at "${path}.${variantId}": the color carries alpha, but the "${opaque[0].format}" format sets "alpha" to false.`,
-		);
+		assertOpaqueColor(colorAlpha(value), formats, `${path}.${variantId}`);
 	}
+};
+
+/** The color in oklch, with the hue missing when the chroma rounds to 0 where it is emitted. */
+const toOklch = (color: Color): Color => {
+	const oklchColor = color.to("oklch");
+	const c = oklchColor.coords[1];
+	if (Number((Number.isNaN(c) ? 0 : c).toFixed(5)) === 0)
+		oklchColor.coords[2] = Number.NaN;
+	return oklchColor;
 };
 
 /** The `oklch()` value of a generated token. */
 function colorToOklch(color: Color): string {
-	const oklchColor = color.to("oklch");
+	const oklchColor = toOklch(color);
 	const [l, c] = oklchColor.coords
 		.slice(0, 2)
 		.map((coord) => Number((Number.isNaN(coord) ? 0 : coord).toFixed(5)));
 	const h = oklchColor.coords[2];
-	const hueValue = Number.isNaN(h) || c === 0 ? "none" : Number(h.toFixed(5));
+	const hueValue = Number.isNaN(h) ? "none" : Number(h.toFixed(5));
 
 	const alpha =
 		oklchColor.alpha === 1 ? "" : ` / ${Number((oklchColor.alpha * 100).toFixed(1))}%`;
@@ -816,6 +866,159 @@ const renderFallbackBlock = (wrappers: string[], declarations: string[]): string
 	return lines;
 };
 
+/** The interpolation spaces a mix accepts: the static mix has to match the browser's. */
+const mixSpaces: readonly string[] = ["oklch"];
+const mixKeys = ["from", "with", "amount", "in"];
+
+/** What a mix resolves against: the tokens declared so far and their static colors. */
+interface MixContext {
+	tokens: Output;
+	staticColors: Map<string, Color>;
+}
+
+/** A color value as it is emitted, with its static color when one can be computed. */
+interface EmittedColor {
+	value: string;
+	referencePaths?: string[];
+	color?: Color;
+}
+
+/** A dotted path without spaces, parentheses or `#`, which no CSS color is. */
+const isTokenPath = (operand: string) =>
+	operand.includes(".") && !/[\s()#,]/.test(operand);
+
+const assertMixKeys = (value: object, allowed: readonly string[], path: string) => {
+	const unknown = Object.keys(value).filter((key) => !allowed.includes(key));
+	if (unknown.length === 0) return;
+
+	throw new ColorConfigError(
+		`Unknown key at "${path}": ${unknown.map((key) => `"${key}"`).join(", ")}. Use ${allowed
+			.map((key) => `"${key}"`)
+			.join(", ")}.`,
+	);
+};
+
+/** Reads one operand: a token path emitted as `var()`, or a CSS color emitted as written. */
+const readMixOperand = (
+	value: unknown,
+	path: string,
+	{ tokens, staticColors }: MixContext,
+): { css: string; path?: string; color?: Color } => {
+	if (typeof value !== "string" || value.trim() === "") {
+		throw new ColorConfigError(
+			`Invalid color mix at "${path}": expected a token path such as "palette.brand.500" or a CSS color, received ${JSON.stringify(
+				value,
+			)}.`,
+		);
+	}
+	const operand = value.trim();
+
+	if (!isTokenPath(operand)) {
+		try {
+			return { css: operand, color: new Color(operand) };
+		} catch {
+			throw new ColorConfigError(
+				`Invalid color mix at "${path}": "${operand}" is neither a token path nor a CSS color.`,
+			);
+		}
+	}
+
+	let key: string;
+	try {
+		key = resolveVariable({ varPath: operand, colors: tokens });
+	} catch {
+		throw new ColorConfigError(
+			`Invalid color mix at "${path}": the token path "${operand}" does not resolve. A mix references a color declared before it.`,
+		);
+	}
+	const tokenPath = normalizeTokenPath(operand);
+	const token = tokens.resolveMap.get(tokenPath);
+	if (token?.type !== "color") {
+		throw new ColorConfigError(
+			`Invalid color mix at "${path}": the token path "${operand}" is a ${token?.type} token, not a color.`,
+		);
+	}
+
+	return { css: `var(${key})`, path: tokenPath, color: staticColors.get(tokenPath) };
+};
+
+/** Mixes as `color-mix(in oklch)` does: lightness and chroma premultiplied by alpha, hue not. */
+const mixInOklch = (from: Color, other: Color, amount: number): Color => {
+	const operands = [toOklch(from), toOklch(other)] as const;
+	const mixed = Color.mix(...operands, amount, { space: "oklch", premultiplied: true });
+	mixed.coords[2] = Color.mix(...operands, amount, { space: "oklch" }).coords[2];
+	return mixed;
+};
+
+/** Reads and validates a `{ mix }` value written at `path`. */
+const readColorMix = (
+	value: ColorMix,
+	path: string,
+	context: MixContext,
+): EmittedColor => {
+	assertMixKeys(value, ["mix"], path);
+	const mixPath = `${path}.mix`;
+	const mix: unknown = value.mix;
+	if (!isRecord(mix)) {
+		throw new ColorConfigError(
+			`Invalid color mix at "${mixPath}": expected an object such as { from: "palette.brand.500", with: "black", amount: 15 }.`,
+		);
+	}
+	assertMixKeys(mix, mixKeys, mixPath);
+
+	const space = mix.in === undefined ? "oklch" : mix.in;
+	if (typeof space !== "string" || !mixSpaces.includes(space)) {
+		throw new ColorConfigError(
+			`Invalid color mix at "${mixPath}.in": ${JSON.stringify(space)}. Use ${mixSpaces
+				.map((name) => `"${name}"`)
+				.join(", ")}.`,
+		);
+	}
+
+	const rawAmount = mix.amount;
+	if (
+		typeof rawAmount !== "number" ||
+		!Number.isFinite(rawAmount) ||
+		rawAmount < 0 ||
+		rawAmount > 100
+	) {
+		throw new ColorConfigError(
+			`Invalid color mix at "${mixPath}.amount": ${JSON.stringify(
+				rawAmount,
+			)}. Use a number from 0 to 100, the percentage of "with".`,
+		);
+	}
+	// Rounded so a tiny amount never stringifies in exponent form, which CSS rejects.
+	const amount = Number(rawAmount.toFixed(4));
+
+	const from = readMixOperand(mix.from, `${mixPath}.from`, context);
+	const other = readMixOperand(mix.with, `${mixPath}.with`, context);
+	const referencePaths = [from.path, other.path].filter(
+		(reference): reference is string => reference !== undefined,
+	);
+
+	return {
+		value: `color-mix(in ${space}, ${from.css}, ${other.css} ${amount}%)`,
+		...(referencePaths.length > 0
+			? { referencePaths: [...new Set(referencePaths)] }
+			: {}),
+		...(from.color && other.color
+			? { color: mixInOklch(from.color, other.color, amount / 100) }
+			: {}),
+	};
+};
+
+/** A palette variant as it is emitted: its `oklch()` value, or its mix. */
+const readPaletteVariant = (
+	value: ColorVariants[string],
+	path: string,
+	context: MixContext,
+): EmittedColor => {
+	if (isColorMix(value)) return readColorMix(value, path, context);
+	const color = readColor(value);
+	return { value: colorToOklch(color), color };
+};
+
 /**
  * Processes the color configuration to generate CSS variables.
  * This includes palettes, gradients, and themes.
@@ -841,6 +1044,10 @@ export function processColors(
 	const rootOutput: string[] = [];
 	const outsideOutput: string[] = [];
 	const resolveMap: ResolveMap = new Map();
+	const mixContext: MixContext = {
+		tokens: { css: {}, resolveMap },
+		staticColors: new Map(),
+	};
 	rootOutput.push(`/* Palette */`);
 	const moduleKey = "palette";
 	// Fallback declarations are collected per wrapper chain, so colors under the
@@ -977,14 +1184,25 @@ export function processColors(
 				validateName(variantId, `palette.${colorName}.${variantId}`);
 				const key = `--${moduleKey}-${colorName}-${variantId}`;
 				const path = `palette.${colorName}.${variantId}`;
-				const color = readColor(colorValue);
-				const value = colorToOklch(color);
+				const { value, color, referencePaths } = readPaletteVariant(
+					colorValue,
+					path,
+					mixContext,
+				);
 				const variable = `${key}: ${value};`;
+				if (color) {
+					mixContext.staticColors.set(path, color);
+					assertOpaqueColor(color.alpha, colorSettings.formats, path);
+				} else if (colorSettings.formats.length > 0 || fallback) {
+					throw new ColorConfigError(
+						`Invalid color mix at "${path}": an operand has no static color, so the sRGB formats cannot be computed.`,
+					);
+				}
 				const generated =
-					colorSettings.formats.length > 0
+					color && colorSettings.formats.length > 0
 						? colorToFormats(color, colorSettings.formats, path)
 						: undefined;
-				if (fallback) {
+				if (fallback && color) {
 					const cssValue = colorToDeclaration(color, fallback.declarationFormat, path);
 					fallback.group.declarations.push(`${key}: ${cssValue};`);
 				}
@@ -1001,8 +1219,9 @@ export function processColors(
 							...(generated ? { color: generated.values } : {}),
 							...(generated?.gamutMapped ? { gamutMapped: true } : {}),
 							sourcePath: `${moduleKey}.${colorName}.${variantId}`,
+							...(referencePaths ? { referencePaths } : {}),
 							type: "color",
-							tier: "primitive",
+							tier: referencePaths ? "semantic" : "primitive",
 						},
 						handler.scope,
 					),
@@ -1011,7 +1230,8 @@ export function processColors(
 
 			handler.finalize();
 		} catch (error) {
-			if (error instanceof InvalidNameError) throw error;
+			if (error instanceof InvalidNameError || error instanceof ColorConfigError)
+				throw error;
 			console.error(`Error processing color ${colorName}:`, error);
 		}
 	}
@@ -1153,15 +1373,17 @@ export function processColors(
 
 					const variantNameOnly = colorInTheme.settings?.variantNameOnly ?? false;
 					for (const [variantName, variantValue] of Object.entries(colorInTheme.value)) {
-						validateName(variantName, `theme.${themeName}.${colorName}.${variantName}`);
-						const resolvedValue = resolveValue({
-							map: resolvedMap,
-							value: variantValue,
-						});
-						const referencePaths = getReferencePaths({
-							value: variantValue,
-							variables: colorInTheme.variables,
-						});
+						const variantPath = `theme.${themeName}.${colorName}.${variantName}`;
+						validateName(variantName, variantPath);
+						const { value: resolvedValue, referencePaths } = isColorMix(variantValue)
+							? readColorMix(variantValue, variantPath, mixContext)
+							: {
+									value: resolveValue({ map: resolvedMap, value: variantValue }),
+									referencePaths: getReferencePaths({
+										value: variantValue,
+										variables: colorInTheme.variables,
+									}),
+								};
 
 						const key = variantNameOnly
 							? `--${variantName}`
@@ -1191,7 +1413,8 @@ export function processColors(
 
 				handler.finalize();
 			} catch (error) {
-				if (error instanceof InvalidNameError) throw error;
+				if (error instanceof InvalidNameError || error instanceof ColorConfigError)
+					throw error;
 				console.error(`Error processing theme ${themeName}:`, error);
 			}
 		}
