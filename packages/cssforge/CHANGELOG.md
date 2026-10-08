@@ -1,5 +1,58 @@
 # @hebilicious/cssforge
 
+## 0.10.0
+
+### Minor Changes
+
+- 5d7cdd2: Derive colors with a `mix` value in palette variants and theme values. `{ mix: { from: "palette.accent.base", with: "black", amount: 15 } }` emits `color-mix(in oklch, var(--palette-accent-base), black 15%)`, so overriding the base re-derives the variant.
+
+  - `from` and `with` take a dotted token path, emitted as its `var()` reference, or a CSS color such as `"transparent"`, emitted as written.
+  - `amount` is the percentage of `with`, from 0 to 100. `in` accepts only `"oklch"`, the default.
+  - A palette mix with `formats` computes its sRGB values by mixing in OKLCH, and an achromatic operand keeps the other color's hue.
+  - Unknown keys, an amount out of range, an unresolvable path, and a value that is not a color are rejected with the configuration path.
+
+- 34a7f87: Pair a light and a dark theme into one `light-dark()` token per color with `colors.theme.settings.lightDark: { light: "light", dark: "dark" }`, written in the `theme: { value, settings }` form.
+
+  - Each paired color is emitted once at `:root` as `--theme-<color>-<variant>: light-dark(<light>, <dark>);` (or `--<variant>` with `variantNameOnly`), at the token path `theme.<color>.<variant>`. `var()` references and `mix` values are kept.
+  - `:root` gets `color-scheme: light dark`, and the optional `colorScheme: { light, dark }` selectors each get a rule forcing that scheme.
+  - The paired themes must declare the same colors and variants, and the error names the missing paths. A `selector` or `atRule` on a paired theme, a `variantNameOnly` that differs between the pair, a paired color named like another theme, and unknown keys are rejected.
+  - `settings` is now a reserved theme name: `theme.settings` written beside named themes, without the `value` form, is rejected instead of being read as a theme named "settings". Rename such a theme.
+  - In the `theme: { value, settings }` form, keys other than `value` and `settings`, and settings other than `lightDark`, are rejected instead of ignored.
+  - Otherwise, themes and configs without `lightDark` are unchanged.
+
+- 84ac160: Check fluid type scales for accessibility and report build warnings.
+
+  - A fluid type step whose maximum size is more than 2.5× its minimum now fails generation (WCAG 1.4.4 Resize Text). Exactly 2.5× passes. The error names the scale, the step, both sizes and the ratio.
+  - A scale whose every step changes by less than 10% across the viewport range warns once, because its `clamp()` values are effectively static.
+  - A step whose smaller size is below `settings.minLegibleSize` (default `12`, in px) warns. Set it to another px number, or `false` to turn the floor off.
+  - `getDiagnostics(config)` returns the build warnings as `{ code, severity, path, message }`, and `processTypography` returns them as `diagnostics`. The CLI prints each one to stderr as `cssforge: warning: <message>` and still writes the outputs with exit code `0`.
+
+- b2636df: Every fluid type scale is also written with `pow()`, beside its `clamp()` steps, in every output.
+
+  - The `clamp()` steps keep their names and paths, `--typography_fluid-<scale>[-<prefix>]-<label>` at `typography_fluid.<scale>@<label>`. Steps 0 and above are unchanged.
+  - Each scale adds pow tokens under a `pow` segment: the inputs `min-width`, `max-width`, `min-font-size`, `max-font-size`, `min-type-scale` and `max-type-scale` as plain numbers, the helpers `progress`, `at-min` and `at-max`, and every step derived from them with `pow()`. They are named `--typography_fluid-<scale>[-<prefix>]-pow-<name>` and `--typography_fluid-<scale>[-<prefix>]-pow-<label>`, at `typography_fluid.<scale>.pow.<name>` and `typography_fluid.<scale>.pow@<label>`. Changing an input on `:root` tunes the whole scale at runtime. `pow()` needs Chrome 120, Firefox 118 or Safari 15.4.
+  - The pow tokens are ordinary tokens: the CSS, JSON, TypeScript and Style Dictionary outputs hold them, and a primitive can reference them. The helpers and steps are semantic tokens that list the tokens they reference.
+  - A step below 0 is now step 0 divided by `minTypeScale^n` at every width, so a small size never shrinks as the screen grows. Its size at `maxWidth` is `maxFontSize / minTypeScale^n` instead of utopia's `maxFontSize / maxTypeScale^n`. This changes the `clamp()` of negative steps when `minTypeScale` and `maxTypeScale` differ, and the fluid type checks use these sizes, once per step.
+  - A step label that gives a pow name, such as `min-width` or `pow-min-width`, is a key collision. A step cannot be labelled `pow`, the segment that holds the pow tokens.
+  - `relativeTo` is validated for every scale: `"container"` writes `cqi`, `"viewport"` writes `vi`, and the default `"viewport-width"` writes `vw`.
+
+- f316382: Add a `motion` module for transition durations and easing curves.
+
+  - `motion.duration.<group>.value` and `motion.easing.<group>.value` emit `--motion-duration-<group>-<name>` and `--motion-easing-<group>-<name>`, referenced from primitives as `motion.duration.<group>.<name>` and `motion.easing.<group>.<name>`.
+  - A duration must be a non-negative number with `ms` or `s`, and an easing a CSS keyword, `cubic-bezier()` with x1 and x2 in [0, 1], `steps()` or `linear()`. Anything else fails generation with the token's path.
+  - A duration over 300ms warns (`motion-long-duration`), or over 500ms in a group with `settings.long: true` for modals and drawers. `ease-in` and ease-in shaped `cubic-bezier()` curves warn (`motion-ease-in`). Both go through `getDiagnostics` and the CLI's `cssforge: warning:` output.
+
+### Patch Changes
+
+- f83df72: Fix achromatic color hue representation in oklch() values. When a color has zero chroma (e.g., white, black, gray), emit the hue as `none` instead of a numeric value. This correctly represents that achromatic colors have no meaningful hue component.
+
+  - White now emits as `oklch(100% 0 none)` instead of `oklch(100% 0 0)`
+  - Black now emits as `oklch(0% 0 none)` instead of `oklch(0% 0 0)`
+  - Any color with chroma rounding to 0 at 5-decimal precision emits hue as `none`
+  - sRGB/hex byte conversions retain their NaN→0 mapping (unchanged)
+
+- b364d08: `pxToRem` converts every top-level `px` length in a value instead of parsing the whole string as one number. `"4px 8px"` now becomes `0.25rem 0.5rem` instead of `0.25rem`, and `"0 0 4px"` becomes `0 0 0.25rem` instead of `0rem`. Values inside CSS functions are left unchanged, so write a pill radius as `calc(infinity * 1px)`. Border and shadow primitives such as `1px solid red` or `0 2px 4px black` now convert their px lengths too.
+
 ## 0.9.0
 
 ### Minor Changes
