@@ -48,7 +48,7 @@ function wrapSource(tsSource: string): string {
 		tsSource,
 	);
 	const srcModUrl = pathToFileURL(join(PACKAGE_ROOT, "src", "mod.ts")).href;
-	const importLine = `import { defineConfig, goodCssEasings } from "${srcModUrl}";\n`;
+	const importLine = `import { defineConfig, uiEasings } from "${srcModUrl}";\n`;
 
 	let normalized = tsSource.trim();
 	if (!hasDefaultExport) {

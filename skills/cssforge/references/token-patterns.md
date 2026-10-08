@@ -31,7 +31,7 @@ All patterns below are derived from README configuration examples.
 ## Motion
 
 - Durations under `motion.duration.<group>.value` in `ms` or `s`; easings under
-  `motion.easing.<group>.value`. Spread `goodCssEasings` into an easing group for the two
+  `motion.easing.<group>.value`. Spread `uiEasings` into an easing group for the two
   recommended curves.
 - Durations over 300ms warn unless the group sets `settings.long` (modals, drawers: 500ms).
   `ease-in` and ease-in shaped `cubic-bezier()` curves warn.

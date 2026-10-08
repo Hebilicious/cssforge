@@ -87,7 +87,7 @@ color output settings.
 - Warnings: `motion-long-duration` per duration over the threshold and `motion-ease-in` per
   `ease-in` or ease-in shaped `cubic-bezier()` (slope at the start below 1 and at the end
   above 1), with the token path as `path`.
-- `goodCssEasings` (`out`, `inOut`) is an exported preset to spread into an easing group's
+- `uiEasings` (`out`, `inOut`) is an exported preset to spread into an easing group's
   `value`; nothing is added unless spread.
 
 ## Derived colors
@@ -116,7 +116,7 @@ color output settings.
 
 ## Exposed API entrypoint
 
-- `packages/cssforge/src/mod.ts` exports `defineConfig`, `generateCSS`, `getDiagnostics`, `goodCssEasings`, the processing helpers,
+- `packages/cssforge/src/mod.ts` exports `defineConfig`, `generateCSS`, `getDiagnostics`, `uiEasings`, the processing helpers,
   and the config and token types (`CSSForgeConfig`, `MotionConfig`, `MotionDurationSettings`, `ColorFormatConfig`, `ColorMix`, `HexFormatOutputs`,
   `RgbFormatOutputs`, `ColorSettings`, `ColorThemesSettings`, `LightDarkSettings`,
   `LightDarkColorScheme`, `ColorFormat`, `HexColorValues`, `RgbColorValues`,

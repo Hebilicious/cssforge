@@ -1697,7 +1697,7 @@ holds its tokens under `value`, emitted as `--motion-duration-<group>-<name>` an
 
 Anything else fails the build with the token's configuration path.
 
-`goodCssEasings`, exported from `@hebilicious/cssforge`, holds the two curves recommended for UI motion: `out`,
+`uiEasings`, exported from `@hebilicious/cssforge`, holds the two curves recommended for UI motion: `out`,
 `cubic-bezier(0.23, 1, 0.32, 1)`, for things entering or reacting, and `inOut`,
 `cubic-bezier(0.77, 0, 0.175, 1)`, for things moving on screen. Spread it into an easing
 group; nothing is added unless you do.
@@ -1710,7 +1710,7 @@ export default defineConfig({
       overlay: { value: { drawer: "400ms" }, settings: { long: true } },
     },
     easing: {
-      ui: { value: { ...goodCssEasings } },
+      ui: { value: { ...uiEasings } },
     },
   },
 });
@@ -1724,7 +1724,7 @@ export default defineConfig({
       overlay: { value: { drawer: "400ms" }, settings: { long: true } },
     },
     easing: {
-      ui: { value: { ...goodCssEasings } },
+      ui: { value: { ...uiEasings } },
     },
   },
 });
@@ -1749,7 +1749,7 @@ This will generate the following CSS :
 
 #### Motion Checks
 
-These checks follow the motion guidance in good-css. They only report warnings: the tokens and
+These checks only report warnings: the tokens and
 the CSS stay the same.
 
 - **Warning: a duration over 300ms** (`motion-long-duration`). A UI transition should take

@@ -4,8 +4,8 @@ import {
 	generateCSS,
 	generateStyleDictionaryJSON,
 	getDiagnostics,
-	goodCssEasings,
 	processMotion,
+	uiEasings,
 } from "../src/mod.ts";
 import { assert, assertEquals, assertThrows, Deno } from "./vitest-compat.ts";
 
@@ -360,13 +360,13 @@ Deno.test("motion - ease-out, ease-in-out and linear curves do not warn", () => 
 	}
 });
 
-Deno.test("motion - goodCssEasings is a preset spread into an easing group", () => {
+Deno.test("motion - uiEasings is a preset spread into an easing group", () => {
 	assertEquals(
-		{ ...goodCssEasings },
+		{ ...uiEasings },
 		{ out: "cubic-bezier(0.23, 1, 0.32, 1)", inOut: "cubic-bezier(0.77, 0, 0.175, 1)" },
 	);
 
-	const config = motion({ easing: { ui: { value: { ...goodCssEasings } } } });
+	const config = motion({ easing: { ui: { value: { ...uiEasings } } } });
 	const css = generateCSS(config);
 	assert(css.includes("--motion-easing-ui-out: cubic-bezier(0.23, 1, 0.32, 1);"), css);
 	assert(css.includes("--motion-easing-ui-inOut: cubic-bezier(0.77, 0, 0.175, 1);"), css);

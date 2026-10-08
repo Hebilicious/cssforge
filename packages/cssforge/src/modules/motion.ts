@@ -38,14 +38,14 @@ export interface MotionConfig {
 }
 
 /**
- * The two easing curves good-css defines for UI motion, to spread into an
+ * The two easing curves recommended for UI motion, to spread into an
  * easing group's `value`. They are not added unless a config spreads them.
  * @example
  * ```ts
- * defineConfig({ motion: { easing: { ui: { value: { ...goodCssEasings } } } } });
+ * defineConfig({ motion: { easing: { ui: { value: { ...uiEasings } } } } });
  * ```
  */
-export const goodCssEasings = Object.freeze({
+export const uiEasings = Object.freeze({
 	out: "cubic-bezier(0.23, 1, 0.32, 1)",
 	inOut: "cubic-bezier(0.77, 0, 0.175, 1)",
 } as const);
@@ -223,7 +223,7 @@ const formatMs = (ms: number) => `${Number(ms.toFixed(3))}ms`;
  *     ui: { value: { press: "120ms", dropdown: "200ms" } },
  *     overlay: { value: { modal: "400ms" }, settings: { long: true } },
  *   },
- *   easing: { ui: { value: { ...goodCssEasings } } },
+ *   easing: { ui: { value: { ...uiEasings } } },
  * });
  * ```
  */
@@ -300,7 +300,7 @@ export function processMotion(motion: MotionConfig): Output {
 		(value, path) => {
 			const points = readEasing(value, path);
 			if (!points || !isEaseInShaped(points)) return undefined;
-			return `Motion easing ${path} is ease-in shaped: it starts slow and ends fast, which reads as lag on UI. Use an ease-out curve such as ${goodCssEasings.out}, or ${goodCssEasings.inOut} for movement on screen.`;
+			return `Motion easing ${path} is ease-in shaped: it starts slow and ends fast, which reads as lag on UI. Use an ease-out curve such as ${uiEasings.out}, or ${uiEasings.inOut} for movement on screen.`;
 		},
 	);
 
