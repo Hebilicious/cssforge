@@ -35,6 +35,16 @@ color output settings.
   with the configuration path. Spacing and primitives keep flat `PixelSettings`.
 - A palette token carries `gamutMapped: true` when the color is outside sRGB.
 
+## Fluid typography checks
+
+- `FluidTypeScaleDefinition.settings.minLegibleSize` in
+  `packages/cssforge/src/modules/typography.ts`: px number greater than 0, or `false`; default
+  `12`. Read at `typography.fluid.<scale>.settings.minLegibleSize`; anything else is rejected.
+- A step growing more than 2.5x (max/min size in px) throws (WCAG 1.4.4); exactly 2.5x passes.
+- Warnings, as `Diagnostic` (`code`, `severity`, `path`, `message`) from `getDiagnostics`:
+  `typography-below-legibility-floor` per step (path `typography_fluid.<scale>@<label>`) and
+  `typography-static-scale` once per scale when every step changes less than 10%.
+
 ## Derived colors
 
 - `ColorMix` in `packages/cssforge/src/modules/colors.ts`, re-exported from `mod.ts`:
@@ -61,11 +71,11 @@ color output settings.
 
 ## Exposed API entrypoint
 
-- `packages/cssforge/src/mod.ts` exports `defineConfig`, `generateCSS`, the processing helpers,
+- `packages/cssforge/src/mod.ts` exports `defineConfig`, `generateCSS`, `getDiagnostics`, the processing helpers,
   and the config and token types (`CSSForgeConfig`, `ColorFormatConfig`, `ColorMix`, `HexFormatOutputs`,
   `RgbFormatOutputs`, `ColorSettings`, `ColorThemesSettings`, `LightDarkSettings`,
   `LightDarkColorScheme`, `ColorFormat`, `HexColorValues`, `RgbColorValues`,
-  `TokenColorFormats`, `GenerateOptions`, `StyleDictionaryJSONOptions`).
+  `TokenColorFormats`, `Diagnostic`, `DiagnosticCode`, `GenerateOptions`, `StyleDictionaryJSONOptions`).
 
 ## Guidance
 

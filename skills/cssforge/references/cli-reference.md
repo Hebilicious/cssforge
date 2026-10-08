@@ -17,6 +17,12 @@ CLI implementation: `packages/cssforge/src/cli.ts`
   appended to the formats `settings.color.formats` declares. Each added format generates its
   CSS value, and `settings.color.fallback` still picks the declaration
 
+## Build warnings
+
+Warnings such as a fluid type step below the legibility floor go to stderr as
+`cssforge: warning: <message>` before the outputs are written. They never fail the build: the
+outputs are still written and the exit code stays `0`.
+
 ## Typical commands from docs
 
 The npm package exposes a `cssforge` executable, so consumers run it directly (`npx cssforge`
@@ -41,3 +47,5 @@ From `README.md`:
 - `const css = generateCSS(config);`
 - `generateCSS(config, { colorFormats: ["hex", "rgb"] })` adds the extra color formats to
   the ones the config declares
+- `getDiagnostics(config)` returns the build warnings as `{ code, severity, path, message }`,
+  the same ones the CLI prints

@@ -120,6 +120,27 @@ export const withTokenScope = <T extends ResolvedToken>(
  */
 export type ResolveMap = Map<string, ResolvedToken>;
 
+/** A stable identifier for each kind of build diagnostic. */
+export type DiagnosticCode =
+	| "typography-static-scale"
+	| "typography-below-legibility-floor";
+
+/**
+ * A build warning about a configuration that generates, but likely not as
+ * intended. Generation still succeeds; a configuration that cannot be generated
+ * throws instead.
+ */
+export interface Diagnostic {
+	/** Stable identifier for programmatic handling. */
+	code: DiagnosticCode;
+	/** Diagnostics are warnings; they never fail generation. */
+	severity: "warning";
+	/** The cssforge configuration path the diagnostic is about. */
+	path: string;
+	/** Actionable description naming the path and how to fix it. */
+	message: string;
+}
+
 /**
  * Represents the output of a processing function, containing the generated
  * CSS and a resolve map.
@@ -129,6 +150,8 @@ export interface Output {
 	css: { root?: string; outside?: string };
 	/** A map for resolving variable paths. */
 	resolveMap: ResolveMap;
+	/** Build warnings the module reported while processing its configuration. */
+	diagnostics?: Diagnostic[];
 }
 
 /**
