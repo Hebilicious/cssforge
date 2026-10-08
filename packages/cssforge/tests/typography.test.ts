@@ -2,6 +2,23 @@ import { defineConfig, processTypography } from "../src/mod.ts";
 import { getLines } from "./helpers.ts";
 import { assertEquals, assertSnapshot, Deno } from "./vitest-compat.ts";
 
+/** The paths of a fluid scale's tokens: its clamp() steps, then its pow tokens. */
+const fluidPaths = (scale: string, labels: string[]) => [
+	...labels.map((label) => `typography_fluid.${scale}@${label}`),
+	...[
+		"min-width",
+		"max-width",
+		"min-font-size",
+		"max-font-size",
+		"min-type-scale",
+		"max-type-scale",
+		"progress",
+		"at-min",
+		"at-max",
+	].map((name) => `typography_fluid.${scale}.pow.${name}`),
+	...labels.map((label) => `typography_fluid.${scale}.pow@${label}`),
+];
+
 Deno.test("processTypography - generates correct CSS variables", async (t) => {
 	const config = defineConfig({
 		typography: {
@@ -25,7 +42,7 @@ Deno.test("processTypography - generates correct CSS variables", async (t) => {
 	const expectedSizes = ["4xl", "3xl", "2xl", "xl", "l", "m", "s", "xs", "2xs"];
 	const result = processTypography(config.typography);
 	const lines = getLines(result.css.root);
-	assertEquals(lines.length, expectedSizes.length);
+	assertEquals(lines.length, 2 * expectedSizes.length + 9);
 
 	// Test a specific value for precision
 	const xlLine = lines.find((line) => line.includes("--typography_fluid-arial-xl:"));
@@ -34,10 +51,7 @@ Deno.test("processTypography - generates correct CSS variables", async (t) => {
 		"--typography_fluid-arial-xl: clamp(1.3672rem, 1.3111rem + 0.2803vw, 1.5625rem);",
 	);
 
-	assertEquals(
-		Array.from(result.resolveMap.keys()),
-		expectedSizes.map((size) => `typography_fluid.arial@${size}`),
-	);
+	assertEquals(Array.from(result.resolveMap.keys()), fluidPaths("arial", expectedSizes));
 
 	// Test that we have all the expected size variables
 	expectedSizes.forEach((size) => {
@@ -88,7 +102,7 @@ Deno.test("typography - can handle custom labels and prefixes", async (t) => {
 	const expectedSizes = ["xs", "s", "m", "l", "xl", "xxl", "h4", "h3", "h2", "h1"];
 	const result = processTypography(config.typography);
 	const lines = getLines(result.css.root);
-	assertEquals(lines.length, expectedSizes.length);
+	assertEquals(lines.length, 2 * expectedSizes.length + 9);
 
 	// Test a specific value for precision
 	const xlLine = lines.find((line) => line.includes("--typography_fluid-arial-text-xl:"));
@@ -99,7 +113,7 @@ Deno.test("typography - can handle custom labels and prefixes", async (t) => {
 
 	assertEquals(
 		Array.from(result.resolveMap.keys()),
-		expectedSizes.toReversed().map((size) => `typography_fluid.arial@${size}`),
+		fluidPaths("arial", expectedSizes.toReversed()),
 	);
 
 	// Test that we have all the expected size variables
@@ -140,16 +154,11 @@ Deno.test("processTypography - can process weights", async (t) => {
 
 	const result = processTypography(config.typography);
 	const lines = getLines(result.css.root);
-	assertEquals(lines.length, positiveSteps + negativeSteps + 1 + 1); // 1 for base size and 1 for weight
+	// Each step twice, the 9 pow inputs and helpers, and the weight.
+	assertEquals(lines.length, 2 * (positiveSteps + negativeSteps + 1) + 9 + 1);
 
 	assertEquals(Array.from(result.resolveMap.keys()), [
-		"typography_fluid.arial@2xl",
-		"typography_fluid.arial@xl",
-		"typography_fluid.arial@l",
-		"typography_fluid.arial@m",
-		"typography_fluid.arial@s",
-		"typography_fluid.arial@xs",
-		"typography_fluid.arial@2xs",
+		...fluidPaths("arial", ["2xl", "xl", "l", "m", "s", "xs", "2xs"]),
 		"typography.weight.arial.regular",
 	]);
 	// Test that we have the weight variable

@@ -145,15 +145,16 @@ Deno.test("fluid type - a minimum below 12px warns on the step", () => {
 });
 
 Deno.test("fluid type - a shrinking negative step is checked at its smaller end", () => {
-	// Step xs is 16 / 1.2^2 = 11.11px at 320px and 20 / 1.5^2 = 8.89px at 1280px.
+	// The scale shrinks from 20px to 16px, so step xs is 20 / 1.2^2 = 13.89px at
+	// 320px and 16 / 1.2^2 = 11.11px at 1280px.
 	const diagnostics = getDiagnostics({
 		typography: {
 			fluid: {
 				body: {
 					value: {
-						...singleStep(16, 20),
+						...singleStep(20, 16),
 						minTypeScale: 1.2,
-						maxTypeScale: 1.5,
+						maxTypeScale: 1.2,
 						negativeSteps: 2,
 					},
 				},
@@ -165,7 +166,7 @@ Deno.test("fluid type - a shrinking negative step is checked at its smaller end"
 		diagnostics.map(({ code, path }) => ({ code, path })),
 		[{ code: "typography-below-legibility-floor", path: "typography_fluid.body@xs" }],
 	);
-	assert(diagnostics[0]?.message.includes("8.89px"), diagnostics[0]?.message);
+	assert(diagnostics[0]?.message.includes("11.11px"), diagnostics[0]?.message);
 });
 
 Deno.test("fluid type - settings.minLegibleSize moves or disables the floor", () => {

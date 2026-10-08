@@ -1263,7 +1263,9 @@ This will generate the following CSS :
 ### Typography
 
 Define your typography, with fluid typescales powered by
-[utopia](https://utopia.fyi/type/calculator):
+[utopia](https://utopia.fyi/type/calculator). Every scale is written twice, and every output
+holds both: each step as one `clamp()`, and the same steps derived with `pow()` from the
+scale's inputs (see [Fluid Typography with pow()](#fluid-typography-with-pow)):
 
 <!-- md:generate defineConfig
 export default defineConfig({
@@ -1336,6 +1338,24 @@ This will generate the following CSS :
 --typography_fluid-arial-s: clamp(0.7rem, 0.6713rem + 0.1435vw, 0.8rem);
 --typography_fluid-arial-xs: clamp(0.56rem, 0.537rem + 0.1148vw, 0.64rem);
 --typography_fluid-arial-2xs: clamp(0.448rem, 0.4296rem + 0.0918vw, 0.512rem);
+--typography_fluid-arial-pow-min-width: 20;
+--typography_fluid-arial-pow-max-width: 89.6875;
+--typography_fluid-arial-pow-min-font-size: 0.875;
+--typography_fluid-arial-pow-max-font-size: 1;
+--typography_fluid-arial-pow-min-type-scale: 1.25;
+--typography_fluid-arial-pow-max-type-scale: 1.25;
+--typography_fluid-arial-pow-progress: clamp(0rem, (100vw - var(--typography_fluid-arial-pow-min-width) * 1rem) / (var(--typography_fluid-arial-pow-max-width) - var(--typography_fluid-arial-pow-min-width)), 1rem);
+--typography_fluid-arial-pow-at-min: calc(var(--typography_fluid-arial-pow-min-font-size) * (1rem - var(--typography_fluid-arial-pow-progress)));
+--typography_fluid-arial-pow-at-max: calc(var(--typography_fluid-arial-pow-max-font-size) * var(--typography_fluid-arial-pow-progress));
+--typography_fluid-arial-pow-4xl: calc(var(--typography_fluid-arial-pow-at-min) * pow(var(--typography_fluid-arial-pow-min-type-scale), 5) + var(--typography_fluid-arial-pow-at-max) * pow(var(--typography_fluid-arial-pow-max-type-scale), 5));
+--typography_fluid-arial-pow-3xl: calc(var(--typography_fluid-arial-pow-at-min) * pow(var(--typography_fluid-arial-pow-min-type-scale), 4) + var(--typography_fluid-arial-pow-at-max) * pow(var(--typography_fluid-arial-pow-max-type-scale), 4));
+--typography_fluid-arial-pow-2xl: calc(var(--typography_fluid-arial-pow-at-min) * pow(var(--typography_fluid-arial-pow-min-type-scale), 3) + var(--typography_fluid-arial-pow-at-max) * pow(var(--typography_fluid-arial-pow-max-type-scale), 3));
+--typography_fluid-arial-pow-xl: calc(var(--typography_fluid-arial-pow-at-min) * pow(var(--typography_fluid-arial-pow-min-type-scale), 2) + var(--typography_fluid-arial-pow-at-max) * pow(var(--typography_fluid-arial-pow-max-type-scale), 2));
+--typography_fluid-arial-pow-l: calc(var(--typography_fluid-arial-pow-at-min) * var(--typography_fluid-arial-pow-min-type-scale) + var(--typography_fluid-arial-pow-at-max) * var(--typography_fluid-arial-pow-max-type-scale));
+--typography_fluid-arial-pow-m: calc(var(--typography_fluid-arial-pow-at-min) + var(--typography_fluid-arial-pow-at-max));
+--typography_fluid-arial-pow-s: calc(var(--typography_fluid-arial-pow-m) / var(--typography_fluid-arial-pow-min-type-scale));
+--typography_fluid-arial-pow-xs: calc(var(--typography_fluid-arial-pow-m) / pow(var(--typography_fluid-arial-pow-min-type-scale), 2));
+--typography_fluid-arial-pow-2xs: calc(var(--typography_fluid-arial-pow-m) / pow(var(--typography_fluid-arial-pow-min-type-scale), 3));
 --typography-weight-arial-regular: 600;
 }
 ```
@@ -1420,6 +1440,20 @@ This will generate the following CSS :
 --typography_fluid-comicsans-text-c: clamp(0.875rem, 0.8391rem + 0.1794vw, 1rem);
 --typography_fluid-comicsans-text-b: clamp(0.7rem, 0.6713rem + 0.1435vw, 0.8rem);
 --typography_fluid-comicsans-text-a: clamp(0.56rem, 0.537rem + 0.1148vw, 0.64rem);
+--typography_fluid-comicsans-text-pow-min-width: 20;
+--typography_fluid-comicsans-text-pow-max-width: 89.6875;
+--typography_fluid-comicsans-text-pow-min-font-size: 0.875;
+--typography_fluid-comicsans-text-pow-max-font-size: 1;
+--typography_fluid-comicsans-text-pow-min-type-scale: 1.25;
+--typography_fluid-comicsans-text-pow-max-type-scale: 1.25;
+--typography_fluid-comicsans-text-pow-progress: clamp(0rem, (100vw - var(--typography_fluid-comicsans-text-pow-min-width) * 1rem) / (var(--typography_fluid-comicsans-text-pow-max-width) - var(--typography_fluid-comicsans-text-pow-min-width)), 1rem);
+--typography_fluid-comicsans-text-pow-at-min: calc(var(--typography_fluid-comicsans-text-pow-min-font-size) * (1rem - var(--typography_fluid-comicsans-text-pow-progress)));
+--typography_fluid-comicsans-text-pow-at-max: calc(var(--typography_fluid-comicsans-text-pow-max-font-size) * var(--typography_fluid-comicsans-text-pow-progress));
+--typography_fluid-comicsans-text-pow-e: calc(var(--typography_fluid-comicsans-text-pow-at-min) * pow(var(--typography_fluid-comicsans-text-pow-min-type-scale), 2) + var(--typography_fluid-comicsans-text-pow-at-max) * pow(var(--typography_fluid-comicsans-text-pow-max-type-scale), 2));
+--typography_fluid-comicsans-text-pow-d: calc(var(--typography_fluid-comicsans-text-pow-at-min) * var(--typography_fluid-comicsans-text-pow-min-type-scale) + var(--typography_fluid-comicsans-text-pow-at-max) * var(--typography_fluid-comicsans-text-pow-max-type-scale));
+--typography_fluid-comicsans-text-pow-c: calc(var(--typography_fluid-comicsans-text-pow-at-min) + var(--typography_fluid-comicsans-text-pow-at-max));
+--typography_fluid-comicsans-text-pow-b: calc(var(--typography_fluid-comicsans-text-pow-c) / var(--typography_fluid-comicsans-text-pow-min-type-scale));
+--typography_fluid-comicsans-text-pow-a: calc(var(--typography_fluid-comicsans-text-pow-c) / pow(var(--typography_fluid-comicsans-text-pow-min-type-scale), 2));
 }
 ```
 
@@ -1427,24 +1461,27 @@ This will generate the following CSS :
 
 #### Fluid Typography Checks
 
-Each fluid step is checked from its smallest and largest size in px, as utopia computes them
-at `minWidth` and `maxWidth`:
+Each fluid step is checked from its smallest and largest size in px at `minWidth` and
+`maxWidth`. Step 0 and the steps above it take utopia's sizes. A step below 0 is step 0 divided
+by `minTypeScale` once per step at every width, so a small size never shrinks as the screen
+grows. Both [representations](#fluid-typography-with-pow) of a scale use these sizes, so each
+step is checked once and the checks hold for both:
 
 - **Error: more than 2.5× growth.** A step whose maximum is more than 2.5 times its minimum
   fails the build. Past that ratio, 500% browser zoom cannot double the text at some viewport
   widths ([WCAG 1.4.4 Resize Text](https://www.w3.org/WAI/WCAG22/Understanding/resize-text.html)).
   Exactly 2.5× passes. Lower `maxFontSize` or `maxTypeScale`, or reduce `positiveSteps`.
 - **Warning: a static scale.** A scale whose every step changes by less than 10% across the
-  viewport range gets one warning, because its `clamp()` values are effectively static. A
+  viewport range gets one warning, because its steps are effectively static. A
   single static step is normal where a scale crosses over, usually near the base step, so it
   is not reported on its own.
 - **Warning: below the legibility floor.** A step whose smaller size is under
   `settings.minLegibleSize` (default `12`, in px) gets one warning. The first example above
   warns for `s` (11.2px), `xs` (8.96px) and `2xs` (7.17px).
 
-When `maxTypeScale` is larger than `minTypeScale`, small negative steps can shrink as the
-viewport grows. Those steps are checked at their smaller end, and the 2.5× error only applies
-to steps that grow.
+When `maxFontSize` is smaller than `minFontSize`, the steps shrink as the viewport grows.
+Those steps are checked at their smaller end, and the 2.5× error only applies to steps that
+grow.
 
 `settings.minLegibleSize` takes a number of px greater than 0, or `false` to turn the floor
 off. It only changes the warnings: the tokens and the CSS stay the same.
@@ -1505,6 +1542,17 @@ This will generate the following CSS :
 /*____ Typography ____*/
 --typography_fluid-caption-l: clamp(0.825rem, 0.7615rem + 0.3177vw, 1.0156rem);
 --typography_fluid-caption-m: clamp(0.6875rem, 0.6458rem + 0.2083vw, 0.8125rem);
+--typography_fluid-caption-pow-min-width: 20;
+--typography_fluid-caption-pow-max-width: 80;
+--typography_fluid-caption-pow-min-font-size: 0.6875;
+--typography_fluid-caption-pow-max-font-size: 0.8125;
+--typography_fluid-caption-pow-min-type-scale: 1.2;
+--typography_fluid-caption-pow-max-type-scale: 1.25;
+--typography_fluid-caption-pow-progress: clamp(0rem, (100vw - var(--typography_fluid-caption-pow-min-width) * 1rem) / (var(--typography_fluid-caption-pow-max-width) - var(--typography_fluid-caption-pow-min-width)), 1rem);
+--typography_fluid-caption-pow-at-min: calc(var(--typography_fluid-caption-pow-min-font-size) * (1rem - var(--typography_fluid-caption-pow-progress)));
+--typography_fluid-caption-pow-at-max: calc(var(--typography_fluid-caption-pow-max-font-size) * var(--typography_fluid-caption-pow-progress));
+--typography_fluid-caption-pow-l: calc(var(--typography_fluid-caption-pow-at-min) * var(--typography_fluid-caption-pow-min-type-scale) + var(--typography_fluid-caption-pow-at-max) * var(--typography_fluid-caption-pow-max-type-scale));
+--typography_fluid-caption-pow-m: calc(var(--typography_fluid-caption-pow-at-min) + var(--typography_fluid-caption-pow-at-max));
 }
 ```
 
@@ -1513,6 +1561,124 @@ This will generate the following CSS :
 Warnings never fail the build. The CLI prints each one to stderr as
 `cssforge: warning: <message>` and still writes the outputs, and `getDiagnostics(config)`
 returns them to programmatic callers (see [Programmatic Usage](#programmatic-usage)).
+
+#### Fluid Typography with pow()
+
+Every fluid scale is written twice from the same sizes, and both representations are ordinary
+tokens: the CSS, JSON, TypeScript and Style Dictionary outputs all hold them, and a primitive
+can reference either.
+
+- **clamp()**: `--typography_fluid-<scale>[-<prefix>]-<label>`, referenced as
+  `typography_fluid.<scale>@<label>`. Each step is one self-contained `clamp()`. Use it where a
+  value has to work on its own, such as a token copied into another tool, or a browser without
+  `pow()`.
+- **pow()**: `--typography_fluid-<scale>[-<prefix>]-pow-<label>`, referenced as
+  `typography_fluid.<scale>.pow@<label>`. Each step is derived from the scale's inputs with
+  `pow()`, so changing an input on `:root` tunes the whole scale at runtime, in DevTools or
+  from a theme. Change an input in the rule that declares the steps: a step takes its value
+  where it is declared, so an input set on a descendant changes nothing below it. It needs
+  `pow()`: Chrome 120, Firefox 118, Safari 15.4.
+
+Both give every step the same size at `minWidth` and `maxWidth`. Step 0 and the steps above
+it are utopia's, and their `clamp()` is the one utopia writes. A step below 0 is step 0
+divided by `minTypeScale^n` at every width: it grows with step 0, and its largest size is
+`maxFontSize / minTypeScale^n` rather than utopia's `maxFontSize / maxTypeScale^n`, so a small
+size never shrinks as the screen grows.
+
+The pow inputs and helpers of each scale are named
+`--typography_fluid-<scale>[-<prefix>]-pow-<name>` and referenced as
+`typography_fluid.<scale>.pow.<name>`:
+
+- `min-width` and `max-width`: `minWidth` and `maxWidth` in rem, as plain numbers. A length divided
+  by a length does not work in Firefox, so the inputs carry no unit.
+- `min-font-size` and `max-font-size`: `minFontSize` and `maxFontSize` in rem.
+- `min-type-scale` and `max-type-scale`: `minTypeScale` and `maxTypeScale`.
+- `progress`, `at-min` and `at-max`: the helpers the steps are built from.
+
+Step 0 is `at-min + at-max`, step `n` above it is
+`at-min × pow(min-type-scale, n) + at-max × pow(max-type-scale, n)`, and step `-n` is pow step 0
+divided by `pow(min-type-scale, n)`. The inputs are primitive tokens. The helpers and steps
+reference other tokens, so they are semantic and list those tokens as their reference paths.
+
+A step label that gives a pow name, such as `customLabel` `min-width` (pow step
+`--typography_fluid-<scale>-pow-min-width`) or `pow-min-width`, is a key collision and fails the
+build. A step cannot be labelled `pow`, the segment that holds the pow tokens.
+
+`relativeTo` sets the width the scale follows: `"viewport-width"` (the default) writes
+`vw`, `"viewport"` writes `vi`, and `"container"` writes `cqi` for a scale that follows its
+container. The `clamp()` steps use it in their slope, and the pow tokens in `progress`.
+
+<!-- md:generate defineConfig
+export default defineConfig({
+  typography: {
+    fluid: {
+      body: {
+        value: {
+          minWidth: 320,
+          minFontSize: 18,
+          minTypeScale: 1.2,
+          maxWidth: 1240,
+          maxFontSize: 20,
+          maxTypeScale: 1.25,
+          positiveSteps: 2,
+          negativeSteps: 1,
+          relativeTo: "container",
+        },
+      },
+    },
+  },
+});
+-->
+
+```typescript
+export default defineConfig({
+  typography: {
+    fluid: {
+      body: {
+        value: {
+          minWidth: 320,
+          minFontSize: 18,
+          minTypeScale: 1.2,
+          maxWidth: 1240,
+          maxFontSize: 20,
+          maxTypeScale: 1.25,
+          positiveSteps: 2,
+          negativeSteps: 1,
+          relativeTo: "container",
+        },
+      },
+    },
+  },
+});
+```
+
+This will generate the following CSS :
+
+```css
+/*____ CSSForge ____*/
+:root {
+/*____ Typography ____*/
+--typography_fluid-body-xl: clamp(1.62rem, 1.5041rem + 0.5793cqi, 1.9531rem);
+--typography_fluid-body-l: clamp(1.35rem, 1.2761rem + 0.3696cqi, 1.5625rem);
+--typography_fluid-body-m: clamp(1.125rem, 1.0815rem + 0.2174cqi, 1.25rem);
+--typography_fluid-body-s: clamp(0.9375rem, 0.9013rem + 0.1812cqi, 1.0417rem);
+--typography_fluid-body-pow-min-width: 20;
+--typography_fluid-body-pow-max-width: 77.5;
+--typography_fluid-body-pow-min-font-size: 1.125;
+--typography_fluid-body-pow-max-font-size: 1.25;
+--typography_fluid-body-pow-min-type-scale: 1.2;
+--typography_fluid-body-pow-max-type-scale: 1.25;
+--typography_fluid-body-pow-progress: clamp(0rem, (100cqi - var(--typography_fluid-body-pow-min-width) * 1rem) / (var(--typography_fluid-body-pow-max-width) - var(--typography_fluid-body-pow-min-width)), 1rem);
+--typography_fluid-body-pow-at-min: calc(var(--typography_fluid-body-pow-min-font-size) * (1rem - var(--typography_fluid-body-pow-progress)));
+--typography_fluid-body-pow-at-max: calc(var(--typography_fluid-body-pow-max-font-size) * var(--typography_fluid-body-pow-progress));
+--typography_fluid-body-pow-xl: calc(var(--typography_fluid-body-pow-at-min) * pow(var(--typography_fluid-body-pow-min-type-scale), 2) + var(--typography_fluid-body-pow-at-max) * pow(var(--typography_fluid-body-pow-max-type-scale), 2));
+--typography_fluid-body-pow-l: calc(var(--typography_fluid-body-pow-at-min) * var(--typography_fluid-body-pow-min-type-scale) + var(--typography_fluid-body-pow-at-max) * var(--typography_fluid-body-pow-max-type-scale));
+--typography_fluid-body-pow-m: calc(var(--typography_fluid-body-pow-at-min) + var(--typography_fluid-body-pow-at-max));
+--typography_fluid-body-pow-s: calc(var(--typography_fluid-body-pow-m) / var(--typography_fluid-body-pow-min-type-scale));
+}
+```
+
+<!-- /md:generate -->
 
 ### Primitives
 
@@ -1640,6 +1806,24 @@ This will generate the following CSS :
 --typography_fluid-arial-s: clamp(0.7rem, 0.6713rem + 0.1435vw, 0.8rem);
 --typography_fluid-arial-xs: clamp(0.56rem, 0.537rem + 0.1148vw, 0.64rem);
 --typography_fluid-arial-2xs: clamp(0.448rem, 0.4296rem + 0.0918vw, 0.512rem);
+--typography_fluid-arial-pow-min-width: 20;
+--typography_fluid-arial-pow-max-width: 89.6875;
+--typography_fluid-arial-pow-min-font-size: 0.875;
+--typography_fluid-arial-pow-max-font-size: 1;
+--typography_fluid-arial-pow-min-type-scale: 1.25;
+--typography_fluid-arial-pow-max-type-scale: 1.25;
+--typography_fluid-arial-pow-progress: clamp(0rem, (100vw - var(--typography_fluid-arial-pow-min-width) * 1rem) / (var(--typography_fluid-arial-pow-max-width) - var(--typography_fluid-arial-pow-min-width)), 1rem);
+--typography_fluid-arial-pow-at-min: calc(var(--typography_fluid-arial-pow-min-font-size) * (1rem - var(--typography_fluid-arial-pow-progress)));
+--typography_fluid-arial-pow-at-max: calc(var(--typography_fluid-arial-pow-max-font-size) * var(--typography_fluid-arial-pow-progress));
+--typography_fluid-arial-pow-4xl: calc(var(--typography_fluid-arial-pow-at-min) * pow(var(--typography_fluid-arial-pow-min-type-scale), 5) + var(--typography_fluid-arial-pow-at-max) * pow(var(--typography_fluid-arial-pow-max-type-scale), 5));
+--typography_fluid-arial-pow-3xl: calc(var(--typography_fluid-arial-pow-at-min) * pow(var(--typography_fluid-arial-pow-min-type-scale), 4) + var(--typography_fluid-arial-pow-at-max) * pow(var(--typography_fluid-arial-pow-max-type-scale), 4));
+--typography_fluid-arial-pow-2xl: calc(var(--typography_fluid-arial-pow-at-min) * pow(var(--typography_fluid-arial-pow-min-type-scale), 3) + var(--typography_fluid-arial-pow-at-max) * pow(var(--typography_fluid-arial-pow-max-type-scale), 3));
+--typography_fluid-arial-pow-xl: calc(var(--typography_fluid-arial-pow-at-min) * pow(var(--typography_fluid-arial-pow-min-type-scale), 2) + var(--typography_fluid-arial-pow-at-max) * pow(var(--typography_fluid-arial-pow-max-type-scale), 2));
+--typography_fluid-arial-pow-l: calc(var(--typography_fluid-arial-pow-at-min) * var(--typography_fluid-arial-pow-min-type-scale) + var(--typography_fluid-arial-pow-at-max) * var(--typography_fluid-arial-pow-max-type-scale));
+--typography_fluid-arial-pow-m: calc(var(--typography_fluid-arial-pow-at-min) + var(--typography_fluid-arial-pow-at-max));
+--typography_fluid-arial-pow-s: calc(var(--typography_fluid-arial-pow-m) / var(--typography_fluid-arial-pow-min-type-scale));
+--typography_fluid-arial-pow-xs: calc(var(--typography_fluid-arial-pow-m) / pow(var(--typography_fluid-arial-pow-min-type-scale), 2));
+--typography_fluid-arial-pow-2xs: calc(var(--typography_fluid-arial-pow-m) / pow(var(--typography_fluid-arial-pow-min-type-scale), 3));
 /*____ Primitives ____*/
 /* button */
 --button-small-width: 7.5rem;
@@ -1708,6 +1892,10 @@ follow the following convention :
 - xl
 - 2xl
 - 3xl
+
+The pow representation of a step adds a `pow` segment, as in
+`typography_fluid.comicsans.pow@a`, and its inputs and helpers are
+`typography_fluid.comicsans.pow.<name>`, such as `typography_fluid.comicsans.pow.max-type-scale`.
 
 ## CLI Usage
 
