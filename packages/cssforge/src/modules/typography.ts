@@ -5,13 +5,13 @@ import {
 	type UtopiaTypeConfig,
 } from "utopia-core";
 import { assertSettingsKeys, validateCustomLabel, validateName } from "../helpers.ts";
-import type {
-	Diagnostic,
-	FluidTypeFunction,
-	GenerateCSSOptions,
-	Output,
-	ResolvedToken,
-	ResolveMap,
+import {
+	type Diagnostic,
+	getReferencePaths,
+	type Output,
+	type ResolvedToken,
+	type ResolveMap,
+	type Variables,
 } from "../lib.ts";
 
 export interface FluidTypeScaleDefinition {
@@ -81,20 +81,6 @@ const readMinLegibleSize = (value: unknown, path: string): number | false => {
 	);
 };
 
-/** The CSS functions a fluid type scale can write its steps with, default first. */
-export const fluidTypeFunctions: readonly FluidTypeFunction[] = ["pow", "clamp"];
-
-export const isFluidTypeFunction = (value: unknown): value is FluidTypeFunction =>
-	fluidTypeFunctions.some((name) => name === value);
-
-const readFluidTypeFunction = (value: unknown): FluidTypeFunction => {
-	if (value === undefined) return "pow";
-	if (isFluidTypeFunction(value)) return value;
-	throw new Error(
-		`Invalid fluidTypeFunction option: expected ${fluidTypeFunctions.map((name) => JSON.stringify(name)).join(" or ")}, received ${JSON.stringify(value)}.`,
-	);
-};
-
 /** The unit utopia-core writes for each `relativeTo`, which defaults to the viewport width. */
 const RELATIVE_UNITS = { viewport: "vi", "viewport-width": "vw", container: "cqi" };
 
@@ -121,8 +107,8 @@ type FluidTypeStep = Pick<
 const round = (size: number) => Math.round((size + Number.EPSILON) * 10000) / 10000;
 
 /**
- * The canonical sizes of every step, which the checks, both CSS functions and
- * the tokens all use. Step 0 and above are utopia-core's. Step -n is step 0
+ * The canonical sizes of every step, which the checks and both representations
+ * of the scale use. Step 0 and above are utopia-core's. Step -n is step 0
  * divided by `minTypeScale^n` at every width, so a small size never shrinks as
  * the screen grows: it matches utopia at `minWidth`, and is
  * `maxFontSize / minTypeScale^n` at `maxWidth`.
@@ -194,18 +180,16 @@ const assertWcagGrowth = (step: StepSizes, label: string, path: string) => {
  * const { css } = processTypography(typography);
  * ```
  *
- * `options.fluidTypeFunction` only changes `css`: the tokens in `resolveMap`
- * hold each step's `clamp()` either way.
+ * Each fluid scale is written twice from the same step sizes. The step tokens
+ * `typography_fluid.<scale>@<label>` hold one self-contained `clamp()` each.
+ * The tokens under `typography_fluid.<scale>.pow` hold the scale's inputs as
+ * plain numbers, three helpers, and the steps derived from them with `pow()`,
+ * so changing an input on `:root` tunes the whole scale at runtime.
  */
-export function processTypography(
-	config: TypographyConfig,
-	options: Pick<GenerateCSSOptions, "fluidTypeFunction"> = {},
-): Output {
+export function processTypography(config: TypographyConfig): Output {
 	const cssOutput: string[] = [];
 	const resolveMap: ResolveMap = new Map();
-	const cssOnly: ResolvedToken[] = [];
 	const diagnostics: Diagnostic[] = [];
-	const fluidTypeFunction = readFluidTypeFunction(options.fluidTypeFunction);
 
 	if (config.fluid) {
 		const moduleKey = "typography_fluid";
@@ -233,71 +217,85 @@ export function processTypography(
 
 			const resolvedPrefix = prefix ? `${scaleName}-${prefix}` : scaleName;
 			const keyOf = (name: string) => `--${moduleKey}-${resolvedPrefix}-${name}`;
-			const labelOf = ({ label }: FluidTypeStep) => {
-				const resolvedLabel = settings?.customLabel
-					? (settings.customLabel[label] ?? label)
-					: label;
+			const steps = scale.map((step) => {
+				const labelPath = `${moduleKey}.${scaleName}.settings.customLabel.${step.label}`;
+				const label = settings?.customLabel
+					? (settings.customLabel[step.label] ?? step.label)
+					: step.label;
 				// Validate the label that is actually emitted. A `customLabel` may
 				// resolve through the prototype chain, so iterating own values would
 				// miss a label that still reaches the generated key.
-				validateCustomLabel(
-					resolvedLabel,
-					`${moduleKey}.${scaleName}.settings.customLabel.${label}`,
-				);
-				return resolvedLabel;
-			};
-			const tokenOf = (path: string, key: string, tokenValue: string): ResolvedToken => ({
-				variable: `${key}: ${tokenValue};`,
-				key,
-				value: tokenValue,
-				sourcePath: path,
-				type: "typography",
-				tier: "primitive",
-			});
-
-			let stepCss = (step: FluidTypeStep) => step.clamp;
-			if (fluidTypeFunction === "pow") {
-				const ref = (name: string) => `var(${keyOf(name)})`;
-				const power = (name: string, n: number) =>
-					n === 1 ? ref(name) : `pow(${ref(name)}, ${n})`;
-				const inputs: Array<[string, string]> = [
-					["narrow", `${utopiaConfig.minWidth / REM}`],
-					["wide", `${utopiaConfig.maxWidth / REM}`],
-					["size-narrow", `${utopiaConfig.minFontSize / REM}`],
-					["size-wide", `${utopiaConfig.maxFontSize / REM}`],
-					["ratio-narrow", `${utopiaConfig.minTypeScale}`],
-					["ratio-wide", `${utopiaConfig.maxTypeScale}`],
-					[
-						"fluid",
-						`clamp(0rem, (100${unit} - ${ref("narrow")} * 1rem) / (${ref("wide")} - ${ref("narrow")}), 1rem)`,
-					],
-					["at-narrow", `calc(${ref("size-narrow")} * (1rem - ${ref("fluid")}))`],
-					["at-wide", `calc(${ref("size-wide")} * ${ref("fluid")})`],
-				];
-				for (const [name, inputValue] of inputs) {
-					const input = tokenOf(`${scalePath}.${name}`, keyOf(name), inputValue);
-					cssOutput.push(input.variable);
-					cssOnly.push(input);
-				}
-
-				const stepZero = scale.find(({ step }) => step === 0);
-				if (!stepZero) {
+				validateCustomLabel(label, labelPath);
+				if (label === "pow") {
 					throw new Error(
-						`Invalid configuration at "${scalePath}": the scale has no step 0.`,
+						`Invalid configuration at "${labelPath}": "pow" is the segment of the scale's pow tokens, so a step cannot take it as its label.`,
 					);
 				}
-				const stepZeroRef = `var(${keyOf(labelOf(stepZero))})`;
-				stepCss = ({ step }) => {
-					if (step === 0) return `calc(${ref("at-narrow")} + ${ref("at-wide")})`;
-					if (step < 0) return `calc(${stepZeroRef} / ${power("ratio-narrow", -step)})`;
-					return `calc(${ref("at-narrow")} * ${power("ratio-narrow", step)} + ${ref("at-wide")} * ${power("ratio-wide", step)})`;
-				};
-			}
+				return { ...step, label };
+			});
 
-			for (const step of scale) {
-				const resolvedLabel = labelOf(step);
-				const stepPath = `${scalePath}@${resolvedLabel}`;
-				assertWcagGrowth(step, resolvedLabel, scalePath);
+			const powPath = `${scalePath}.pow`;
+			const powKey = (name: string) => keyOf(`pow-${name}`);
+			const ref = (name: string) => `var(${powKey(name)})`;
+			const power = (name: string, n: number) =>
+				n === 1 ? ref(name) : `pow(${ref(name)}, ${n})`;
+			const powInputs: Array<[string, string]> = [
+				["narrow", `${utopiaConfig.minWidth / REM}`],
+				["wide", `${utopiaConfig.maxWidth / REM}`],
+				["size-narrow", `${utopiaConfig.minFontSize / REM}`],
+				["size-wide", `${utopiaConfig.maxFontSize / REM}`],
+				["ratio-narrow", `${utopiaConfig.minTypeScale}`],
+				["ratio-wide", `${utopiaConfig.maxTypeScale}`],
+				[
+					"fluid",
+					`clamp(0rem, (100${unit} - ${ref("narrow")} * 1rem) / (${ref("wide")} - ${ref("narrow")}), 1rem)`,
+				],
+				["at-narrow", `calc(${ref("size-narrow")} * (1rem - ${ref("fluid")}))`],
+				["at-wide", `calc(${ref("size-wide")} * ${ref("fluid")})`],
+			];
+			const stepZero = steps.find(({ step }) => step === 0);
+			if (!stepZero) {
+				throw new Error(
+					`Invalid configuration at "${scalePath}": the scale has no step 0.`,
+				);
+			}
+			const powStep = (step: number) => {
+				if (step === 0) return `calc(${ref("at-narrow")} + ${ref("at-wide")})`;
+				if (step < 0) {
+					return `calc(${ref(stepZero.label)} / ${power("ratio-narrow", -step)})`;
+				}
+				return `calc(${ref("at-narrow")} * ${power("ratio-narrow", step)} + ${ref("at-wide")} * ${power("ratio-wide", step)})`;
+			};
+
+			// The pow values reference each other by key, so the shared resolver
+			// finds their reference paths through these aliases.
+			const powVariables: Variables = Object.fromEntries([
+				...powInputs.map(([name]) => [powKey(name).slice(2), `${powPath}.${name}`]),
+				...steps.map(({ label }) => [powKey(label).slice(2), `${powPath}@${label}`]),
+			]);
+			const tokenOf = (path: string, key: string, tokenValue: string): ResolvedToken => {
+				const referencePaths = getReferencePaths({
+					value: tokenValue,
+					variables: powVariables,
+				});
+				return {
+					variable: `${key}: ${tokenValue};`,
+					key,
+					value: tokenValue,
+					sourcePath: path,
+					...(referencePaths ? { referencePaths } : {}),
+					type: "typography",
+					tier: referencePaths ? "semantic" : "primitive",
+				};
+			};
+
+			const clampTokens: ResolvedToken[] = [];
+			const powTokens = powInputs.map(([name, inputValue]) =>
+				tokenOf(`${powPath}.${name}`, powKey(name), inputValue),
+			);
+			for (const step of steps) {
+				const stepPath = `${scalePath}@${step.label}`;
+				assertWcagGrowth(step, step.label, scalePath);
 				const smallest = Math.min(step.minFontSize, step.maxFontSize);
 				if (minLegibleSize !== false && smallest < minLegibleSize) {
 					diagnostics.push({
@@ -307,10 +305,14 @@ export function processTypography(
 						message: `Typography step ${stepPath} reaches ${px(smallest)}, below the ${px(minLegibleSize)} legibility floor. Raise minFontSize, lower the type scale or negativeSteps, or set the scale's settings.minLegibleSize.`,
 					});
 				}
-				const key = keyOf(resolvedLabel);
-				cssOutput.push(`${key}: ${stepCss(step)};`);
-				// The token holds the self-contained clamp() whichever function the CSS uses.
-				resolveMap.set(stepPath, tokenOf(stepPath, key, step.clamp));
+				clampTokens.push(tokenOf(stepPath, keyOf(step.label), step.clamp));
+				powTokens.push(
+					tokenOf(`${powPath}@${step.label}`, powKey(step.label), powStep(step.step)),
+				);
+			}
+			for (const token of [...clampTokens, ...powTokens]) {
+				cssOutput.push(token.variable);
+				resolveMap.set(token.sourcePath, token);
 			}
 
 			// One static step is normal where a scale crosses over, so only a scale
@@ -349,5 +351,5 @@ export function processTypography(
 		}
 	}
 
-	return { css: { root: cssOutput.join("\n") }, resolveMap, diagnostics, cssOnly };
+	return { css: { root: cssOutput.join("\n") }, resolveMap, diagnostics };
 }

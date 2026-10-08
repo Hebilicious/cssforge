@@ -2,7 +2,6 @@ import type { CSSForgeConfig } from "./config.ts";
 import type {
 	ColorFormat,
 	Diagnostic,
-	GenerateCSSOptions,
 	GenerateOptions,
 	TokenColorFormats,
 } from "./lib.ts";
@@ -128,14 +127,11 @@ const deepMerge = <T extends Record<string, unknown>>(target: T, source: T): T =
  * without a wrapper share `ROOT_SCOPE`. Tokens that share a name but target
  * different scopes are not a collision: two `variantNameOnly` themes emitting
  * `--primary` under different selectors is the documented way to build themes.
- *
- * The CSS output also passes the declarations it writes without a token, such
- * as the inputs of a pow() type scale, so they cannot collide either.
  */
-const assertNoKeyCollisions = (tokens: Iterable<ResolvedToken>): void => {
+const assertNoKeyCollisions = (resolveMap: ResolveMap): void => {
 	const sourcesByScopeAndKey = new Map<string, string>();
 
-	for (const token of tokens) {
+	for (const token of resolveMap.values()) {
 		const scopedKey = `${getTokenScope(token)}\u0000${token.key}`;
 		const existingSourcePath = sourcesByScopeAndKey.get(scopedKey);
 
@@ -189,7 +185,7 @@ const processModules = (
 
 	const outputs = Object.values(forge);
 	const resolveMap = mergeResolveMaps(outputs);
-	assertNoKeyCollisions(resolveMap.values());
+	assertNoKeyCollisions(resolveMap);
 	return {
 		resolveMap,
 		diagnostics: outputs.flatMap((output) => output?.diagnostics ?? []),
@@ -549,8 +545,6 @@ export function generateTS(
 /**
  * Generates a CSS string from the CSSForge configuration.
  * This is the main function to generate the CSS variables.
- * `options.fluidTypeFunction` chooses how fluid type steps are written, `"pow"`
- * by default or `"clamp"`.
  * @example
  * ```ts
  * const config = defineConfig({ colors: { palette: { value: { red: { 100: { hex: "#ff0000" } } } } });
@@ -560,11 +554,15 @@ export function generateTS(
  */
 export function generateCSS(
 	config: Partial<CSSForgeConfig>,
-	options: GenerateCSSOptions = {},
+	options: GenerateOptions = {},
 ): string {
 	const chunks: string[] = ["/*____ CSSForge ____*/", ":root {"];
 	const outsideChunks: string[] = [];
-	const processedConfig: { [key: string]: Output | undefined } = {};
+	const processedConfig: {
+		[key: string]:
+			| { css: { root?: string; outside?: string }; resolveMap: ResolveMap }
+			| undefined;
+	} = {};
 
 	// Process colors if present
 	if (config.colors) {
@@ -596,7 +594,7 @@ export function generateCSS(
 
 	// Process Typography if present
 	if (config.typography) {
-		processedConfig.typography = processTypography(config.typography, options);
+		processedConfig.typography = processTypography(config.typography);
 		if (processedConfig.typography) {
 			if (processedConfig.typography.css.root) {
 				chunks.push("/*____ Typography ____*/");
@@ -629,13 +627,8 @@ export function generateCSS(
 
 	// Reject colliding keys before returning any output. This reuses the module
 	// results gathered above and feeds the same `assertNoKeyCollisions` used by
-	// JSON, TypeScript and Style Dictionary output, plus the declarations only
-	// the CSS writes.
-	const outputs = Object.values(processedConfig);
-	assertNoKeyCollisions([
-		...mergeResolveMaps(outputs).values(),
-		...outputs.flatMap((output) => output?.cssOnly ?? []),
-	]);
+	// JSON, TypeScript and Style Dictionary output.
+	assertNoKeyCollisions(mergeResolveMaps(Object.values(processedConfig)));
 
 	chunks.push("}");
 

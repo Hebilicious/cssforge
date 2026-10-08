@@ -23,7 +23,7 @@ features:
     link: /tokens/colors
     linkText: Explore colors
   - title: Typography
-    details: Generate fluid typography scales, written with pow() for live tuning or with clamp().
+    details: Generate fluid typography scales as self-contained clamp() steps and as pow() tokens you can tune at runtime.
     icon:
       src: /icons/typography.svg
     link: /tokens/typography

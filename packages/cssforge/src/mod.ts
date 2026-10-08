@@ -25,8 +25,6 @@ export type {
 	ColorFormat,
 	Diagnostic,
 	DiagnosticCode,
-	FluidTypeFunction,
-	GenerateCSSOptions,
 	GenerateOptions,
 	HexColorValues,
 	RgbColorValues,

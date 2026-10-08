@@ -50,23 +50,25 @@ color output settings.
 - Every step has one canonical size in px at `minWidth` and `maxWidth`
   (`fluidTypeSteps` in `packages/cssforge/src/modules/typography.ts`). Step 0 and above are
   utopia-core's. Step `-n` is `step 0 / minTypeScale^n` at every width, so its wide end is
-  `maxFontSize / minTypeScale^n`. The checks, both CSS functions and the tokens use it.
-- The CSS function is a CSS-only generation option, not token config:
-  `GenerateCSSOptions.fluidTypeFunction` in `packages/cssforge/src/lib.ts`, `"pow" | "clamp"`,
-  default `"pow"`. `generateCSS(config, { fluidTypeFunction })` and
-  `processTypography(typography, { fluidTypeFunction })` read it; the CLI flag
-  `--fluid-type-function` sets it. Anything else is rejected.
-- `"pow"` CSS declares `--typography_fluid-<scale>[-<prefix>]-<input>` for `narrow`, `wide`,
-  `size-narrow`, `size-wide`, `ratio-narrow`, `ratio-wide`, `fluid`, `at-narrow` and
-  `at-wide`, and writes each step with `pow()`. These inputs are CSS only (`Output.cssOnly`):
-  they are not tokens and cannot be referenced, but the key collision check covers them, so a
-  step label such as `fluid` fails in pow CSS.
-- `"clamp"` CSS writes each step as its canonical `clamp()`, the value the step token holds in
-  the JSON, TypeScript and Style Dictionary outputs for both functions.
-- Steps keep their names and paths `typography_fluid.<scale>@<label>`; a reference is
-  `var(--typography_fluid-<scale>[-<prefix>]-<label>)`.
+  `maxFontSize / minTypeScale^n`. The checks run once per step on it, and both representations
+  are written from it. There is no option: every output holds both.
+- clamp steps: `--typography_fluid-<scale>[-<prefix>]-<label>` at
+  `typography_fluid.<scale>@<label>`, each the `clamp()` utopia-core's `calculateClamp` writes
+  (identical to utopia for step 0 and above). Primitive tier.
+- pow tokens under a `pow` segment: inputs and helpers
+  `--typography_fluid-<scale>[-<prefix>]-pow-<name>` at `typography_fluid.<scale>.pow.<name>`
+  for `narrow`, `wide`, `size-narrow`, `size-wide`, `ratio-narrow`, `ratio-wide` (plain
+  numbers, primitive tier), `fluid`, `at-narrow`, `at-wide`; steps
+  `--typography_fluid-<scale>[-<prefix>]-pow-<label>` at `typography_fluid.<scale>.pow@<label>`.
+  Helpers and steps carry `referencePaths` to the pow tokens they use and the semantic tier.
+  Step `-n` is `calc(<pow step 0> / pow(ratio-narrow, n))`.
+- References use these paths from `variables`, for example
+  `typography_fluid.body.pow@l` or `typography_fluid.body.pow.ratio-wide`; the prefix is not part
+  of the path.
+- A label that gives a pow key (`narrow`, `pow-narrow`, ...) fails the key collision check.
+  The label `pow` is rejected, as it is the segment that holds the pow tokens.
 - `value.relativeTo` maps `viewport-width` (default) to `vw`, `viewport` to `vi` and
-  `container` to `cqi` in both functions; anything else is rejected.
+  `container` to `cqi` in both representations; anything else is rejected.
 
 ## Derived colors
 

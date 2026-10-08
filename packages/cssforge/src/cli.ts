@@ -21,10 +21,9 @@ import {
 	generateTS,
 	getDiagnostics,
 } from "./generator.ts";
-import type { ColorFormat, FluidTypeFunction, GenerateOptions } from "./lib.ts";
+import type { ColorFormat, GenerateOptions } from "./lib.ts";
 import { loadConfig } from "./loader.ts";
 import { isColorFormat, supportedColorFormats } from "./modules/colors.ts";
-import { fluidTypeFunctions, isFluidTypeFunction } from "./modules/typography.ts";
 import { version } from "./version.ts";
 
 /**
@@ -68,12 +67,6 @@ const colorFormatList = supportedColorFormats.join(", ");
 const invalidColorFormatMessage = (format: unknown) =>
 	`Invalid color format: ${String(format)}. Accepted formats: ${colorFormatList}.`;
 
-/** The fluid type functions the CLI accepts, as its help and errors list them. */
-const fluidTypeFunctionList = fluidTypeFunctions.join(", ");
-
-const invalidFluidTypeFunctionMessage = (value: unknown) =>
-	`Invalid fluid type function: ${String(value)}. Accepted functions: ${fluidTypeFunctionList}.`;
-
 /**
  * Reads the extra color formats from the comma separated `--color-formats`
  * value, such as `hex,rgb`. Duplicates are dropped, and an unknown format is
@@ -116,12 +109,6 @@ export interface BuildOptions {
 	 * the configuration declares. The `--color-formats` flag sets it.
 	 */
 	colorFormats?: readonly ColorFormat[];
-	/**
-	 * How fluid type steps are written in the CSS output, `"pow"` by default.
-	 * The other outputs are the same for both. The `--fluid-type-function` flag
-	 * sets it.
-	 */
-	fluidTypeFunction?: FluidTypeFunction;
 }
 
 /**
@@ -150,7 +137,6 @@ export async function build({
 	styleDictionaryOutput,
 	styleDictionaryValueMode = "resolved",
 	colorFormats = [],
-	fluidTypeFunction,
 	mode,
 }: BuildOptions): Promise<BuildResult> {
 	try {
@@ -167,9 +153,6 @@ export async function build({
 			// callers reach this check.
 			if (!isColorFormat(format)) throw new Error(invalidColorFormatMessage(format));
 		}
-		if (fluidTypeFunction !== undefined && !isFluidTypeFunction(fluidTypeFunction)) {
-			throw new Error(invalidFluidTypeFunctionMessage(fluidTypeFunction));
-		}
 		const absoluteCssOutput = resolve(process.cwd(), cssOutput);
 		const absoluteJsonOutput = resolve(process.cwd(), jsonOutput);
 		const absoluteTsOutput = resolve(process.cwd(), tsOutput);
@@ -185,7 +168,7 @@ export async function build({
 		if (mode === "css" || mode === "all") {
 			await writeFileRecursive(
 				absoluteCssOutput,
-				generateCSS(userConfig, { ...generateOptions, fluidTypeFunction }),
+				generateCSS(userConfig, generateOptions),
 			);
 			console.log(`✔ Generated CSS written to ${cssOutput}`);
 		}
@@ -386,18 +369,12 @@ const mainCommand = defineCommand({
 			type: "string",
 			description: `Extra color formats generated alongside oklch, comma separated (${colorFormatList})`,
 		},
-		"fluid-type-function": {
-			type: "string",
-			description: `CSS function fluid type steps are written with (${fluidTypeFunctionList})`,
-			default: "pow",
-		},
 	},
 	async run({ args }) {
 		const { watch: shouldWatch, config, css, json, ts, mode, prefix } = args;
 		const styleDictionary = args["style-dictionary"];
 		const styleDictionaryValueMode = args["style-dictionary-value-mode"];
 		const rawColorFormats = args["color-formats"];
-		const fluidTypeFunction = args["fluid-type-function"];
 		if (!isOutputMode(mode)) {
 			console.error(`Error during build: Error: ${invalidOutputModeMessage(mode)}`);
 			process.exit(1);
@@ -406,13 +383,6 @@ const mainCommand = defineCommand({
 		if (!isStyleDictionaryValueMode(styleDictionaryValueMode)) {
 			console.error(
 				`Error during build: Error: Invalid Style Dictionary value mode: ${styleDictionaryValueMode}`,
-			);
-			process.exit(1);
-			return;
-		}
-		if (!isFluidTypeFunction(fluidTypeFunction)) {
-			console.error(
-				`Error during build: Error: ${invalidFluidTypeFunctionMessage(fluidTypeFunction)}`,
 			);
 			process.exit(1);
 			return;
@@ -436,7 +406,6 @@ const mainCommand = defineCommand({
 			styleDictionaryOutput: realPath(styleDictionary),
 			styleDictionaryValueMode,
 			colorFormats,
-			fluidTypeFunction,
 		};
 		if (shouldWatch) {
 			const cleanup = await watch(settings);

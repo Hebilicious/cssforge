@@ -41,23 +41,6 @@ export interface GenerateOptions {
 	colorFormats?: readonly ColorFormat[];
 }
 
-/** The CSS function a fluid type scale writes its steps with. */
-export type FluidTypeFunction = "pow" | "clamp";
-
-/** Options that only change the CSS output. */
-export interface GenerateCSSOptions extends GenerateOptions {
-	/**
-	 * How fluid type steps are written in the CSS. `"pow"` declares each scale's
-	 * six inputs and three helpers and derives every step from them with `pow()`,
-	 * so the scale can be tuned in DevTools; it needs Chrome 120, Firefox 118 or
-	 * Safari 15.4. `"clamp"` writes each step as one self-contained `clamp()`.
-	 * Both give every step the same size at `minWidth` and `maxWidth`. The JSON,
-	 * TypeScript and Style Dictionary outputs always hold the `clamp()` value.
-	 * @default "pow"
-	 */
-	fluidTypeFunction?: FluidTypeFunction;
-}
-
 /**
  * Metadata carried through generation so alternate outputs can preserve token
  * provenance without changing the generated CSS.
@@ -169,12 +152,6 @@ export interface Output {
 	resolveMap: ResolveMap;
 	/** Build warnings the module reported while processing its configuration. */
 	diagnostics?: Diagnostic[];
-	/**
-	 * Declarations written into the CSS only, such as the inputs of a pow()
-	 * type scale. They are not tokens, so no other output or reference sees
-	 * them, but the key collision check covers them with the tokens.
-	 */
-	cssOnly?: ResolvedToken[];
 }
 
 /**
