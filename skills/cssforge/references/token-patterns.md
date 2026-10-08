@@ -19,6 +19,9 @@ All patterns below are derived from README configuration examples.
 
 - Static spacing under `spacing.custom`.
 - Fluid spacing under `spacing.fluid` using Utopia inputs.
+- `pxToRem` (enabled by default) converts each top-level `px` length to rem (`4px 8px` →
+  `0.25rem 0.5rem`) and leaves values inside CSS functions untouched. Write a pill radius as
+  `calc(infinity * 1px)`, not `999px`.
 
 ## Typography
 

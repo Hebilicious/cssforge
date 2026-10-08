@@ -205,3 +205,78 @@ Deno.test("processSpacing - combines fluid and custom spacing", async (t) => {
 	await assertSnapshot(t, css.root);
 	await assertSnapshot(t, Array.from(resolveMap.entries()));
 });
+
+Deno.test("processSpacing - handles multiple px values in a single spacing value", async () => {
+	const config = defineConfig({
+		spacing: {
+			custom: {
+				pad: {
+					value: {
+						inline: "4px 8px",
+						block: "0 0 4px",
+						negative: "-8px",
+						plus: "+4px",
+						exponent: "1e2px",
+						shadow: "0 0 4px red, 0 0 8px blue",
+					},
+					settings: { pxToRem: true },
+				},
+			},
+		},
+	});
+
+	const result = processSpacing(config.spacing);
+	const expected = [
+		"--spacing-pad-inline: 0.25rem 0.5rem;",
+		"--spacing-pad-block: 0 0 0.25rem;",
+		"--spacing-pad-negative: -0.5rem;",
+		"--spacing-pad-plus: 0.25rem;",
+		"--spacing-pad-exponent: 6.25rem;",
+		"--spacing-pad-shadow: 0 0 0.25rem red, 0 0 0.5rem blue;",
+	].join("\n");
+	assertEquals(result.css.root, expected);
+});
+
+Deno.test("processSpacing - preserves px values inside calc and var functions", async () => {
+	const config = defineConfig({
+		spacing: {
+			custom: {
+				size: {
+					value: {
+						calc_px: "calc(100% - 16px)",
+						var_px: "var(--x, 4px)",
+						nested: "calc(infinity * 1px)",
+					},
+					settings: { pxToRem: true },
+				},
+			},
+		},
+	});
+
+	const result = processSpacing(config.spacing);
+	const expected = [
+		"--spacing-size-calc_px: calc(100% - 16px);",
+		"--spacing-size-var_px: var(--x, 4px);",
+		"--spacing-size-nested: calc(infinity * 1px);",
+	].join("\n");
+	assertEquals(result.css.root, expected);
+});
+
+Deno.test("processSpacing - handles mixed px and non-px values", async () => {
+	const config = defineConfig({
+		spacing: {
+			custom: {
+				border: {
+					value: {
+						shorthand: "1px solid red",
+					},
+					settings: { pxToRem: true },
+				},
+			},
+		},
+	});
+
+	const result = processSpacing(config.spacing);
+	const expected = "--spacing-border-shorthand: 0.0625rem solid red;";
+	assertEquals(result.css.root, expected);
+});

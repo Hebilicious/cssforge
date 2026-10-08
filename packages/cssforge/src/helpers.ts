@@ -126,23 +126,35 @@ export function validateCustomLabel(label: string, path: string): void {
 }
 
 /**
- * Converts a pixel value to a rem value.
- * If the value is not in pixels, it returns the original value.
+ * Converts each top-level pixel length in a value, including each item of a comma-separated list, to rem. Components inside a
+ * CSS function, such as `calc(infinity * 1px)`, are left unchanged.
  * @example
  * ```ts
  * pxToRem({ value: "16px" }); // "1rem"
- * pxToRem({ value: "1rem" }); // "1rem"
- * pxToRem({ value: "32px", rem: 16 }); // "2rem"
+ * pxToRem({ value: "4px 8px" }); // "0.25rem 0.5rem"
+ * pxToRem({ value: "0 0 4px red, 0 0 8px blue" }); // "0 0 0.25rem red, 0 0 0.5rem blue"
+ * pxToRem({ value: "calc(infinity * 1px)" }); // "calc(infinity * 1px)"
  * ```
  */
 export function pxToRem({ value, rem = 16 }: { value: string; rem?: number }): string {
-	const pxMatch = value.endsWith("px");
-	if (pxMatch) {
-		const pxValue = parseFloat(value.slice(0, -2));
-		const remValue = pxValue / rem;
-		return `${remValue}rem`;
+	let depth = 0;
+	let result = "";
+	let component = "";
+	const flush = () => {
+		const px = /^([+-]?(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?)px$/i.exec(component);
+		result += px ? `${Number(px[1]) / rem}rem` : component;
+		component = "";
+	};
+	for (const char of value) {
+		if (char === "(") depth++;
+		else if (char === ")") depth--;
+		if (depth === 0 && /[\s,]/.test(char)) {
+			flush();
+			result += char;
+		} else component += char;
 	}
-	return value;
+	flush();
+	return result;
 }
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>

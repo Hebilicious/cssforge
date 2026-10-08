@@ -804,8 +804,10 @@ usually used in combination with `selector` to conditionnally apply themes.
 ### Spacing
 
 Define custom spacing scale, that can be referenced for other types, such as primitives.
-By default all spacing values are converted to from `px` to `rem`. This can be disabled
-with the settings.
+By default all spacing values are converted from `px` to `rem`. This can be disabled
+with the settings. Each top-level `px` length is converted, so `4px 8px` becomes
+`0.25rem 0.5rem`. Values inside a CSS function such as `calc()` or `var()` are left as they
+are, so write a pill radius as `calc(infinity * 1px)` rather than a large number like `999px`.
 
 <!-- md:generate defineConfig
 export default defineConfig({
