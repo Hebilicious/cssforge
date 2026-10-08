@@ -15,6 +15,7 @@ import {
 	type TokenType,
 } from "./lib.ts";
 import { processColors } from "./modules/colors.ts";
+import { processMotion } from "./modules/motion.ts";
 import { processPrimitives } from "./modules/primitive.ts";
 import { processSpacing } from "./modules/spacing.ts";
 import { processTypography } from "./modules/typography.ts";
@@ -173,12 +174,14 @@ const processModules = (
 		colors: config.colors ? processColors(config.colors, options) : undefined,
 		spacing: config.spacing ? processSpacing(config.spacing) : undefined,
 		typography: config.typography ? processTypography(config.typography) : undefined,
+		motion: config.motion ? processMotion(config.motion) : undefined,
 		primitives: config.primitives
 			? processPrimitives({
 					primitives: config.primitives,
 					colors: config.colors,
 					typography: config.typography,
 					spacing: config.spacing,
+					motion: config.motion,
 				})
 			: undefined,
 	};
@@ -606,12 +609,21 @@ export function generateCSS(
 		}
 	}
 
+	if (config.motion) {
+		processedConfig.motion = processMotion(config.motion);
+		if (processedConfig.motion.css.root) {
+			chunks.push("/*____ Motion ____*/");
+			chunks.push(processedConfig.motion.css.root);
+		}
+	}
+
 	if (config.primitives) {
 		const primitiveVars = processPrimitives({
 			primitives: config.primitives,
 			colors: config.colors,
 			typography: config.typography,
 			spacing: config.spacing,
+			motion: config.motion,
 		});
 		processedConfig.primitives = primitiveVars;
 		if (primitiveVars) {

@@ -16,6 +16,7 @@ This file maps user requests to official CSS Forge documentation.
   - `### Colors`
   - `### Spacing`
   - `### Typography`
+  - `### Motion`
   - `### Primitives`
 - Variable references inside config:
   - `README.md` -> `## Referencing Variables`

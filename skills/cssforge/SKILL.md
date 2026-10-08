@@ -24,7 +24,7 @@ Do not invent schema fields that are not present in docs or source types.
 
 1. Confirm the user goal
 - New config from scratch
-- Extend existing config (colors, spacing, typography, primitives)
+- Extend existing config (colors, spacing, typography, motion, primitives)
 - Fix references / generation errors
 - Wire CLI scripts and output paths
 

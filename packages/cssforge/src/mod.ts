@@ -1,7 +1,7 @@
 /**
  * This module provides the core functionalities of CSSForge, a tool for generating
  * CSS variables from a configuration file. It exports functions for processing
- * different aspects of a design system, such as colors, typography, and spacing,
+ * different aspects of a design system, such as colors, typography, spacing, and motion,
  * as well as the main function to generate the final CSS.
  *
  * @module
@@ -13,6 +13,7 @@ import { generateCSS, generateStyleDictionaryJSON, getDiagnostics } from "./gene
 import { InvalidNameError } from "./helpers.ts";
 import { loadConfig } from "./loader.ts";
 import { processColors } from "./modules/colors.ts";
+import { processMotion } from "./modules/motion.ts";
 import { processPrimitives } from "./modules/primitive.ts";
 import { processSpacing } from "./modules/spacing.ts";
 import { processTypography } from "./modules/typography.ts";
@@ -42,6 +43,7 @@ export type {
 	PaletteColorSettings,
 	RgbFormatOutputs,
 } from "./modules/colors.ts";
+export type { MotionConfig, MotionDurationSettings } from "./modules/motion.ts";
 
 export {
 	/**
@@ -99,6 +101,12 @@ export {
 	 * @returns A map of CSS variables for colors.
 	 */
 	processColors,
+	/**
+	 * Processes the motion section of the configuration.
+	 * @param motion The motion configuration.
+	 * @returns A map of CSS variables for motion, and its build warnings.
+	 */
+	processMotion,
 	/**
 	 * Processes the primitives section of the configuration.
 	 * @param primitives The primitives configuration.

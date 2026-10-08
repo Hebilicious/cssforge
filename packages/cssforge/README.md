@@ -26,6 +26,7 @@ In the future, CSSforge will try to integrate with popular design tools such as 
 - 🎨 **Colors**: Create palettes, gradients and themes. Automatically convert to OKLCH.
 - 📐 **Typography**: Generate fluid typography
 - 📏 **Spacing**: Organise spacing utilities
+- 🎞️ **Motion**: Durations and easing curves, checked against UI motion guidelines
 - 📦 **Primitives**: Define custom design tokens
 - 🎯 **Zero Runtime**: All processing happens at build time
 - 🔄 **Watch Mode**: Auto-regenerate when your config changes
@@ -369,13 +370,13 @@ const coral = tokens.palette.coral["100"].value; // "oklch(73.511% 0.16799 40.24
 
 ### Values are CSS strings
 
-Palette, spacing and typography tokens hold final values, because CSS Forge converts colors to
+Palette, spacing, typography and motion tokens hold final values, because CSS Forge converts colors to
 OKLCH and computes fluid scales at build time. Theme, gradient and primitive tokens keep their
 `var(--other-token)` reference, because only the CSS cascade knows which value is active:
 
 | Token | `value` |
 | --- | --- |
-| Palette, spacing, typography | The final value, such as `oklch(...)`, `0.5rem`, or `clamp(...)` |
+| Palette, spacing, typography, motion | The final value, such as `oklch(...)`, `0.5rem`, or `clamp(...)` |
 | Theme, gradient, primitive | `var(--token)`, resolved by the browser at paint time |
 
 ```typescript
@@ -1680,6 +1681,100 @@ This will generate the following CSS :
 
 <!-- /md:generate -->
 
+### Motion
+
+Define transition durations and easing curves once, then reference them from primitives.
+Durations are grouped under `motion.duration` and easings under `motion.easing`. Each group
+holds its tokens under `value`, emitted as `--motion-duration-<group>-<name>` and
+`--motion-easing-<group>-<name>`, and referenced as `motion.duration.<group>.<name>` and
+`motion.easing.<group>.<name>`.
+
+- A duration is a non-negative number with `ms` or `s`, such as `120ms` or `0.2s`. CSS needs
+  a unit on a time, so write `0ms` rather than `0`.
+- An easing is `linear`, `ease`, `ease-in`, `ease-out`, `ease-in-out`, `step-start`,
+  `step-end`, `cubic-bezier(x1, y1, x2, y2)` with `x1` and `x2` between 0 and 1, `steps()` or
+  `linear()`.
+
+Anything else fails the build with the token's configuration path.
+
+Two curves work well for UI motion: an ease-out, `cubic-bezier(0.23, 1, 0.32, 1)`, for things
+entering or reacting, and an ease-in-out, `cubic-bezier(0.77, 0, 0.175, 1)`, for things moving
+on screen.
+
+<!-- md:generate defineConfig
+export default defineConfig({
+  motion: {
+    duration: {
+      ui: { value: { press: "120ms", tooltip: "150ms", dropdown: "200ms" } },
+      overlay: { value: { drawer: "400ms" }, settings: { long: true } },
+    },
+    easing: {
+      ui: {
+        value: {
+          out: "cubic-bezier(0.23, 1, 0.32, 1)",
+          inOut: "cubic-bezier(0.77, 0, 0.175, 1)",
+        },
+      },
+    },
+  },
+});
+-->
+
+```typescript
+export default defineConfig({
+  motion: {
+    duration: {
+      ui: { value: { press: "120ms", tooltip: "150ms", dropdown: "200ms" } },
+      overlay: { value: { drawer: "400ms" }, settings: { long: true } },
+    },
+    easing: {
+      ui: {
+        value: {
+          out: "cubic-bezier(0.23, 1, 0.32, 1)",
+          inOut: "cubic-bezier(0.77, 0, 0.175, 1)",
+        },
+      },
+    },
+  },
+});
+```
+
+This will generate the following CSS :
+
+```css
+/*____ CSSForge ____*/
+:root {
+/*____ Motion ____*/
+--motion-duration-ui-press: 120ms;
+--motion-duration-ui-tooltip: 150ms;
+--motion-duration-ui-dropdown: 200ms;
+--motion-duration-overlay-drawer: 400ms;
+--motion-easing-ui-out: cubic-bezier(0.23, 1, 0.32, 1);
+--motion-easing-ui-inOut: cubic-bezier(0.77, 0, 0.175, 1);
+}
+```
+
+<!-- /md:generate -->
+
+#### Motion Checks
+
+These checks only report warnings: the tokens and
+the CSS stay the same.
+
+- **Warning: a duration over 300ms** (`motion-long-duration`). A UI transition should take
+  300ms or less. A modal or drawer may take longer: set `settings.long: true` on its duration
+  group to raise the limit to 500ms. Exactly 300ms, or 500ms in a long group, passes.
+- **Warning: an ease-in curve** (`motion-ease-in`). A curve that starts slow and ends fast
+  reads as lag on UI. `ease-in` warns, and so does a `cubic-bezier()` whose slope at the start
+  is below 1 and whose slope at the end is above 1. Each slope is taken toward the nearest
+  control point that does not sit on that end: `y1 / x1` at the start and
+  `(1 - y2) / (1 - x2)` at the end. `ease`, `ease-out`, `ease-in-out` and `linear` do not
+  warn, and neither do `steps()` and `linear()`.
+
+`settings.long` is the only motion setting. It is read on duration groups, and an easing group
+rejects any setting. CSS Forge only emits the tokens: whether something animates, and the
+`prefers-reduced-motion: no-preference` query around the motion, stay in your stylesheet.
+
 ### Primitives
 
 More flexible than other types, primitives allow you to define any type of token by
@@ -1860,6 +1955,7 @@ For example, if an object has the following structure :
 ```
 
 The reference would be : `spacing.custom.size.1`, not `spacing.custom.size.value.1`.
+Motion tokens follow the same rule: `motion.duration.ui.press` and `motion.easing.ui.out`.
 
 #### Referencing Fluid Spacing
 
@@ -1961,8 +2057,8 @@ for (const { code, severity, path, message } of getDiagnostics(config)) {
 
 Warnings never change the generated output, and the `generate*` functions do not report
 them. A configuration that cannot be generated, such as a fluid step past 2.5× growth, throws
-from `getDiagnostics` with the same error as from the generators. `processTypography` also
-returns its warnings as `diagnostics` beside `css` and `resolveMap`.
+from `getDiagnostics` with the same error as from the generators. `processTypography` and
+`processMotion` also return their warnings as `diagnostics` beside `css` and `resolveMap`.
 
 ## Style Dictionary JSON
 

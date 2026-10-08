@@ -28,6 +28,13 @@ All patterns below are derived from README configuration examples.
 - Weights under `typography.weight`.
 - Fluid type scales under `typography.fluid` with optional custom labels/prefix.
 
+## Motion
+
+- Durations under `motion.duration.<group>.value` in `ms` or `s`; easings under
+  `motion.easing.<group>.value`.
+- Durations over 300ms warn unless the group sets `settings.long` (modals, drawers: 500ms).
+  `ease-in` and ease-in shaped `cubic-bezier()` curves warn.
+
 ## Primitives
 
 - Use `primitives.<group>.value.<variant>`.
@@ -39,3 +46,4 @@ All patterns below are derived from README configuration examples.
 - Fluid references use `@`, for example:
   - spacing: `spacing_fluid.base@xs`
   - typography: `typography_fluid.comicsans@a`
+- Motion references: `motion.duration.ui.press`, `motion.easing.ui.out`

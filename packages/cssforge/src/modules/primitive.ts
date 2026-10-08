@@ -14,6 +14,8 @@ import {
 } from "../lib.ts";
 import type { ColorConfig } from "./colors.ts";
 import { processColors } from "./colors.ts";
+import type { MotionConfig } from "./motion.ts";
+import { processMotion } from "./motion.ts";
 import type { PixelSettings, SpacingConfig } from "./spacing.ts";
 import { processSpacing } from "./spacing.ts";
 import type { TypographyConfig } from "./typography.ts";
@@ -49,7 +51,7 @@ export interface PrimitiveConfig {
 
 /**
  * Processes the primitive configuration to generate CSS variables.
- * Primitives can reference other design tokens from colors, typography, and spacing.
+ * Primitives can reference other design tokens from colors, typography, spacing, and motion.
  * @example
  * ```ts
  * const config = {
@@ -86,6 +88,7 @@ export function processPrimitives(config: {
 	colors?: ColorConfig;
 	typography?: TypographyConfig;
 	spacing?: SpacingConfig;
+	motion?: MotionConfig;
 }): Output {
 	const cssOutput: string[] = [];
 	const resolveMap = new Map();
@@ -95,6 +98,7 @@ export function processPrimitives(config: {
 		? processTypography(config.typography)
 		: null;
 	const spacingVariables = config.spacing ? processSpacing(config.spacing) : null;
+	const motionVariables = config.motion ? processMotion(config.motion) : null;
 	for (const [primitiveName, primitive] of Object.entries(config.primitives)) {
 		validateName(primitiveName, `${moduleKey}.${primitiveName}`);
 		assertSettingsKeys(
@@ -123,6 +127,7 @@ export function processPrimitives(config: {
 					colors: colorVariables,
 					typography: typographyVariables,
 					spacing: spacingVariables,
+					motion: motionVariables,
 				});
 
 				for (const [propName, propValue] of Object.entries(properties)) {
