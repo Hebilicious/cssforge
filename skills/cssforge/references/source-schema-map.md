@@ -67,7 +67,6 @@ color output settings.
   `var(--typography_fluid-<scale>[-<prefix>]-<label>)`.
 - `value.relativeTo` maps `viewport-width` (default) to `vw`, `viewport` to `vi` and
   `container` to `cqi` in both functions; anything else is rejected.
-- `settings.output` no longer exists and is rejected as an unknown key.
 
 ## Derived colors
 
