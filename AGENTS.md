@@ -13,19 +13,43 @@ following the pattern in `packages/cssforge/tests`.
 Ask permissions before adding new dependencies. Always prefer using features from the
 standard library or writing code from first principles.
 
-## Engineering workflow
+## Branches and pull requests
 
-- For implementation or pull-request work, do not work directly on `main`. Use a dedicated
-  branch and worktree. Read-only inspection may remain in the current checkout.
+- Never work directly on `main`. Changes go in through a pull request that is merged with a
+  squash merge. Read-only inspection may stay in the current checkout.
+- Each issue or task gets its own branch and its own worktree in `.worktrees/<branch>`. Create
+  it from `main` with `git fetch origin && git worktree add .worktrees/<branch> -b <branch>
+  origin/main`, and do all the work in that worktree. Keep the main worktree as you found it.
+- When you start a subagent, tell it which branch and worktree it uses: the parent's, or a new
+  one that you name. The subagent does not choose.
 - Run `git status` before editing and review the complete diff afterward. Preserve unrelated
-  changes and commit only when explicitly requested.
-- Open a pull request and stop there. Never merge a pull request that a human has not reviewed,
-  and never merge one because the work looks finished or the checks are green. Merging needs an
-  explicit instruction from the user for that specific pull request, and opening a pull request
-  is not that instruction. Report the pull request URL and wait.
+  changes.
+- Commit titles and pull request titles are semantic: `type(scope): subject`, for example
+  `fix(colors): reject duplicate palette keys`. The types are `feat`, `fix`, `docs`, `style`,
+  `refactor`, `perf`, `test`, `build`, `ci`, `chore` and `revert`. The scope is required. Add
+  `!` after the scope for a breaking change. The pull request title becomes the commit on
+  `main`.
+- When the work is done and checked, commit it, push the branch and open a pull request against
+  `main` with `gh pr create --base main --head <branch>`. Do not wait to be asked. A pull
+  request that closes an issue says `Closes #<number>` in its body.
+- When a change is too large for one pull request, use `gh stack` (see
+  `.agents/skills/gh-stack`): one branch and one pull request for each layer, in one worktree.
+  Use it when the work splits into layers that a reviewer can read one at a time.
+- A human reviews each pull request. Report the pull request URL and stop there. Never merge a
+  pull request that a human has not reviewed, and never merge one because the work looks
+  finished or the checks are green. Merging needs an explicit instruction from the user for
+  that specific pull request, and opening a pull request is not that instruction.
 - An authorized pull request authorizes its release: merge the changesets release pull request
   the workflow opens for it once it is mergeable. That branch never gets a green CI gate, so
   waiting for one deadlocks the release.
+- Each session owns its own branch. Do not push to, rebase or merge a branch that another
+  session owns.
+- The session that merges a branch makes CI pass on it. Rebase on `main`, fix what fails, and
+  merge only when every required check is green. Never skip or weaken a check to make it pass.
+- After the merge, remove the worktree with `git worktree remove .worktrees/<branch>`.
+
+## Engineering workflow
+
 - Define repository operations in `moon.yml` or `.moon/tasks/**/*.yml`, not `package.json`
   scripts. Run existing operations through their Moon targets; use pnpm directly only for
   dependency management.
