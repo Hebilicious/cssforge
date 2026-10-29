@@ -1,5 +1,11 @@
 # @hebilicious/cssforge
 
+## 0.10.1
+
+### Patch Changes
+
+- ffb9d87: Document the JSR channel for Node package managers only. The README no longer describes Deno usage; the package is still published to JSR at the same version as npm.
+
 ## 0.10.0
 
 ### Minor Changes
