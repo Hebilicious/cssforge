@@ -424,9 +424,9 @@ const mainCommand = defineCommand({
 });
 
 const isDirectRun = (): boolean => {
-	// Deno and recent Node versions report whether this module is the entry
-	// point. This also covers the JSR channel, where the module URL is remote
-	// and cannot be mapped to a file path.
+	// Node 24.2 and newer report whether this module is the entry point. This
+	// also covers a JSR import whose module URL is remote and cannot be mapped
+	// to a file path.
 	const isMain = (import.meta as ImportMeta & { main?: boolean }).main;
 	if (typeof isMain === "boolean") {
 		return isMain;

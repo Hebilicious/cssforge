@@ -35,8 +35,8 @@ Do not invent schema fields that are not present in docs or source types.
 - Mirror patterns from README configuration sections.
 
 3. Configure generation commands
-- Install the package from npm: `npm install --save-dev @hebilicious/cssforge` (Deno projects
-  use the secondary JSR channel: `deno add jsr:@hebilicious/cssforge`).
+- Install the package from npm: `npm install --save-dev @hebilicious/cssforge` (the same
+  version is on the secondary JSR channel: `npx jsr add @hebilicious/cssforge`).
 - Run the installed executable directly: `cssforge --mode all` (`npx cssforge` with npm,
   `pnpm cssforge` with pnpm)
 - For local repo examples, call the built CLI of the sibling package directly: pnpm only

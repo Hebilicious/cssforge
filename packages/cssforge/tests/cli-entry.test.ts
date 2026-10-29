@@ -4,10 +4,10 @@ import { mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { expect, test } from "vitest";
 import { childEnv } from "./helpers.ts";
-import { assertEquals, Deno } from "./vitest-compat.ts";
 
-Deno.test("cli - runs when the entry point is invoked through a symlink", async () => {
+test("cli - runs when the entry point is invoked through a symlink", async () => {
 	const tempDir = await mkdtemp(join(tmpdir(), "cssforge-cli-entry-"));
 
 	try {
@@ -38,8 +38,8 @@ Deno.test("cli - runs when the entry point is invoked through a symlink", async 
 			env: childEnv,
 		});
 
-		assertEquals(help.status, 0);
-		assertEquals(help.stdout.includes("USAGE"), true);
+		expect(help.status).toEqual(0);
+		expect(help.stdout.includes("USAGE")).toEqual(true);
 
 		const generate = spawnSync(
 			process.execPath,
@@ -47,10 +47,12 @@ Deno.test("cli - runs when the entry point is invoked through a symlink", async 
 			{ cwd: tempDir, encoding: "utf8", env: childEnv },
 		);
 
-		assertEquals(generate.status, 0);
-		assertEquals(generate.stderr, "");
-		assertEquals(existsSync(cssOutput), true);
-		assertEquals((await readFile(cssOutput, "utf8")).includes("--spacing-size-2"), true);
+		expect(generate.status).toEqual(0);
+		expect(generate.stderr).toEqual("");
+		expect(existsSync(cssOutput)).toEqual(true);
+		expect((await readFile(cssOutput, "utf8")).includes("--spacing-size-2")).toEqual(
+			true,
+		);
 	} finally {
 		await rm(tempDir, { recursive: true, force: true });
 	}

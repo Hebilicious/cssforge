@@ -4,9 +4,9 @@ import { mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve, win32 } from "node:path";
 import { fileURLToPath } from "node:url";
+import { expect, test } from "vitest";
 import { writeFileRecursive } from "../src/cli.ts";
 import { childEnv } from "./helpers.ts";
-import { assertEquals, Deno } from "./vitest-compat.ts";
 
 const cssForgeConfig = `export default {
 	spacing: {
@@ -57,12 +57,12 @@ const inTempCwd = async (run: (dir: string) => Promise<void>) => {
 /** Asserts the path is a file, never a directory, with exactly `expected` content. */
 const assertFileWithContents = async (path: string, expected: string) => {
 	const stats = await stat(path);
-	assertEquals(stats.isDirectory(), false, `${path} must not be a directory`);
-	assertEquals(stats.isFile(), true, `${path} must be a file`);
-	assertEquals(await readFile(path, "utf8"), expected);
+	expect(stats.isDirectory(), `${path} must not be a directory`).toEqual(false);
+	expect(stats.isFile(), `${path} must be a file`).toEqual(true);
+	expect(await readFile(path, "utf8")).toEqual(expected);
 };
 
-Deno.test("writeFileRecursive - creates the parent directory and writes the file for every path shape", async () => {
+test("writeFileRecursive - creates the parent directory and writes the file for every path shape", async () => {
 	await inTempCwd(async (dir) => {
 		for (const [shape, outputDir] of outputDirectoryShapes(dir)) {
 			const outputPath = join(outputDir, "output.css");
@@ -73,12 +73,12 @@ Deno.test("writeFileRecursive - creates the parent directory and writes the file
 	});
 });
 
-Deno.test("writeFileRecursive - resolves a Windows output path's parent with the win32 dirname", async () => {
+test("writeFileRecursive - resolves a Windows output path's parent with the win32 dirname", async () => {
 	const windowsOutput = String.raw`C:\project\.cssforge\output.css`;
 	const windowsParent = String.raw`C:\project\.cssforge`;
 
 	// The platform-aware primitive the helper is required to depend on.
-	assertEquals(win32.dirname(windowsOutput), windowsParent);
+	expect(win32.dirname(windowsOutput)).toEqual(windowsParent);
 
 	await inTempCwd(async (dir) => {
 		await writeFileRecursive(windowsOutput, "css{}", win32.dirname);
@@ -87,11 +87,10 @@ Deno.test("writeFileRecursive - resolves a Windows output path's parent with the
 		// path is a literal relative path. What this observes is the parent the
 		// helper chose: the containing directory, never the output file path.
 		const parentStats = await stat(join(dir, windowsParent));
-		assertEquals(
+		expect(
 			parentStats.isDirectory(),
-			true,
 			`${windowsParent} must be created as a directory`,
-		);
+		).toEqual(true);
 		await assertFileWithContents(join(dir, windowsOutput), "css{}");
 	});
 });
@@ -109,12 +108,11 @@ const cliEntries = [
 ];
 
 for (const { label, entry } of cliEntries) {
-	Deno.test(`cli - writes every output kind for every path shape through the ${label} entry`, async () => {
-		assertEquals(
+	test(`cli - writes every output kind for every path shape through the ${label} entry`, async () => {
+		expect(
 			existsSync(entry),
-			true,
 			`${entry} is missing; run \`moon run cssforge:build\` before running this suite directly`,
-		);
+		).toEqual(true);
 
 		const dir = await mkdtemp(join(tmpdir(), "cssforge-cli-paths-"));
 
@@ -139,26 +137,22 @@ for (const { label, entry } of cliEntries) {
 					{ cwd: dir, encoding: "utf8", env: childEnv },
 				);
 
-				assertEquals(
+				expect(
 					generate.status,
-					0,
 					`${label} failed for ${shape}: ${generate.stderr}`,
-				);
+				).toEqual(0);
 
 				for (const [flag, outputPath] of outputs) {
 					const target = resolve(dir, outputPath);
 					const stats = await stat(target);
-					assertEquals(
-						stats.isDirectory(),
+					expect(stats.isDirectory(), `${flag} wrote a directory at ${target}`).toEqual(
 						false,
-						`${flag} wrote a directory at ${target}`,
 					);
-					assertEquals(stats.isFile(), true, `${flag} must write a file at ${target}`);
-					assertEquals(
+					expect(stats.isFile(), `${flag} must write a file at ${target}`).toEqual(true);
+					expect(
 						(await readFile(target, "utf8")).includes("--spacing-size-2"),
-						true,
 						`${flag} must write the generated token to ${target}`,
-					);
+					).toEqual(true);
 				}
 			}
 		} finally {

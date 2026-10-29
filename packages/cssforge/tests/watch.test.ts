@@ -2,8 +2,8 @@ import { spawn } from "node:child_process";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { expect, test } from "vitest";
 import { childEnv } from "./helpers.ts";
-import { assert, assertEquals, Deno } from "./vitest-compat.ts";
 
 const configSource = `import { size } from "./tokens.ts";
 
@@ -96,7 +96,7 @@ console.log(JSON.stringify({ afterTokenChange, afterConfigChange, failureSeen, a
 process.exit(0);
 `;
 
-Deno.test("cli - watch mode regenerates the output when a token module or the config changes", async () => {
+test("cli - watch mode regenerates the output when a token module or the config changes", async () => {
 	const dir = await mkdtemp(join(tmpdir(), "cssforge-watch-deps-"));
 
 	try {
@@ -128,7 +128,7 @@ Deno.test("cli - watch mode regenerates the output when a token module or the co
 			child.on("close", resolve);
 		});
 
-		assertEquals(exitCode, 0, `watch() failed: ${stderr}`);
+		expect(exitCode, `watch() failed: ${stderr}`).toEqual(0);
 
 		const output = stdout
 			.split("\n")
@@ -148,27 +148,27 @@ Deno.test("cli - watch mode regenerates the output when a token module or the co
 				afterRecovery: string;
 			};
 
-		assert(
+		expect(
 			afterTokenChange.includes("--spacing-size-2: 2rem"),
 			`the rebuild must use the new token value: ${afterTokenChange}`,
-		);
-		assert(
+		).toBeTruthy();
+		expect(
 			!afterTokenChange.includes("0.5rem"),
 			`the rebuild must not keep the old token value: ${afterTokenChange}`,
-		);
-		assert(
+		).toBeTruthy();
+		expect(
 			afterConfigChange.includes("--spacing-size-4: 1rem"),
 			`a second config change must regenerate too: ${afterConfigChange}`,
-		);
-		assert(
+		).toBeTruthy();
+		expect(
 			afterConfigChange.includes("--spacing-size-2: 2rem"),
 			`the second rebuild must keep the token module value: ${afterConfigChange}`,
-		);
-		assert(failureSeen, "the invalid config must trigger a rebuild");
-		assert(
+		).toBeTruthy();
+		expect(failureSeen, "the invalid config must trigger a rebuild").toBeTruthy();
+		expect(
 			afterRecovery.includes("--spacing-size-2: 9rem"),
 			`a failed rebuild must not stop watching: ${afterRecovery}`,
-		);
+		).toBeTruthy();
 	} finally {
 		await rm(dir, { recursive: true, force: true });
 	}

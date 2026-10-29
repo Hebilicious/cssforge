@@ -1,10 +1,11 @@
+import { expect, test } from "vitest";
 import type { CSSForgeConfig } from "../src/mod.ts";
 import { defineConfig, generateCSS } from "../src/mod.ts";
-import { assert, assertThrows, Deno } from "./vitest-compat.ts";
+import { thrownError } from "./helpers.ts";
 
 /** Settings are read from a JavaScript object at runtime, so they are validated. */
 
-Deno.test("generateCSS - rejects a fallback format that is not generated", () => {
+test("generateCSS - rejects a fallback format that is not generated", () => {
 	const config = {
 		colors: {
 			palette: {
@@ -14,15 +15,15 @@ Deno.test("generateCSS - rejects a fallback format that is not generated", () =>
 		},
 	} as unknown as CSSForgeConfig;
 
-	const error = assertThrows(() => generateCSS(config));
+	const error = thrownError(() => generateCSS(config));
 
-	assert(
+	expect(
 		error.message.includes('"rgb"'),
 		`Expected the error to name the missing format. Received: ${error.message}`,
-	);
+	).toBeTruthy();
 });
 
-Deno.test("generateCSS - rejects a fallback format without its string output", () => {
+test("generateCSS - rejects a fallback format without its string output", () => {
 	const config = defineConfig({
 		colors: {
 			palette: {
@@ -34,15 +35,15 @@ Deno.test("generateCSS - rejects a fallback format without its string output", (
 		},
 	});
 
-	const error = assertThrows(() => generateCSS(config));
+	const error = thrownError(() => generateCSS(config));
 
-	assert(
+	expect(
 		error.message.includes('"string"'),
 		`Expected the error to ask for the string output. Received: ${error.message}`,
-	);
+	).toBeTruthy();
 });
 
-Deno.test("generateCSS - a format rejects a color that carries alpha when it sets alpha false", () => {
+test("generateCSS - a format rejects a color that carries alpha when it sets alpha false", () => {
 	const config = defineConfig({
 		colors: {
 			palette: {
@@ -55,15 +56,15 @@ Deno.test("generateCSS - a format rejects a color that carries alpha when it set
 		},
 	});
 
-	const error = assertThrows(() => generateCSS(config));
+	const error = thrownError(() => generateCSS(config));
 
-	assert(
+	expect(
 		error.message.includes('"palette.coral.100"') && error.message.includes('"hex"'),
 		`Expected the error to name the variant and the format. Received: ${error.message}`,
-	);
+	).toBeTruthy();
 });
 
-Deno.test("generateCSS - rejects an unknown color format", () => {
+test("generateCSS - rejects an unknown color format", () => {
 	const palette = { value: { coral: { 100: { hex: "#FF7F50" } } } };
 	const invalidPalette = {
 		colors: { palette: { ...palette, settings: { color: { formats: { hsl: true } } } } },
@@ -81,21 +82,21 @@ Deno.test("generateCSS - rejects an unknown color format", () => {
 		},
 	} as unknown as CSSForgeConfig;
 
-	const paletteError = assertThrows(() => generateCSS(invalidPalette));
-	const colorError = assertThrows(() => generateCSS(invalidColor));
+	const paletteError = thrownError(() => generateCSS(invalidPalette));
+	const colorError = thrownError(() => generateCSS(invalidColor));
 
-	assert(
+	expect(
 		paletteError.message.includes('"palette.settings.color.formats"') &&
 			paletteError.message.includes("hsl"),
 		`Expected the error to name the path and the value. Received: ${paletteError.message}`,
-	);
-	assert(
+	).toBeTruthy();
+	expect(
 		colorError.message.includes('"palette.coral.settings.color.formats"'),
 		`Expected the error to name "palette.coral.settings.color.formats". Received: ${colorError.message}`,
-	);
+	).toBeTruthy();
 });
 
-Deno.test("generateCSS - rejects an output a format does not produce", () => {
+test("generateCSS - rejects an output a format does not produce", () => {
 	const palette = { value: { coral: { 100: { hex: "#FF7F50" } } } };
 	const arrayOnHex = {
 		colors: {
@@ -114,27 +115,27 @@ Deno.test("generateCSS - rejects an output a format does not produce", () => {
 		colors: { palette: { ...palette, settings: { color: { formats: { hex: {} } } } } },
 	} as unknown as CSSForgeConfig;
 
-	const hexError = assertThrows(() => generateCSS(arrayOnHex));
-	const rgbError = assertThrows(() => generateCSS(digitsOnRgb));
-	const emptyError = assertThrows(() => generateCSS(nothingEnabled));
+	const hexError = thrownError(() => generateCSS(arrayOnHex));
+	const rgbError = thrownError(() => generateCSS(digitsOnRgb));
+	const emptyError = thrownError(() => generateCSS(nothingEnabled));
 
-	assert(
+	expect(
 		hexError.message.includes('"palette.settings.color.formats.hex"') &&
 			hexError.message.includes('"digits"'),
 		`Expected the error to list the hex outputs. Received: ${hexError.message}`,
-	);
-	assert(
+	).toBeTruthy();
+	expect(
 		rgbError.message.includes('"palette.settings.color.formats.rgb"') &&
 			rgbError.message.includes('"array"'),
 		`Expected the error to list the rgb outputs. Received: ${rgbError.message}`,
-	);
-	assert(
+	).toBeTruthy();
+	expect(
 		emptyError.message.includes('"palette.settings.color.formats.hex"'),
 		`Expected the error to name the empty format. Received: ${emptyError.message}`,
-	);
+	).toBeTruthy();
 });
 
-Deno.test("generateCSS - rejects an alpha that is not a boolean or an opacity", () => {
+test("generateCSS - rejects an alpha that is not a boolean or an opacity", () => {
 	const palette = { value: { coral: { 100: { hex: "#FF7F50" } } } };
 	const notAnOpacity = {
 		colors: {
@@ -145,15 +146,15 @@ Deno.test("generateCSS - rejects an alpha that is not a boolean or an opacity", 
 		},
 	} as unknown as CSSForgeConfig;
 
-	const error = assertThrows(() => generateCSS(notAnOpacity));
+	const error = thrownError(() => generateCSS(notAnOpacity));
 
-	assert(
+	expect(
 		error.message.includes('"palette.settings.color.formats.hex.alpha"'),
 		`Expected the error to name the format's alpha. Received: ${error.message}`,
-	);
+	).toBeTruthy();
 });
 
-Deno.test("generateCSS - rejects an alpha outside a format", () => {
+test("generateCSS - rejects an alpha outside a format", () => {
 	const config = {
 		colors: {
 			palette: {
@@ -163,16 +164,16 @@ Deno.test("generateCSS - rejects an alpha outside a format", () => {
 		},
 	} as unknown as CSSForgeConfig;
 
-	const error = assertThrows(() => generateCSS(config));
+	const error = thrownError(() => generateCSS(config));
 
-	assert(
+	expect(
 		error.message.includes('"palette.settings.color"') &&
 			error.message.includes("formats.hex.alpha"),
 		`Expected the error to point at the format. Received: ${error.message}`,
-	);
+	).toBeTruthy();
 });
 
-Deno.test("generateCSS - rejects color settings that are not inside settings", () => {
+test("generateCSS - rejects color settings that are not inside settings", () => {
 	const palette = { value: { coral: { 100: { hex: "#FF7F50" } } } };
 	const colorOnPalette = {
 		colors: { palette: { ...palette, color: { formats: { hex: true } } } },
@@ -193,43 +194,43 @@ Deno.test("generateCSS - rejects color settings that are not inside settings", (
 		},
 	} as unknown as CSSForgeConfig;
 
-	const paletteError = assertThrows(() => generateCSS(colorOnPalette));
-	const settingsError = assertThrows(() => generateCSS(formatsInSettings));
-	const colorError = assertThrows(() => generateCSS(fallbackOnColor));
+	const paletteError = thrownError(() => generateCSS(colorOnPalette));
+	const settingsError = thrownError(() => generateCSS(formatsInSettings));
+	const colorError = thrownError(() => generateCSS(fallbackOnColor));
 
-	assert(
+	expect(
 		paletteError.message.includes('"palette"'),
 		`Expected the error to name "palette". Received: ${paletteError.message}`,
-	);
-	assert(
+	).toBeTruthy();
+	expect(
 		settingsError.message.includes('"palette.settings.color"'),
 		`Expected the error to name "palette.settings.color". Received: ${settingsError.message}`,
-	);
-	assert(
+	).toBeTruthy();
+	expect(
 		colorError.message.includes('"palette.coral"'),
 		`Expected the error to name "palette.coral". Received: ${colorError.message}`,
-	);
+	).toBeTruthy();
 });
 
-Deno.test("generateCSS - rejects an unknown key in settings", () => {
+test("generateCSS - rejects an unknown key in settings", () => {
 	const palette = { value: { coral: { 100: { hex: "#FF7F50" } } } };
 	const misspelled = {
 		colors: { palette: { ...palette, settings: { colour: { formats: { hex: true } } } } },
 	} as unknown as CSSForgeConfig;
 
-	const error = assertThrows(() => generateCSS(misspelled));
+	const error = thrownError(() => generateCSS(misspelled));
 
-	assert(
+	expect(
 		error.message.includes('"palette.settings"') && error.message.includes('"colour"'),
 		`Expected the error to name the path and the unknown key. Received: ${error.message}`,
-	);
-	assert(
+	).toBeTruthy();
+	expect(
 		error.message.includes('"color"'),
 		`Expected the error to list the accepted key. Received: ${error.message}`,
-	);
+	).toBeTruthy();
 });
 
-Deno.test("generateCSS - rejects an unknown key beside the formats", () => {
+test("generateCSS - rejects an unknown key beside the formats", () => {
 	const palette = { value: { coral: { 100: { hex: "#FF7F50" } } } };
 	const misspelled = {
 		colors: {
@@ -240,17 +241,17 @@ Deno.test("generateCSS - rejects an unknown key beside the formats", () => {
 		},
 	} as unknown as CSSForgeConfig;
 
-	const error = assertThrows(() => generateCSS(misspelled));
+	const error = thrownError(() => generateCSS(misspelled));
 
-	assert(
+	expect(
 		error.message.includes('"palette.settings.color"') &&
 			error.message.includes('"alfpha"') &&
 			error.message.includes('"fallback"'),
 		`Expected the error to name the path, the unknown key and the accepted keys. Received: ${error.message}`,
-	);
+	).toBeTruthy();
 });
 
-Deno.test("generateCSS - rejects an unknown key on a palette color entry", () => {
+test("generateCSS - rejects an unknown key on a palette color entry", () => {
 	const unknownKey = {
 		colors: {
 			palette: {
@@ -277,22 +278,22 @@ Deno.test("generateCSS - rejects an unknown key on a palette color entry", () =>
 		},
 	} as unknown as CSSForgeConfig;
 
-	const entryError = assertThrows(() => generateCSS(unknownKey));
-	const settingsError = assertThrows(() => generateCSS(unknownSetting));
+	const entryError = thrownError(() => generateCSS(unknownKey));
+	const settingsError = thrownError(() => generateCSS(unknownSetting));
 
-	assert(
+	expect(
 		entryError.message.includes('"palette.coral"') &&
 			entryError.message.includes('"selectr"'),
 		`Expected the error to name the entry and the key. Received: ${entryError.message}`,
-	);
-	assert(
+	).toBeTruthy();
+	expect(
 		settingsError.message.includes('"palette.coral.settings"') &&
 			settingsError.message.includes('"selector"'),
 		`Expected the error to name the settings and the accepted keys. Received: ${settingsError.message}`,
-	);
+	).toBeTruthy();
 });
 
-Deno.test("generateCSS - rejects color format settings on gradients and themes", () => {
+test("generateCSS - rejects color format settings on gradients and themes", () => {
 	const base = { palette: { value: { coral: { 100: { hex: "#FF7F50" } } } } };
 	const onGradient = {
 		colors: {
@@ -320,22 +321,22 @@ Deno.test("generateCSS - rejects color format settings on gradients and themes",
 		},
 	} as unknown as CSSForgeConfig;
 
-	const gradientError = assertThrows(() => generateCSS(onGradient));
-	const themeError = assertThrows(() => generateCSS(onTheme));
+	const gradientError = thrownError(() => generateCSS(onGradient));
+	const themeError = thrownError(() => generateCSS(onTheme));
 
-	assert(
+	expect(
 		gradientError.message.includes('"gradients.settings"') &&
 			gradientError.message.includes("palette"),
 		`Expected the error to point at the palette. Received: ${gradientError.message}`,
-	);
-	assert(
+	).toBeTruthy();
+	expect(
 		themeError.message.includes('"theme.light.settings"') &&
 			themeError.message.includes("palette"),
 		`Expected the error to point at the palette. Received: ${themeError.message}`,
-	);
+	).toBeTruthy();
 });
 
-Deno.test("generateCSS - a fallback error names the color it was resolved for", () => {
+test("generateCSS - a fallback error names the color it was resolved for", () => {
 	const palette = { value: { coral: { 100: { hex: "#FF7F50" } } } };
 	const namedButMissing = {
 		colors: {
@@ -356,22 +357,22 @@ Deno.test("generateCSS - a fallback error names the color it was resolved for", 
 		},
 	} as unknown as CSSForgeConfig;
 
-	const missingError = assertThrows(() => generateCSS(namedButMissing));
-	const stringError = assertThrows(() => generateCSS(namedWithoutString));
+	const missingError = thrownError(() => generateCSS(namedButMissing));
+	const stringError = thrownError(() => generateCSS(namedWithoutString));
 
-	assert(
+	expect(
 		missingError.message.includes('"palette.coral"') &&
 			missingError.message.includes('"rgb"'),
 		`Expected the error to name the color and the format. Received: ${missingError.message}`,
-	);
-	assert(
+	).toBeTruthy();
+	expect(
 		stringError.message.includes('"palette.coral"') &&
 			stringError.message.includes('"string"'),
 		`Expected the error to name the color and the output. Received: ${stringError.message}`,
-	);
+	).toBeTruthy();
 });
 
-Deno.test("generateCSS - rejects color format settings on a theme color", () => {
+test("generateCSS - rejects color format settings on a theme color", () => {
 	// This check used to sit inside the theme try block, which logged and dropped
 	// the theme instead of reporting the configuration.
 	const config = {
@@ -391,15 +392,15 @@ Deno.test("generateCSS - rejects color format settings on a theme color", () => 
 		},
 	} as unknown as CSSForgeConfig;
 
-	const error = assertThrows(() => generateCSS(config));
+	const error = thrownError(() => generateCSS(config));
 
-	assert(
+	expect(
 		error.message.includes('"theme.light.content.settings"'),
 		`Expected the error to name the theme color. Received: ${error.message}`,
-	);
+	).toBeTruthy();
 });
 
-Deno.test("generateCSS - rejects unknown keys at the gradient and theme levels", () => {
+test("generateCSS - rejects unknown keys at the gradient and theme levels", () => {
 	const base = { palette: { value: { coral: { 100: { hex: "#FF7F50" } } } } };
 	const onTheme = {
 		colors: {
@@ -443,42 +444,42 @@ Deno.test("generateCSS - rejects unknown keys at the gradient and theme levels",
 		},
 	} as unknown as CSSForgeConfig;
 
-	const themeError = assertThrows(() => generateCSS(onTheme));
-	const themeColorError = assertThrows(() => generateCSS(onThemeColor));
-	const gradientError = assertThrows(() => generateCSS(onGradientLevel));
+	const themeError = thrownError(() => generateCSS(onTheme));
+	const themeColorError = thrownError(() => generateCSS(onThemeColor));
+	const gradientError = thrownError(() => generateCSS(onGradientLevel));
 
-	assert(
+	expect(
 		themeError.message.includes('"theme.light.settings"') &&
 			themeError.message.includes('"selectr"'),
 		`Expected the theme settings key to be rejected. Received: ${themeError.message}`,
-	);
-	assert(
+	).toBeTruthy();
+	expect(
 		themeColorError.message.includes('"theme.light.content.settings"') &&
 			themeColorError.message.includes('"variantNameOnly"'),
 		`Expected the theme color settings key to be rejected. Received: ${themeColorError.message}`,
-	);
-	assert(
+	).toBeTruthy();
+	expect(
 		gradientError.message.includes('"gradients.settings"') &&
 			gradientError.message.includes("reads no settings"),
 		`Expected the unread gradient settings to be rejected. Received: ${gradientError.message}`,
-	);
+	).toBeTruthy();
 });
 
-Deno.test("generateCSS - rejects formats set to false", () => {
+test("generateCSS - rejects formats set to false", () => {
 	const palette = { value: { coral: { 100: { hex: "#FF7F50" } } } };
 	const config = {
 		colors: { palette: { ...palette, settings: { color: { formats: false } } } },
 	} as unknown as CSSForgeConfig;
 
-	const error = assertThrows(() => generateCSS(config));
+	const error = thrownError(() => generateCSS(config));
 
-	assert(
+	expect(
 		error.message.includes('"palette.settings.color.formats"'),
 		`Expected the error to name the formats. Received: ${error.message}`,
-	);
+	).toBeTruthy();
 });
 
-Deno.test("generateCSS - rejects settings a gradient variant does not read", () => {
+test("generateCSS - rejects settings a gradient variant does not read", () => {
 	const config = {
 		colors: {
 			palette: { value: { coral: { 100: { hex: "#FF7F50" } } } },
@@ -497,11 +498,11 @@ Deno.test("generateCSS - rejects settings a gradient variant does not read", () 
 		},
 	} as unknown as CSSForgeConfig;
 
-	const error = assertThrows(() => generateCSS(config));
+	const error = thrownError(() => generateCSS(config));
 
-	assert(
+	expect(
 		error.message.includes('"gradients.g.primary.settings"') &&
 			error.message.includes("reads no settings"),
 		`Expected the error to name the variant. Received: ${error.message}`,
-	);
+	).toBeTruthy();
 });

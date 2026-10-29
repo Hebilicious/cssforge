@@ -1,3 +1,4 @@
+import { expect } from "vitest";
 import type { Output } from "../src/lib.ts";
 
 /**
@@ -16,3 +17,15 @@ export const combine = (css: Output["css"]) =>
 
 export const lineHasProp = (lines: string[]) => (prop: string) =>
 	lines.some((line) => line.includes(prop));
+
+/** Asserts that `run` throws and returns the Error so the caller can inspect it. */
+export const thrownError = (run: () => unknown): Error => {
+	try {
+		run();
+	} catch (error) {
+		expect(error).toBeInstanceOf(Error);
+		return error as Error;
+	}
+
+	throw new Error("Expected the call to throw, but it returned a value.");
+};

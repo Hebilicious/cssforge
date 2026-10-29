@@ -2,8 +2,8 @@ import { existsSync } from "node:fs";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { expect, test } from "vitest";
 import { build } from "../src/cli.ts";
-import { assertEquals, Deno } from "./vitest-compat.ts";
 
 const configSource = `export default {
 	spacing: {
@@ -39,7 +39,7 @@ const callWithMode = (mode: unknown, paths: BuildPaths) =>
 		styleDictionaryOutput: paths.styleDictionary,
 	});
 
-Deno.test("build - rejects an unsupported output mode for JavaScript callers", async () => {
+test("build - rejects an unsupported output mode for JavaScript callers", async () => {
 	const tempDir = await mkdtemp(join(tmpdir(), "cssforge-build-invalid-mode-"));
 
 	try {
@@ -49,23 +49,23 @@ Deno.test("build - rejects an unsupported output mode for JavaScript callers", a
 
 		const result = await callWithMode("typo", paths);
 
-		assertEquals(result.success, false);
+		expect(result.success).toEqual(false);
 		const message =
 			result.error instanceof Error ? result.error.message : String(result.error);
-		assertEquals(message.includes("typo"), true);
+		expect(message.includes("typo")).toEqual(true);
 		for (const mode of ["css", "json", "ts", "style-dictionary", "all"]) {
-			assertEquals(message.includes(mode), true);
+			expect(message.includes(mode)).toEqual(true);
 		}
-		assertEquals(await readFile(paths.css, "utf8"), "/* pre-existing css */");
-		assertEquals(existsSync(paths.json), false);
-		assertEquals(existsSync(paths.ts), false);
-		assertEquals(existsSync(paths.styleDictionary), false);
+		expect(await readFile(paths.css, "utf8")).toEqual("/* pre-existing css */");
+		expect(existsSync(paths.json)).toEqual(false);
+		expect(existsSync(paths.ts)).toEqual(false);
+		expect(existsSync(paths.styleDictionary)).toEqual(false);
 	} finally {
 		await rm(tempDir, { recursive: true, force: true });
 	}
 });
 
-Deno.test("build - accepts every supported output mode", async () => {
+test("build - accepts every supported output mode", async () => {
 	const tempDir = await mkdtemp(join(tmpdir(), "cssforge-build-valid-modes-"));
 
 	try {
@@ -83,15 +83,13 @@ Deno.test("build - accepts every supported output mode", async () => {
 
 			const result = await callWithMode(mode, paths);
 
-			assertEquals(result.success, true, `mode ${mode} should succeed`);
+			expect(result.success, `mode ${mode} should succeed`).toEqual(true);
 			for (const [name, path] of Object.entries(paths)) {
 				if (name === "config") {
 					continue;
 				}
-				assertEquals(
-					existsSync(path),
+				expect(existsSync(path), `mode ${mode} output ${name}`).toEqual(
 					produced.includes(name),
-					`mode ${mode} output ${name}`,
 				);
 			}
 		}

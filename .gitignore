@@ -9,5 +9,4 @@ convert.ts
 /.cssforge
 TODO.md
 .worktrees
-.jsr-smoke-*
 .artifact-build-*

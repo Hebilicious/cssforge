@@ -1,10 +1,10 @@
+import { expect, test } from "vitest";
 import { generateCSS, generateJSON, generateTS } from "../src/generator.ts";
 import { defineConfig } from "../src/mod.ts";
 import { processColors } from "../src/modules/colors.ts";
 import { processPrimitives } from "../src/modules/primitive.ts";
 import { processSpacing } from "../src/modules/spacing.ts";
 import { processTypography } from "../src/modules/typography.ts";
-import { assert, assertEquals, Deno } from "./vitest-compat.ts";
 
 /**
  * Declaration names that are not valid CSS dashed identifiers. The name is read
@@ -42,13 +42,13 @@ const fluidSize = {
 	negativeSteps: 0,
 };
 
-Deno.test("invalidDashedIdentifiers - detects the malformed name from issue #29", () => {
-	assertEquals(invalidDashedIdentifiers("--card button-default-gap: 1rem;"), [
+test("invalidDashedIdentifiers - detects the malformed name from issue #29", () => {
+	expect(invalidDashedIdentifiers("--card button-default-gap: 1rem;")).toEqual([
 		"--card button-default-gap",
 	]);
-	assertEquals(invalidDashedIdentifiers("--palette-coral-50: oklch(0 0 0);"), []);
-	assertEquals(invalidDashedIdentifiers("---card-default-gap: 1rem;"), []);
-	assertEquals(invalidDashedIdentifiers("--50-default-gap: 1rem;"), []);
+	expect(invalidDashedIdentifiers("--palette-coral-50: oklch(0 0 0);")).toEqual([]);
+	expect(invalidDashedIdentifiers("---card-default-gap: 1rem;")).toEqual([]);
+	expect(invalidDashedIdentifiers("--50-default-gap: 1rem;")).toEqual([]);
 });
 
 /**
@@ -247,31 +247,31 @@ const rejectedSegments: Array<[label: string, run: () => unknown, expected: stri
 	],
 ];
 
-Deno.test("validateName - rejects an invalid segment at every call site", () => {
+test("validateName - rejects an invalid segment at every call site", () => {
 	for (const [label, run, expectedPath] of rejectedSegments) {
 		const message = captureError(run);
-		assert(
+		expect(
 			message.includes(expectedPath),
 			`${label} must name "${expectedPath}". Received: ${message}`,
-		);
+		).toBeTruthy();
 	}
 });
 
-Deno.test("validateName - rejects every ASCII delimiter as a name segment", () => {
+test("validateName - rejects every ASCII delimiter as a name segment", () => {
 	for (const character of " !\"#$%&'()*+,./:;<=>?@[\\]^`{|}~") {
 		const message = captureError(() =>
 			processSpacing({
 				custom: { size: { value: { [`a${character}b`]: "4px" } } },
 			} as never),
 		);
-		assert(
+		expect(
 			message.includes(`a${character}b`),
 			`Expected "${character}" to be rejected. Received: ${message}`,
-		);
+		).toBeTruthy();
 	}
 });
 
-Deno.test("validateName - rejects an empty alias key that would emit var(--)", () => {
+test("validateName - rejects an empty alias key that would emit var(--)", () => {
 	const message = captureError(() =>
 		processPrimitives({
 			primitives: {
@@ -283,13 +283,13 @@ Deno.test("validateName - rejects an empty alias key that would emit var(--)", (
 			},
 		} as never),
 	);
-	assert(
+	expect(
 		message.includes("primitives.btn.d.variables.") && message.includes("non-empty"),
 		`An empty alias key must be rejected with its path. Received: ${message}`,
-	);
+	).toBeTruthy();
 });
 
-Deno.test("validateName - names the configured alias key verbatim in the error", () => {
+test("validateName - names the configured alias key verbatim in the error", () => {
 	// `getResolvedVariablesMap` builds the reference as `--${varKey}`, so a key
 	// written `--alias` already includes its hyphens and must be quoted as-is.
 	const message = captureError(() =>
@@ -306,14 +306,14 @@ Deno.test("validateName - names the configured alias key verbatim in the error",
 			},
 		} as never),
 	);
-	assert(
+	expect(
 		message.includes("Invalid name: --a b") &&
 			message.includes("primitives.btn.d.variables.--a b"),
 		`Error must name the configured key verbatim. Received: ${message}`,
-	);
+	).toBeTruthy();
 });
 
-Deno.test("validateName - keeps alias keys and custom labels that are not token keys", () => {
+test("validateName - keeps alias keys and custom labels that are not token keys", () => {
 	// Alias keys and custom labels are not token keys, so the reserved-keyword
 	// rule must not apply to them.
 	const aliasResult = processPrimitives({
@@ -329,8 +329,7 @@ Deno.test("validateName - keeps alias keys and custom labels that are not token 
 			},
 		},
 	} as never);
-	assertEquals(
-		aliasResult.css.root,
+	expect(aliasResult.css.root).toEqual(
 		"/* btn */\n--btn-d-color: var(--palette-coral-50);",
 	);
 
@@ -339,7 +338,7 @@ Deno.test("validateName - keeps alias keys and custom labels that are not token 
 			base: { value: fluidSize, settings: { customLabel: { "1": "value", "0": "0" } } },
 		},
 	} as never);
-	assertEquals(labelResult.css.root?.includes("--typography_fluid-base-value:"), true);
+	expect(labelResult.css.root?.includes("--typography_fluid-base-value:")).toEqual(true);
 
 	// A hyphen-only alias key is a name that already contains the hyphens, so
 	// `var(----)` resolves and must keep working.
@@ -353,10 +352,12 @@ Deno.test("validateName - keeps alias keys and custom labels that are not token 
 			},
 		},
 	} as never);
-	assertEquals(hyphenKey.css.root, "/* btn */\n--btn-d-color: var(--palette-coral-50);");
+	expect(hyphenKey.css.root).toEqual(
+		"/* btn */\n--btn-d-color: var(--palette-coral-50);",
+	);
 });
 
-Deno.test("validateName - keeps numeric, hyphen, underscore and non-ASCII names working", () => {
+test("validateName - keeps numeric, hyphen, underscore and non-ASCII names working", () => {
 	const config = defineConfig({
 		spacing: {
 			custom: {
@@ -382,12 +383,15 @@ Deno.test("validateName - keeps numeric, hyphen, underscore and non-ASCII names 
 		"--card-2-hover_focus-background-color: 1rem;",
 		"--card-2-hover_focus-row-gap: 2rem;",
 	]) {
-		assert(css.includes(expected), `Expected "${expected}". Received: ${css}`);
+		expect(
+			css.includes(expected),
+			`Expected "${expected}". Received: ${css}`,
+		).toBeTruthy();
 	}
-	assertEquals(invalidDashedIdentifiers(css), []);
+	expect(invalidDashedIdentifiers(css)).toEqual([]);
 });
 
-Deno.test("validateName - validates the custom label that is actually emitted", () => {
+test("validateName - validates the custom label that is actually emitted", () => {
 	// `customLabel` is read with bracket access, so an inherited mapping resolves
 	// through the prototype chain and must still be validated.
 	const inherited: Record<string, string> = Object.create({ "1": "big type", "0": "0" });
@@ -396,21 +400,21 @@ Deno.test("validateName - validates the custom label that is actually emitted", 
 			fluid: { base: { value: fluidSize, settings: { customLabel: inherited } } },
 		} as never),
 	);
-	assert(
+	expect(
 		message.includes("big type") &&
 			message.includes("typography_fluid.base.settings.customLabel"),
 		`An inherited invalid label must be rejected. Received: ${message}`,
-	);
+	).toBeTruthy();
 
 	// A label with no mapping falls back to the generated step label.
 	const fallback = processTypography({
 		fluid: { base: { value: fluidSize, settings: { customLabel: {} } } },
 	} as never);
-	assertEquals(fallback.css.root?.includes("--typography_fluid-base-1:"), true);
-	assertEquals(invalidDashedIdentifiers(fallback.css.root ?? ""), []);
+	expect(fallback.css.root?.includes("--typography_fluid-base-1:")).toEqual(true);
+	expect(invalidDashedIdentifiers(fallback.css.root ?? "")).toEqual([]);
 });
 
-Deno.test("validateName - surfaces name errors that module error handling would swallow", () => {
+test("validateName - surfaces name errors that module error handling would swallow", () => {
 	// Palette colors and themes log ordinary token failures and continue, so a
 	// configuration mistake must escape instead of silently dropping declarations.
 	const paletteVariant = captureError(() =>
@@ -418,7 +422,7 @@ Deno.test("validateName - surfaces name errors that module error handling would 
 			palette: { value: { coral: { value: { "50 light": { hex: "#ff0000" } } } } },
 		} as never),
 	);
-	assertEquals(paletteVariant.includes("palette.coral.50 light"), true);
+	expect(paletteVariant.includes("palette.coral.50 light")).toEqual(true);
 
 	const themeVariant = captureError(() =>
 		processColors({
@@ -435,10 +439,10 @@ Deno.test("validateName - surfaces name errors that module error handling would 
 			},
 		} as never),
 	);
-	assertEquals(themeVariant.includes("theme.light.background.primary dark"), true);
+	expect(themeVariant.includes("theme.light.background.primary dark")).toEqual(true);
 });
 
-Deno.test("generateCSS - never emits a malformed custom property name", () => {
+test("generateCSS - never emits a malformed custom property name", () => {
 	const config = defineConfig({
 		colors: {
 			palette: { value: { coral: { value: { "50": { hex: "#FF7E60" } } } } },
@@ -493,14 +497,14 @@ Deno.test("generateCSS - never emits a malformed custom property name", () => {
 	});
 
 	const css = generateCSS(config);
-	assertEquals(invalidDashedIdentifiers(css), []);
+	expect(invalidDashedIdentifiers(css)).toEqual([]);
 	// Keeps the check above from passing vacuously: it must see the issue #29 name.
-	assertEquals(invalidDashedIdentifiers(`${css}\n--card button-default-gap: 1rem;`), [
+	expect(invalidDashedIdentifiers(`${css}\n--card button-default-gap: 1rem;`)).toEqual([
 		"--card button-default-gap",
 	]);
 });
 
-Deno.test("generator - rejects an invalid name through every output", () => {
+test("generator - rejects an invalid name through every output", () => {
 	const config = defineConfig({
 		primitives: { "card button": { value: { default: { value: { gap: "1rem" } } } } },
 	});
@@ -510,9 +514,9 @@ Deno.test("generator - rejects an invalid name through every output", () => {
 		["JSON", () => generateJSON(config)],
 		["TypeScript", () => generateTS(config)],
 	] as const) {
-		assert(
+		expect(
 			captureError(run).includes("primitives.card button"),
 			`${output} generation must fail with the configuration path.`,
-		);
+		).toBeTruthy();
 	}
 });

@@ -3,9 +3,9 @@ import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { expect, test } from "vitest";
 import { build, parseColorFormats } from "../src/cli.ts";
-import { childEnv } from "./helpers.ts";
-import { assert, assertEquals, assertThrows, Deno } from "./vitest-compat.ts";
+import { childEnv, thrownError } from "./helpers.ts";
 
 const cliPath = fileURLToPath(new URL("../src/cli.ts", import.meta.url));
 
@@ -51,23 +51,23 @@ const buildWithFormats = (paths: BuildPaths, colorFormats: unknown) =>
 		colorFormats: colorFormats as never,
 	});
 
-Deno.test("parseColorFormats - reads a comma separated list and drops duplicates", () => {
-	assertEquals(parseColorFormats(undefined), undefined);
-	assertEquals(parseColorFormats(""), []);
-	assertEquals(parseColorFormats("hex, rgb"), ["hex", "rgb"]);
-	assertEquals(parseColorFormats("rgb,hex,rgb"), ["rgb", "hex"]);
+test("parseColorFormats - reads a comma separated list and drops duplicates", () => {
+	expect(parseColorFormats(undefined)).toEqual(undefined);
+	expect(parseColorFormats("")).toEqual([]);
+	expect(parseColorFormats("hex, rgb")).toEqual(["hex", "rgb"]);
+	expect(parseColorFormats("rgb,hex,rgb")).toEqual(["rgb", "hex"]);
 });
 
-Deno.test("parseColorFormats - rejects a format the generator cannot emit", () => {
-	const error = assertThrows(() => parseColorFormats("hex,hsl"));
+test("parseColorFormats - rejects a format the generator cannot emit", () => {
+	const error = thrownError(() => parseColorFormats("hex,hsl"));
 
-	assert(
+	expect(
 		error.message.includes("hsl") && error.message.includes("hex"),
 		`Expected the error to name the rejected value and the accepted formats. Received: ${error.message}`,
-	);
+	).toBeTruthy();
 });
 
-Deno.test("build - --color-formats adds the formats to every output", async () => {
+test("build - --color-formats adds the formats to every output", async () => {
 	const tempDir = await mkdtemp(join(tmpdir(), "cssforge-color-formats-"));
 
 	try {
@@ -76,20 +76,20 @@ Deno.test("build - --color-formats adds the formats to every output", async () =
 
 		const result = await buildWithFormats(paths, parseColorFormats("hex,rgb"));
 
-		assertEquals(result.success, true);
+		expect(result.success).toEqual(true);
 
 		const css = await readFile(paths.css, "utf8");
 		const json = JSON.parse(await readFile(paths.json, "utf8"));
 		const ts = await readFile(paths.ts, "utf8");
 		const styleDictionary = JSON.parse(await readFile(paths.styleDictionary, "utf8"));
 
-		assertEquals(css.includes("--palette-coral-100: #ff7f50;"), true);
-		assertEquals(json.palette.coral["100"].color, {
+		expect(css.includes("--palette-coral-100: #ff7f50;")).toEqual(true);
+		expect(json.palette.coral["100"].color).toEqual({
 			hex: { string: "#ff7f50" },
 			rgb: { string: "rgb(255 127 80)" },
 		});
-		assertEquals(ts.includes('"rgb": {'), true);
-		assertEquals(styleDictionary.palette.coral["100"].$color, {
+		expect(ts.includes('"rgb": {')).toEqual(true);
+		expect(styleDictionary.palette.coral["100"].$color).toEqual({
 			hex: { string: "#ff7f50" },
 			rgb: { string: "rgb(255 127 80)" },
 		});
@@ -98,7 +98,7 @@ Deno.test("build - --color-formats adds the formats to every output", async () =
 	}
 });
 
-Deno.test("build - rejects an unknown color format for JavaScript callers", async () => {
+test("build - rejects an unknown color format for JavaScript callers", async () => {
 	const tempDir = await mkdtemp(join(tmpdir(), "cssforge-color-formats-invalid-"));
 
 	try {
@@ -107,16 +107,16 @@ Deno.test("build - rejects an unknown color format for JavaScript callers", asyn
 
 		const result = await buildWithFormats(paths, ["hsl"]);
 
-		assertEquals(result.success, false);
+		expect(result.success).toEqual(false);
 		const message =
 			result.error instanceof Error ? result.error.message : String(result.error);
-		assertEquals(message.includes("hsl"), true);
+		expect(message.includes("hsl")).toEqual(true);
 	} finally {
 		await rm(tempDir, { recursive: true, force: true });
 	}
 });
 
-Deno.test("cli - --color-formats writes the formats through the CLI entry", async () => {
+test("cli - --color-formats writes the formats through the CLI entry", async () => {
 	const tempDir = await mkdtemp(join(tmpdir(), "cssforge-color-formats-cli-"));
 
 	try {
@@ -137,15 +137,15 @@ Deno.test("cli - --color-formats writes the formats through the CLI entry", asyn
 			tempDir,
 		);
 
-		assertEquals(result.status, 0, result.stderr);
+		expect(result.status, result.stderr).toEqual(0);
 		const css = await readFile(paths.css, "utf8");
-		assertEquals(css.includes("--palette-coral-100: #ff7f50;"), true);
+		expect(css.includes("--palette-coral-100: #ff7f50;")).toEqual(true);
 	} finally {
 		await rm(tempDir, { recursive: true, force: true });
 	}
 });
 
-Deno.test("cli - --color-formats reports an unknown format", async () => {
+test("cli - --color-formats reports an unknown format", async () => {
 	const tempDir = await mkdtemp(join(tmpdir(), "cssforge-color-formats-cli-invalid-"));
 
 	try {
@@ -166,11 +166,9 @@ Deno.test("cli - --color-formats reports an unknown format", async () => {
 			tempDir,
 		);
 
-		assertEquals(result.status, 1);
-		assertEquals(
-			result.stderr.includes("Invalid color format: hsl"),
+		expect(result.status).toEqual(1);
+		expect(result.stderr.includes("Invalid color format: hsl"), result.stderr).toEqual(
 			true,
-			result.stderr,
 		);
 	} finally {
 		await rm(tempDir, { recursive: true, force: true });

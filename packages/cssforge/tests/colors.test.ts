@@ -1,8 +1,8 @@
+import { expect, test } from "vitest";
 import { defineConfig, processColors } from "../src/mod.ts";
 import { combine, getLines } from "./helpers.ts";
-import { assert, assertEquals, assertSnapshot, Deno } from "./vitest-compat.ts";
 
-Deno.test("processColors - converts hex to oklch", async (t) => {
+test("processColors - converts hex to oklch", () => {
 	const config = defineConfig({
 		colors: {
 			palette: {
@@ -21,14 +21,21 @@ Deno.test("processColors - converts hex to oklch", async (t) => {
 	const { css, resolveMap } = processColors(config.colors);
 	const combined = combine(css);
 	const lines = getLines(combined);
-	assertEquals(lines[2].trim(), "--palette-coral-100: oklch(73.511% 0.16799 40.24666);");
-	assertEquals(lines[3].trim(), "--palette-coral-200: oklch(69.622% 0.19552 32.32143);");
-	assertEquals(Array.from(resolveMap.keys()), ["palette.coral.100", "palette.coral.200"]);
-	await assertSnapshot(t, combined);
-	await assertSnapshot(t, Array.from(resolveMap.entries()));
+	expect(lines[2].trim()).toEqual(
+		"--palette-coral-100: oklch(73.511% 0.16799 40.24666);",
+	);
+	expect(lines[3].trim()).toEqual(
+		"--palette-coral-200: oklch(69.622% 0.19552 32.32143);",
+	);
+	expect(Array.from(resolveMap.keys())).toEqual([
+		"palette.coral.100",
+		"palette.coral.200",
+	]);
+	expect(combined).toMatchSnapshot();
+	expect(Array.from(resolveMap.entries())).toMatchSnapshot();
 });
 
-Deno.test("processColors - handles different color formats", async (t) => {
+test("processColors - handles different color formats", () => {
 	const config = defineConfig({
 		colors: {
 			palette: {
@@ -49,25 +56,28 @@ Deno.test("processColors - handles different color formats", async (t) => {
 	const combined = combine(css);
 	const lines = getLines(combined);
 
-	assertEquals(lines[2].trim(), "--palette-brand-200: oklch(86.644% 0.29483 142.49535);");
-	assertEquals(lines[3].trim(), "--palette-brand-300: oklch(45.201% 0.31321 264.05202);");
-	assertEquals(lines[4].trim(), "--palette-brand-400: oklch(70% 0.2 270);");
-	assertEquals(
-		lines[5].trim(),
+	expect(lines[2].trim()).toEqual(
+		"--palette-brand-200: oklch(86.644% 0.29483 142.49535);",
+	);
+	expect(lines[3].trim()).toEqual(
+		"--palette-brand-300: oklch(45.201% 0.31321 264.05202);",
+	);
+	expect(lines[4].trim()).toEqual("--palette-brand-400: oklch(70% 0.2 270);");
+	expect(lines[5].trim()).toEqual(
 		"--palette-brand-default: oklch(62.796% 0.25768 29.23388);",
 	);
 
-	assertEquals(Array.from(resolveMap.keys()), [
+	expect(Array.from(resolveMap.keys())).toEqual([
 		"palette.brand.200",
 		"palette.brand.300",
 		"palette.brand.400",
 		"palette.brand.default",
 	]);
-	await assertSnapshot(t, combined);
-	await assertSnapshot(t, Array.from(resolveMap.entries()));
+	expect(combined).toMatchSnapshot();
+	expect(Array.from(resolveMap.entries())).toMatchSnapshot();
 });
 
-Deno.test("processColors - handles string values", async (t) => {
+test("processColors - handles string values", () => {
 	const config = defineConfig({
 		colors: {
 			palette: {
@@ -85,17 +95,17 @@ Deno.test("processColors - handles string values", async (t) => {
 	const { css, resolveMap } = processColors(config.colors);
 	const combined = combine(css);
 	const lines = getLines(combined);
-	assertEquals(lines[2].trim(), "--palette-simple-white: oklch(100% 0 none);");
-	assertEquals(lines[3].trim(), "--palette-simple-black: oklch(0% 0 none);");
-	assertEquals(Array.from(resolveMap.keys()), [
+	expect(lines[2].trim()).toEqual("--palette-simple-white: oklch(100% 0 none);");
+	expect(lines[3].trim()).toEqual("--palette-simple-black: oklch(0% 0 none);");
+	expect(Array.from(resolveMap.keys())).toEqual([
 		"palette.simple.white",
 		"palette.simple.black",
 	]);
-	await assertSnapshot(t, combined);
-	await assertSnapshot(t, Array.from(resolveMap.entries()));
+	expect(combined).toMatchSnapshot();
+	expect(Array.from(resolveMap.entries())).toMatchSnapshot();
 });
 
-Deno.test("processColors - handles direct palette groups", async (t) => {
+test("processColors - handles direct palette groups", () => {
 	const config = defineConfig({
 		colors: {
 			palette: {
@@ -129,23 +139,22 @@ Deno.test("processColors - handles direct palette groups", async (t) => {
 	const { css, resolveMap } = processColors(config.colors);
 	const combined = combine(css);
 
-	assertEquals(combined.includes("--palette-basic-white: oklch(100% 0 none);"), true);
-	assertEquals(combined.includes("--palette-gray-950: oklch(14.479% 0 none);"), true);
-	assertEquals(
+	expect(combined.includes("--palette-basic-white: oklch(100% 0 none);")).toEqual(true);
+	expect(combined.includes("--palette-gray-950: oklch(14.479% 0 none);")).toEqual(true);
+	expect(
 		combined.includes("--theme-light-content-primary: var(--palette-gray-950);"),
-		true,
-	);
-	assertEquals(Array.from(resolveMap.keys()), [
+	).toEqual(true);
+	expect(Array.from(resolveMap.keys())).toEqual([
 		"palette.basic.white",
 		"palette.basic.black",
 		"palette.gray.950",
 		"theme.light.content.primary",
 	]);
-	await assertSnapshot(t, combined);
-	await assertSnapshot(t, Array.from(resolveMap.entries()));
+	expect(combined).toMatchSnapshot();
+	expect(Array.from(resolveMap.entries())).toMatchSnapshot();
 });
 
-Deno.test("processColors - handles themes", async (t) => {
+test("processColors - handles themes", () => {
 	const config = defineConfig({
 		colors: {
 			palette: {
@@ -179,25 +188,23 @@ Deno.test("processColors - handles themes", async (t) => {
 	const { css, resolveMap } = processColors(config.colors);
 	const combined = combine(css);
 	const lines = getLines(combined);
-	assertEquals(
-		lines[7].trim(),
+	expect(lines[7].trim()).toEqual(
 		"--theme-light-background-primary: var(--palette-simple-white);",
 	);
-	assertEquals(
-		lines[8].trim(),
+	expect(lines[8].trim()).toEqual(
 		"--theme-light-background-secondary: var(--palette-simple-black);",
 	);
-	assertEquals(Array.from(resolveMap.keys()), [
+	expect(Array.from(resolveMap.keys())).toEqual([
 		"palette.simple.white",
 		"palette.simple.black",
 		"theme.light.background.primary",
 		"theme.light.background.secondary",
 	]);
-	await assertSnapshot(t, combined);
-	await assertSnapshot(t, Array.from(resolveMap.entries()));
+	expect(combined).toMatchSnapshot();
+	expect(Array.from(resolveMap.entries())).toMatchSnapshot();
 });
 
-Deno.test("processColors - handles transparency", async (t) => {
+test("processColors - handles transparency", () => {
 	const config = defineConfig({
 		colors: {
 			palette: {
@@ -215,17 +222,21 @@ Deno.test("processColors - handles transparency", async (t) => {
 	const { css, resolveMap } = processColors(config.colors);
 	const combined = combine(css);
 	const lines = getLines(combined);
-	assertEquals(lines[2].trim(), "--palette-alpha-softGray1: oklch(14.48% 0 none / 12%);");
-	assertEquals(lines[3].trim(), "--palette-alpha-softGray2: oklch(14.48% 0 none / 24%);");
-	assertEquals(Array.from(resolveMap.keys()), [
+	expect(lines[2].trim()).toEqual(
+		"--palette-alpha-softGray1: oklch(14.48% 0 none / 12%);",
+	);
+	expect(lines[3].trim()).toEqual(
+		"--palette-alpha-softGray2: oklch(14.48% 0 none / 24%);",
+	);
+	expect(Array.from(resolveMap.keys())).toEqual([
 		"palette.alpha.softGray1",
 		"palette.alpha.softGray2",
 	]);
-	await assertSnapshot(t, combined);
-	await assertSnapshot(t, Array.from(resolveMap.entries()));
+	expect(combined).toMatchSnapshot();
+	expect(Array.from(resolveMap.entries())).toMatchSnapshot();
 });
 
-Deno.test("processColors - generates gradient with color variables", async (t) => {
+test("processColors - generates gradient with color variables", () => {
 	const config = defineConfig({
 		colors: {
 			palette: {
@@ -272,19 +283,19 @@ Deno.test("processColors - generates gradient with color variables", async (t) =
 		"--gradients-orangeGradient-primary: linear-gradient(261.78deg, var(--palette-coral-50) 33.1%, var(--palette-coral-90) 56.3%, var(--palette-coral-100) 65.78%, var(--palette-indigo-100) 84.23%);",
 	].join("\n");
 
-	assertEquals(lines.at(-1), expected);
-	assertEquals(Array.from(result.resolveMap.keys()), [
+	expect(lines.at(-1)).toEqual(expected);
+	expect(Array.from(result.resolveMap.keys())).toEqual([
 		"palette.coral.50",
 		"palette.coral.90",
 		"palette.coral.100",
 		"palette.indigo.100",
 		"gradients.orangeGradient.primary",
 	]);
-	await assertSnapshot(t, combined);
-	await assertSnapshot(t, Array.from(result.resolveMap.entries()));
+	expect(combined).toMatchSnapshot();
+	expect(Array.from(result.resolveMap.entries())).toMatchSnapshot();
 });
 
-Deno.test("processColors - handles themes referencing gradients", async (t) => {
+test("processColors - handles themes referencing gradients", () => {
 	const config = defineConfig({
 		colors: {
 			palette: {
@@ -332,20 +343,19 @@ Deno.test("processColors - handles themes referencing gradients", async (t) => {
 	const combined = combine(css);
 	const lines = getLines(combined);
 	const lastLine = lines.pop();
-	assertEquals(
-		lastLine,
+	expect(lastLine).toEqual(
 		"--theme-light-background-primary: var(--gradients-orangeGradient-primary);",
 	);
-	assertEquals(Array.from(resolveMap.keys()), [
+	expect(Array.from(resolveMap.keys())).toEqual([
 		"palette.coral.50",
 		"gradients.orangeGradient.primary",
 		"theme.light.background.primary",
 	]);
-	await assertSnapshot(t, combined);
-	await assertSnapshot(t, Array.from(resolveMap.entries()));
+	expect(combined).toMatchSnapshot();
+	expect(Array.from(resolveMap.entries())).toMatchSnapshot();
 });
 
-Deno.test("processColors - handles gradients with atRule", async (t) => {
+test("processColors - handles gradients with atRule", () => {
 	const config = defineConfig({
 		colors: {
 			palette: {
@@ -386,32 +396,31 @@ Deno.test("processColors - handles gradients with atRule", async (t) => {
 		line.includes("@media (prefers-color-scheme: dark)"),
 	);
 
-	assertEquals(lines[mediaQueryIndex], "@media (prefers-color-scheme: dark) {");
+	expect(lines[mediaQueryIndex]).toEqual("@media (prefers-color-scheme: dark) {");
 
 	const varIndex = lines.findIndex(
 		(line, idx) =>
 			idx > mediaQueryIndex && line.includes("--gradients-orangeGradient-primary:"),
 	);
 
-	assert(
+	expect(
 		varIndex > mediaQueryIndex,
 		"Gradient variable should be inside the media query block",
-	);
+	).toBeTruthy();
 
-	assertEquals(
-		lines[varIndex].trim(),
+	expect(lines[varIndex].trim()).toEqual(
 		"--gradients-orangeGradient-primary: linear-gradient(to right, var(--palette-coral-50), var(--palette-coral-50));",
 	);
 
-	assertEquals(Array.from(resolveMap.keys()), [
+	expect(Array.from(resolveMap.keys())).toEqual([
 		"palette.coral.50",
 		"gradients.orangeGradient.primary",
 	]);
-	await assertSnapshot(t, combined);
-	await assertSnapshot(t, Array.from(resolveMap.entries()));
+	expect(combined).toMatchSnapshot();
+	expect(Array.from(resolveMap.entries())).toMatchSnapshot();
 });
 
-Deno.test("processColors - handles palette colors with atRule", async (t) => {
+test("processColors - handles palette colors with atRule", () => {
 	const config = defineConfig({
 		colors: {
 			palette: {
@@ -437,37 +446,39 @@ Deno.test("processColors - handles palette colors with atRule", async (t) => {
 	const combined = combine(css);
 	const lines = getLines(combined);
 
-	assertEquals(lines[2].trim(), "--palette-background-light: oklch(100% 0 none);");
+	expect(lines[2].trim()).toEqual("--palette-background-light: oklch(100% 0 none);");
 
 	const mediaQueryIndex = lines.findIndex((line) =>
 		line.includes("@media (prefers-color-scheme: dark)"),
 	);
 
-	assertEquals(lines[mediaQueryIndex], "@media (prefers-color-scheme: dark) {");
+	expect(lines[mediaQueryIndex]).toEqual("@media (prefers-color-scheme: dark) {");
 
 	const darkVarIndex = lines.findIndex((line) =>
 		line.includes("--palette-backgroundDark-dark:"),
 	);
 
-	assertEquals(
-		lines[darkVarIndex].trim(),
+	expect(lines[darkVarIndex].trim()).toEqual(
 		"--palette-backgroundDark-dark: oklch(0% 0 none);",
 	);
 
 	const closingBraceIndex = lines.findIndex(
 		(line, idx) => idx > mediaQueryIndex && line === "}",
 	);
-	assert(closingBraceIndex > darkVarIndex, "Closing brace should exist after variables");
+	expect(
+		closingBraceIndex > darkVarIndex,
+		"Closing brace should exist after variables",
+	).toBeTruthy();
 
-	assertEquals(Array.from(resolveMap.keys()), [
+	expect(Array.from(resolveMap.keys())).toEqual([
 		"palette.background.light",
 		"palette.backgroundDark.dark",
 	]);
-	await assertSnapshot(t, combined);
-	await assertSnapshot(t, Array.from(resolveMap.entries()));
+	expect(combined).toMatchSnapshot();
+	expect(Array.from(resolveMap.entries())).toMatchSnapshot();
 });
 
-Deno.test("processColors - handles themes with selector", async (t) => {
+test("processColors - handles themes with selector", () => {
 	const config = defineConfig({
 		colors: {
 			palette: {
@@ -504,20 +515,23 @@ Deno.test("processColors - handles themes with selector", async (t) => {
 	const lines = getLines(combined);
 
 	const classIndex = lines.findIndex((l) => l.includes(".dark-theme"));
-	assertEquals(lines[classIndex], ".dark-theme {");
+	expect(lines[classIndex]).toEqual(".dark-theme {");
 
 	const varIndex = lines.findIndex((l) => l.includes("--theme-dark-background-primary:"));
-	assert(varIndex > classIndex, "theme variable should be inside the class block");
+	expect(
+		varIndex > classIndex,
+		"theme variable should be inside the class block",
+	).toBeTruthy();
 
-	assertEquals(Array.from(resolveMap.keys()), [
+	expect(Array.from(resolveMap.keys())).toEqual([
 		"palette.base.primary",
 		"theme.dark.background.primary",
 	]);
-	await assertSnapshot(t, combined);
-	await assertSnapshot(t, Array.from(resolveMap.entries()));
+	expect(combined).toMatchSnapshot();
+	expect(Array.from(resolveMap.entries())).toMatchSnapshot();
 });
 
-Deno.test("processColors - handles selector + atRule", async (t) => {
+test("processColors - handles selector + atRule", () => {
 	const config = defineConfig({
 		colors: {
 			palette: {
@@ -557,32 +571,35 @@ Deno.test("processColors - handles selector + atRule", async (t) => {
 	const mediaIndex = lines.findIndex((l) =>
 		l.includes("@media (prefers-color-scheme: dark)"),
 	);
-	assertEquals(lines[mediaIndex], "@media (prefers-color-scheme: dark) {");
+	expect(lines[mediaIndex]).toEqual("@media (prefers-color-scheme: dark) {");
 
 	const classIndex = lines.findIndex(
 		(l, idx) => idx > mediaIndex && l.includes(".dark-theme"),
 	);
-	assert(classIndex > mediaIndex, "selector should be inside the media query block");
-	assertEquals(lines[classIndex].trim(), ".dark-theme {");
+	expect(
+		classIndex > mediaIndex,
+		"selector should be inside the media query block",
+	).toBeTruthy();
+	expect(lines[classIndex].trim()).toEqual(".dark-theme {");
 
 	const varIndex = lines.findIndex(
 		(l, idx) => idx > classIndex && l.includes("--theme-dark-background-primary:"),
 	);
-	assert(
+	expect(
 		varIndex > classIndex,
 		"theme variable should be inside the selector block within the media query",
-	);
+	).toBeTruthy();
 
-	assertEquals(Array.from(resolveMap.keys()), [
+	expect(Array.from(resolveMap.keys())).toEqual([
 		"palette.base.primary",
 		"theme.dark.background.primary",
 	]);
 
-	await assertSnapshot(t, combined);
-	await assertSnapshot(t, Array.from(resolveMap.entries()));
+	expect(combined).toMatchSnapshot();
+	expect(Array.from(resolveMap.entries())).toMatchSnapshot();
 });
 
-Deno.test("processColors - handles theme variantNameOnly", async (t) => {
+test("processColors - handles theme variantNameOnly", () => {
 	const config = defineConfig({
 		colors: {
 			palette: {
@@ -624,21 +641,21 @@ Deno.test("processColors - handles theme variantNameOnly", async (t) => {
 	const primaryLine = lines.find((l) => l.includes("--primary:"));
 	const secondaryLine = lines.find((l) => l.includes("--secondary:"));
 
-	assertEquals(primaryLine?.trim(), "--primary: var(--palette-simple-white);");
-	assertEquals(secondaryLine?.trim(), "--secondary: var(--palette-simple-black);");
+	expect(primaryLine?.trim()).toEqual("--primary: var(--palette-simple-white);");
+	expect(secondaryLine?.trim()).toEqual("--secondary: var(--palette-simple-black);");
 
-	assertEquals(Array.from(resolveMap.keys()), [
+	expect(Array.from(resolveMap.keys())).toEqual([
 		"palette.simple.white",
 		"palette.simple.black",
 		"theme.light.background.primary",
 		"theme.light.background.secondary",
 	]);
 
-	await assertSnapshot(t, combined);
-	await assertSnapshot(t, Array.from(resolveMap.entries()));
+	expect(combined).toMatchSnapshot();
+	expect(Array.from(resolveMap.entries())).toMatchSnapshot();
 });
 
-Deno.test("processColors - achromatic colors emit hue as none", async (t) => {
+test("processColors - achromatic colors emit hue as none", () => {
 	const config = defineConfig({
 		colors: {
 			palette: {
@@ -667,34 +684,31 @@ Deno.test("processColors - achromatic colors emit hue as none", async (t) => {
 	const combined = combine(css);
 	const lines = getLines(combined);
 
-	assertEquals(
-		lines.find((l) => l.includes("--palette-achromatic-white:"))?.trim(),
+	expect(lines.find((l) => l.includes("--palette-achromatic-white:"))?.trim()).toEqual(
 		"--palette-achromatic-white: oklch(100% 0 none);",
 	);
-	assertEquals(
-		lines.find((l) => l.includes("--palette-achromatic-black:"))?.trim(),
+	expect(lines.find((l) => l.includes("--palette-achromatic-black:"))?.trim()).toEqual(
 		"--palette-achromatic-black: oklch(0% 0 none);",
 	);
-	assertEquals(
-		lines.find((l) => l.includes("--palette-achromatic-gray:"))?.trim(),
+	expect(lines.find((l) => l.includes("--palette-achromatic-gray:"))?.trim()).toEqual(
 		"--palette-achromatic-gray: oklch(59.987% 0 none);",
 	);
-	assertEquals(
+	expect(
 		lines.find((l) => l.includes("--palette-achromatic-oklchZeroChroma:"))?.trim(),
-		"--palette-achromatic-oklchZeroChroma: oklch(50% 0 none);",
-	);
-	assertEquals(
+	).toEqual("--palette-achromatic-oklchZeroChroma: oklch(50% 0 none);");
+	expect(
 		lines.find((l) => l.includes("--palette-achromatic-oklchRedHue:"))?.trim(),
-		"--palette-achromatic-oklchRedHue: oklch(50% 0 none);",
-	);
-	assertEquals(
+	).toEqual("--palette-achromatic-oklchRedHue: oklch(50% 0 none);");
+	expect(
 		lines.find((l) => l.includes("--palette-achromatic-oklchTuple:"))?.trim(),
-		"--palette-achromatic-oklchTuple: oklch(50% 0 none);",
-	);
+	).toEqual("--palette-achromatic-oklchTuple: oklch(50% 0 none);");
 
 	const redLine = lines.find((l) => l.includes("--palette-chromatic-red:"))?.trim();
-	assert(redLine?.includes("oklch("));
-	assert(!redLine?.includes("none"), "chromatic colors should have a numeric hue");
+	expect(redLine?.includes("oklch(")).toBeTruthy();
+	expect(
+		!redLine?.includes("none"),
+		"chromatic colors should have a numeric hue",
+	).toBeTruthy();
 
-	await assertSnapshot(t, combined);
+	expect(combined).toMatchSnapshot();
 });

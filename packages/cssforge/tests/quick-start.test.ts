@@ -5,8 +5,8 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import type { ArgsDef } from "citty";
+import { expect, test } from "vitest";
 import mainCommand from "../src/cli.ts";
-import { assert, assertEquals, Deno } from "./vitest-compat.ts";
 
 // The fixtures are excerpts of README.md that must match it byte for byte, so
 // they keep a `.txt` suffix: the TypeScript one imports the generated
@@ -24,7 +24,7 @@ const allowedFenceLanguages = ["bash", ...scannedFenceLanguages];
 const readmeSection = (readme: string, title: string): string => {
 	const heading = `## ${title}`;
 	const start = readme.indexOf(heading);
-	assert(start >= 0, `README.md must contain a '${heading}' section`);
+	expect(start >= 0, `README.md must contain a '${heading}' section`).toBeTruthy();
 	const end = readme.indexOf("\n## ", start + heading.length);
 
 	return readme.slice(start, end === -1 ? readme.length : end);
@@ -45,7 +45,9 @@ const documentedOutputPaths = (): { css: string; ts: string } => {
 	const args = (mainCommand.args ?? {}) as ArgsDef;
 	const defaultOf = (name: string): string => {
 		const value = args[name]?.default;
-		assertEquals(typeof value, "string", `the CLI must declare a default for --${name}`);
+		expect(typeof value, `the CLI must declare a default for --${name}`).toEqual(
+			"string",
+		);
 
 		return value as string;
 	};
@@ -53,7 +55,7 @@ const documentedOutputPaths = (): { css: string; ts: string } => {
 	return { css: defaultOf("css"), ts: defaultOf("ts") };
 };
 
-Deno.test("quick start - documented usage matches generated tokens and output paths", async () => {
+test("quick start - documented usage matches generated tokens and output paths", async () => {
 	const readme = await readFile(
 		fileURLToPath(new URL("../../../README.md", import.meta.url)),
 		"utf8",
@@ -63,10 +65,10 @@ Deno.test("quick start - documented usage matches generated tokens and output pa
 	const tsExample = await readFixture("consumer.ts.txt");
 
 	const { css: cssPath, ts: tsPath } = documentedOutputPaths();
-	assertEquals(cssPath, "./.cssforge/output.css");
-	assertEquals(tsPath, "./.cssforge/output.ts");
-	assertEquals(cssExample.match(/@import\s+"([^"]+)"/)?.[1], cssPath);
-	assertEquals(tsExample.match(/from\s+"([^"]+)"/)?.[1], tsPath);
+	expect(cssPath).toEqual("./.cssforge/output.css");
+	expect(tsPath).toEqual("./.cssforge/output.ts");
+	expect(cssExample.match(/@import\s+"([^"]+)"/)?.[1]).toEqual(cssPath);
+	expect(tsExample.match(/from\s+"([^"]+)"/)?.[1]).toEqual(tsPath);
 
 	const projectDir = await mkdtemp(join(tmpdir(), "cssforge-quick-start-"));
 
@@ -94,12 +96,12 @@ Deno.test("quick start - documented usage matches generated tokens and output pa
 			[fileURLToPath(new URL("../src/cli.ts", import.meta.url))],
 			{ cwd: projectDir, encoding: "utf8", env: childEnv },
 		);
-		assertEquals(generate.status, 0, generate.stderr);
+		expect(generate.status, generate.stderr).toEqual(0);
 
 		const cssOutput = resolve(projectDir, cssPath);
 		const tsOutput = resolve(projectDir, tsPath);
-		assertEquals(existsSync(cssOutput), true);
-		assertEquals(existsSync(tsOutput), true);
+		expect(existsSync(cssOutput)).toEqual(true);
+		expect(existsSync(tsOutput)).toEqual(true);
 
 		const css = await readFile(cssOutput, "utf8");
 		const declared = new Set(
@@ -110,11 +112,11 @@ Deno.test("quick start - documented usage matches generated tokens and output pa
 		const consumed = [...cssExample.matchAll(/var\((--[\w-]+)\)/g)].map(
 			(match) => match[1],
 		);
-		assert(consumed.length > 0, "the CSS example must consume custom properties");
-		assertEquals(
-			consumed.filter((name) => !declared.has(name)),
-			[],
-		);
+		expect(
+			consumed.length > 0,
+			"the CSS example must consume custom properties",
+		).toBeTruthy();
+		expect(consumed.filter((name) => !declared.has(name))).toEqual([]);
 
 		// No token name in the Quick Start may be missing from the generated
 		// declarations, so the documented drift cannot return silently.
@@ -122,35 +124,34 @@ Deno.test("quick start - documented usage matches generated tokens and output pa
 		const fences = [...quickStart.matchAll(/^```([^\n]*)\n([\s\S]*?)^```$/gm)].map(
 			(match) => ({ language: match[1], body: match[2] }),
 		);
-		assertEquals(
+		expect(
 			fences.filter((fence) => !allowedFenceLanguages.includes(fence.language)),
-			[],
 			"the Quick Start must only fence code in languages this scan understands",
-		);
+		).toEqual([]);
 		const referenced = fences
 			.filter((fence) => scannedFenceLanguages.includes(fence.language))
 			.flatMap((fence) =>
 				[...fence.body.matchAll(/--[a-zA-Z][\w-]*/g)].map((match) => match[0]),
 			);
-		assert(referenced.length > 0, "the Quick Start must reference generated tokens");
-		assertEquals(
-			[...new Set(referenced)].filter((name) => !declared.has(name)),
-			[],
-		);
+		expect(
+			referenced.length > 0,
+			"the Quick Start must reference generated tokens",
+		).toBeTruthy();
+		expect([...new Set(referenced)].filter((name) => !declared.has(name))).toEqual([]);
 
 		// README.md must contain the fixtures exactly.
-		assert(
+		expect(
 			readme.includes(configFixture.trimEnd()),
 			"README.md does not contain the Quick Start configuration fixture",
-		);
-		assert(
+		).toBeTruthy();
+		expect(
 			readme.includes(cssExample.trimEnd()),
 			"README.md does not contain the CSS usage fixture",
-		);
-		assert(
+		).toBeTruthy();
+		expect(
 			readme.includes(tsExample.trimEnd()),
 			"README.md does not contain the TypeScript usage fixture",
-		);
+		).toBeTruthy();
 
 		// The documented property chain must type-check and resolve.
 		const usagePath = join(projectDir, "consumer.ts");
@@ -184,13 +185,16 @@ Deno.test("quick start - documented usage matches generated tokens and output pa
 			".bin",
 			executableName("tsc"),
 		);
-		assert(existsSync(tsc), "typescript is required to type-check the example");
+		expect(
+			existsSync(tsc),
+			"typescript is required to type-check the example",
+		).toBeTruthy();
 		const typecheck = spawnSync(tsc, ["--project", join(projectDir, "tsconfig.json")], {
 			cwd: projectDir,
 			encoding: "utf8",
 			env: childEnv,
 		});
-		assertEquals(typecheck.status, 0, `${typecheck.stdout}\n${typecheck.stderr}`);
+		expect(typecheck.status, `${typecheck.stdout}\n${typecheck.stderr}`).toEqual(0);
 
 		const runExample = spawnSync(
 			process.execPath,
@@ -203,14 +207,14 @@ Deno.test("quick start - documented usage matches generated tokens and output pa
 			],
 			{ cwd: projectDir, encoding: "utf8", env: childEnv },
 		);
-		assertEquals(runExample.status, 0, runExample.stderr);
+		expect(runExample.status, runExample.stderr).toEqual(0);
 
 		const token = JSON.parse(runExample.stdout) as {
 			key: string;
 			value: string;
 			variable: string;
 		};
-		assertEquals(token, {
+		expect(token).toEqual({
 			key: "--spacing-size-2",
 			value: "0.5rem",
 			variable: "--spacing-size-2: 0.5rem;",

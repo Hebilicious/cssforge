@@ -1,3 +1,4 @@
+import { expect, test } from "vitest";
 import {
 	generateCSS,
 	generateStyleDictionaryJSON,
@@ -7,21 +8,20 @@ import {
 	processSpacing,
 	processTypography,
 } from "../src/mod.ts";
-import { assert, assertEquals, Deno } from "./vitest-compat.ts";
 
 // Imported from the package entry on purpose: the export is the behaviour under
 // test, so importing from `helpers.ts` would pass even without a re-export.
-Deno.test("InvalidNameError - is exported from the package entry as a constructor", () => {
-	assertEquals(typeof InvalidNameError, "function");
-	assert(
+test("InvalidNameError - is exported from the package entry as a constructor", () => {
+	expect(typeof InvalidNameError).toEqual("function");
+	expect(
 		InvalidNameError.prototype instanceof Error,
 		"InvalidNameError must extend Error so existing catch blocks keep working.",
-	);
+	).toBeTruthy();
 
 	const error = new InvalidNameError("boom");
-	assert(error instanceof Error, "An instance must be an Error.");
-	assertEquals(error.name, "InvalidNameError");
-	assertEquals(error.message, "boom");
+	expect(error instanceof Error, "An instance must be an Error.").toBeTruthy();
+	expect(error.name).toEqual("InvalidNameError");
+	expect(error.message).toEqual("boom");
 });
 
 const invalidPrimitiveConfig = {
@@ -32,7 +32,7 @@ const invalidPrimitiveConfig = {
 	},
 };
 
-Deno.test("InvalidNameError - catches a name validation failure with instanceof", () => {
+test("InvalidNameError - catches a name validation failure with instanceof", () => {
 	let caught: unknown;
 	try {
 		processPrimitives(invalidPrimitiveConfig as never);
@@ -40,11 +40,14 @@ Deno.test("InvalidNameError - catches a name validation failure with instanceof"
 		caught = error;
 	}
 
-	assert(caught instanceof InvalidNameError, "Expected an InvalidNameError instance.");
-	assertEquals((caught as Error).name, "InvalidNameError");
+	expect(
+		caught instanceof InvalidNameError,
+		"Expected an InvalidNameError instance.",
+	).toBeTruthy();
+	expect((caught as Error).name).toEqual("InvalidNameError");
 });
 
-Deno.test("InvalidNameError - is reachable through every public entry", () => {
+test("InvalidNameError - is reachable through every public entry", () => {
 	// The entries `mod.ts` exports. `generateJSON` and `generateTS` live in
 	// `generator.ts` and are not part of the package surface.
 	const entries: Array<[string, () => unknown]> = [
@@ -79,14 +82,14 @@ Deno.test("InvalidNameError - is reachable through every public entry", () => {
 		} catch (error) {
 			caught = error;
 		}
-		assert(
+		expect(
 			caught instanceof InvalidNameError,
 			`${label} must surface an InvalidNameError, received ${String(caught)}.`,
-		);
+		).toBeTruthy();
 	}
 });
 
-Deno.test("InvalidNameError - does not affect valid configurations", () => {
+test("InvalidNameError - does not affect valid configurations", () => {
 	const css = generateCSS({
 		primitives: {
 			"card-2": {
@@ -95,8 +98,8 @@ Deno.test("InvalidNameError - does not affect valid configurations", () => {
 		},
 	} as never);
 
-	assert(
+	expect(
 		css.includes("--card-2-default-gap: 1rem;"),
 		`Valid names must keep generating. Received: ${css}`,
-	);
+	).toBeTruthy();
 });

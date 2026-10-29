@@ -1,7 +1,8 @@
+import { expect, test } from "vitest";
 import { generateJSON, generateTS } from "../src/generator.ts";
 import type { CSSForgeConfig, LightDarkSettings } from "../src/mod.ts";
 import { defineConfig, generateCSS, generateStyleDictionaryJSON } from "../src/mod.ts";
-import { assert, assertEquals, assertThrows, Deno } from "./vitest-compat.ts";
+import { thrownError } from "./helpers.ts";
 
 const palette = {
 	value: {
@@ -55,21 +56,20 @@ const withLightDark = (lightDark: unknown) => {
 };
 
 const throwsAt = (config: unknown, ...fragments: string[]) => {
-	const error = assertThrows(() => generateCSS(config as CSSForgeConfig));
+	const error = thrownError(() => generateCSS(config as CSSForgeConfig));
 	for (const fragment of fragments) {
-		assert(
+		expect(
 			error.message.includes(fragment),
 			`Expected the error to include ${fragment}. Received: ${error.message}`,
-		);
+		).toBeTruthy();
 	}
 };
 
-Deno.test("generateCSS - lightDark emits one light-dark() token per paired color at :root", () => {
+test("generateCSS - lightDark emits one light-dark() token per paired color at :root", () => {
 	const css = generateCSS(pairedConfig());
 	const themes = css.slice(css.indexOf("/* Themes */"));
 
-	assertEquals(
-		themes,
+	expect(themes).toEqual(
 		[
 			"/* Themes */",
 			"/* Theme: light-dark(light, dark) */",
@@ -83,7 +83,7 @@ Deno.test("generateCSS - lightDark emits one light-dark() token per paired color
 	);
 });
 
-Deno.test("generateCSS - lightDark colorScheme emits a color-scheme override rule per scheme", () => {
+test("generateCSS - lightDark colorScheme emits a color-scheme override rule per scheme", () => {
 	const css = generateCSS(
 		pairedConfig({
 			light: "light",
@@ -92,7 +92,7 @@ Deno.test("generateCSS - lightDark colorScheme emits a color-scheme override rul
 		}),
 	);
 
-	assert(
+	expect(
 		css.endsWith(
 			[
 				"}",
@@ -105,10 +105,10 @@ Deno.test("generateCSS - lightDark colorScheme emits a color-scheme override rul
 			].join("\n"),
 		),
 		css,
-	);
+	).toBeTruthy();
 });
 
-Deno.test("generateCSS - lightDark names a paired variantNameOnly color by its variant", () => {
+test("generateCSS - lightDark names a paired variantNameOnly color by its variant", () => {
 	const variantNameOnly = { variantNameOnly: true };
 	const css = generateCSS(
 		defineConfig({
@@ -133,10 +133,10 @@ Deno.test("generateCSS - lightDark names a paired variantNameOnly color by its v
 		}),
 	);
 
-	assert(css.includes("--background: light-dark(white, black);"), css);
+	expect(css.includes("--background: light-dark(white, black);"), css).toBeTruthy();
 });
 
-Deno.test("generateCSS - lightDark keeps unpaired themes with their selector", () => {
+test("generateCSS - lightDark keeps unpaired themes with their selector", () => {
 	const config = pairedConfig();
 	const theme = config.colors.theme as { value: Record<string, unknown> };
 	theme.value.pink = {
@@ -145,7 +145,7 @@ Deno.test("generateCSS - lightDark keeps unpaired themes with their selector", (
 	};
 	const css = generateCSS(config);
 
-	assert(
+	expect(
 		css.endsWith(
 			[
 				"/* Theme: pink */",
@@ -156,12 +156,12 @@ Deno.test("generateCSS - lightDark keeps unpaired themes with their selector", (
 			].join("\n"),
 		),
 		css,
-	);
-	assert(!css.includes("--theme-light-"), css);
-	assert(!css.includes("--theme-dark-"), css);
+	).toBeTruthy();
+	expect(!css.includes("--theme-light-"), css).toBeTruthy();
+	expect(!css.includes("--theme-dark-"), css).toBeTruthy();
 });
 
-Deno.test("generateCSS - a token path to a paired color resolves to the light-dark() token", () => {
+test("generateCSS - a token path to a paired color resolves to the light-dark() token", () => {
 	const config = pairedConfig();
 	config.primitives = {
 		card: {
@@ -175,13 +175,13 @@ Deno.test("generateCSS - a token path to a paired color resolves to the light-da
 	};
 	const css = generateCSS(config);
 
-	assert(
+	expect(
 		css.includes("--card-surface-background: var(--theme-background-primary);"),
 		css,
-	);
+	).toBeTruthy();
 });
 
-Deno.test("generateCSS - a paired mix references an earlier paired variant", () => {
+test("generateCSS - a paired mix references an earlier paired variant", () => {
 	const config = pairedConfig();
 	const theme = config.colors.theme as {
 		value: Record<string, { value: Record<string, { value: Record<string, unknown> }> }>;
@@ -192,17 +192,17 @@ Deno.test("generateCSS - a paired mix references an earlier paired variant", () 
 		};
 	}
 
-	assert(
+	expect(
 		generateCSS(config).includes(
 			"--theme-background-hover: light-dark(color-mix(in oklch, var(--theme-background-primary), black 5%), color-mix(in oklch, var(--theme-background-primary), black 5%));",
 		),
-	);
+	).toBeTruthy();
 });
 
-Deno.test("generateJSON - lightDark paired tokens sit at theme.<color>.<variant>", () => {
+test("generateJSON - lightDark paired tokens sit at theme.<color>.<variant>", () => {
 	const json = JSON.parse(generateJSON(pairedConfig()));
 
-	assertEquals(json.theme, {
+	expect(json.theme).toEqual({
 		background: {
 			primary: {
 				key: "--theme-background-primary",
@@ -221,25 +221,25 @@ Deno.test("generateJSON - lightDark paired tokens sit at theme.<color>.<variant>
 			},
 		},
 	});
-	assert(
+	expect(
 		generateTS(pairedConfig()).includes('"key": "--theme-background-primary"'),
 		"TS output carries the paired token",
-	);
+	).toBeTruthy();
 });
 
-Deno.test("generateStyleDictionaryJSON - a paired token resolves both schemes and references both", () => {
+test("generateStyleDictionaryJSON - a paired token resolves both schemes and references both", () => {
 	const tokens = JSON.parse(generateStyleDictionaryJSON(pairedConfig()));
 	const primary = tokens.theme.background.primary;
 
-	assertEquals(primary.value, "light-dark(oklch(100% 0 none), oklch(14.5% 0 none))");
-	assertEquals(primary.type, "color");
-	assertEquals(primary.attributes.referencePaths, [
+	expect(primary.value).toEqual("light-dark(oklch(100% 0 none), oklch(14.5% 0 none))");
+	expect(primary.type).toEqual("color");
+	expect(primary.attributes.referencePaths).toEqual([
 		"palette.base.white",
 		"palette.base.ink",
 	]);
 });
 
-Deno.test("generateCSS - lightDark rejects paired themes that declare different variants", () => {
+test("generateCSS - lightDark rejects paired themes that declare different variants", () => {
 	const config = pairedConfig();
 	const theme = config.colors.theme as {
 		value: Record<string, { value: Record<string, { value: Record<string, string> }> }>;
@@ -255,7 +255,7 @@ Deno.test("generateCSS - lightDark rejects paired themes that declare different 
 	);
 });
 
-Deno.test("generateCSS - lightDark rejects a selector or atRule on a paired theme", () => {
+test("generateCSS - lightDark rejects a selector or atRule on a paired theme", () => {
 	const config = pairedConfig();
 	const theme = config.colors.theme as { value: Record<string, { settings?: unknown }> };
 	theme.value.dark.settings = { selector: ".dark" };
@@ -263,7 +263,7 @@ Deno.test("generateCSS - lightDark rejects a selector or atRule on a paired them
 	throwsAt(config, '"theme.dark.settings"', '"selector"', "lightDark");
 });
 
-Deno.test("generateCSS - lightDark rejects paired colors that disagree on variantNameOnly", () => {
+test("generateCSS - lightDark rejects paired colors that disagree on variantNameOnly", () => {
 	const config = pairedConfig();
 	const theme = config.colors.theme as {
 		value: Record<string, { value: Record<string, { settings?: unknown }> }>;
@@ -273,7 +273,7 @@ Deno.test("generateCSS - lightDark rejects paired colors that disagree on varian
 	throwsAt(config, '"theme.dark.text.settings.variantNameOnly"', '"theme.light.text"');
 });
 
-Deno.test("generateCSS - lightDark rejects a paired color named like an unpaired theme", () => {
+test("generateCSS - lightDark rejects a paired color named like an unpaired theme", () => {
 	const config = pairedConfig();
 	const theme = config.colors.theme as { value: Record<string, unknown> };
 	theme.value.text = { value: { accent: { value: { primary: "red" } } } };
@@ -281,7 +281,7 @@ Deno.test("generateCSS - lightDark rejects a paired color named like an unpaired
 	throwsAt(config, '"theme.light.text"', 'the theme "text"');
 });
 
-Deno.test("generateCSS - lightDark settings are validated with their configuration path", () => {
+test("generateCSS - lightDark settings are validated with their configuration path", () => {
 	throwsAt(
 		withLightDark({ light: "light", dark: "night" }),
 		'"theme.settings.lightDark.dark"',
@@ -312,7 +312,7 @@ Deno.test("generateCSS - lightDark settings are validated with their configurati
 	throwsAt(unknownKey, '"theme"', '"extra"');
 });
 
-Deno.test("generateCSS - theme settings are rejected beside named themes", () => {
+test("generateCSS - theme settings are rejected beside named themes", () => {
 	throwsAt(
 		{
 			colors: {

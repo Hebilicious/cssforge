@@ -1,6 +1,7 @@
+import { expect, test } from "vitest";
 import type { CSSForgeConfig, Diagnostic } from "../src/mod.ts";
 import { generateCSS, getDiagnostics } from "../src/mod.ts";
-import { assert, assertEquals, assertThrows, Deno } from "./vitest-compat.ts";
+import { thrownError } from "./helpers.ts";
 
 type FluidSettings = NonNullable<
 	NonNullable<CSSForgeConfig["typography"]["fluid"]>[string]["settings"]
@@ -27,15 +28,15 @@ const typography = (
 
 const codes = (diagnostics: Diagnostic[]) => diagnostics.map(({ code }) => code);
 
-Deno.test("fluid type - a step growing exactly 2.5x passes", () => {
+test("fluid type - a step growing exactly 2.5x passes", () => {
 	const config = typography(singleStep(16, 40));
 
 	generateCSS(config);
-	assertEquals(getDiagnostics(config), []);
+	expect(getDiagnostics(config)).toEqual([]);
 });
 
-Deno.test("fluid type - a step growing more than 2.5x is rejected (WCAG 1.4.4)", () => {
-	const error = assertThrows(() => generateCSS(typography(singleStep(16, 40.01))));
+test("fluid type - a step growing more than 2.5x is rejected (WCAG 1.4.4)", () => {
+	const error = thrownError(() => generateCSS(typography(singleStep(16, 40.01))));
 
 	for (const part of [
 		'"typography_fluid.body"',
@@ -47,12 +48,15 @@ Deno.test("fluid type - a step growing more than 2.5x is rejected (WCAG 1.4.4)",
 		"maxFontSize",
 		"positiveSteps",
 	]) {
-		assert(error.message.includes(part), `Expected "${part}" in: ${error.message}`);
+		expect(
+			error.message.includes(part),
+			`Expected "${part}" in: ${error.message}`,
+		).toBeTruthy();
 	}
 });
 
-Deno.test("fluid type - the 2.5x error names the step that exceeds it", () => {
-	const error = assertThrows(() =>
+test("fluid type - the 2.5x error names the step that exceeds it", () => {
+	const error = thrownError(() =>
 		generateCSS({
 			typography: {
 				fluid: {
@@ -70,23 +74,23 @@ Deno.test("fluid type - the 2.5x error names the step that exceeds it", () => {
 	);
 
 	// Step 3 ("2xl") grows from 16 * 1.2^3 = 27.648px to 20 * 1.6^3 = 81.92px, 2.963x; step 2 grows 2.22x.
-	assert(
+	expect(
 		error.message.includes('"2xl"') && error.message.includes("27.65px"),
 		error.message,
-	);
+	).toBeTruthy();
 });
 
-Deno.test("fluid type - a scale growing exactly 10% is fluid", () => {
-	assertEquals(getDiagnostics(typography(singleStep(20, 22))), []);
+test("fluid type - a scale growing exactly 10% is fluid", () => {
+	expect(getDiagnostics(typography(singleStep(20, 22)))).toEqual([]);
 });
 
-Deno.test("fluid type - a scale growing less than 10% at every step warns once", () => {
+test("fluid type - a scale growing less than 10% at every step warns once", () => {
 	const [diagnostic, ...rest] = getDiagnostics(typography(singleStep(20, 21.9)));
-	assertEquals(rest, []);
-	assertEquals(diagnostic?.code, "typography-static-scale");
-	assertEquals(diagnostic?.severity, "warning");
-	assertEquals(diagnostic?.path, "typography_fluid.body");
-	assert(diagnostic?.message.includes("9.5%"), diagnostic?.message);
+	expect(rest).toEqual([]);
+	expect(diagnostic?.code).toEqual("typography-static-scale");
+	expect(diagnostic?.severity).toEqual("warning");
+	expect(diagnostic?.path).toEqual("typography_fluid.body");
+	expect(diagnostic?.message.includes("9.5%"), diagnostic?.message).toBeTruthy();
 
 	const staticSteps = getDiagnostics({
 		typography: {
@@ -102,10 +106,10 @@ Deno.test("fluid type - a scale growing less than 10% at every step warns once",
 			},
 		},
 	});
-	assertEquals(codes(staticSteps), ["typography-static-scale"]);
+	expect(codes(staticSteps)).toEqual(["typography-static-scale"]);
 });
 
-Deno.test("fluid type - one static step in a fluid scale does not warn", () => {
+test("fluid type - one static step in a fluid scale does not warn", () => {
 	// Step m stays at 16px while l and xl grow 11% and 23%.
 	const diagnostics = getDiagnostics({
 		typography: {
@@ -122,29 +126,29 @@ Deno.test("fluid type - one static step in a fluid scale does not warn", () => {
 		},
 	});
 
-	assertEquals(diagnostics, []);
+	expect(diagnostics).toEqual([]);
 });
 
-Deno.test("fluid type - a minimum of exactly 12px is legible", () => {
-	assertEquals(getDiagnostics(typography(singleStep(12, 16))), []);
+test("fluid type - a minimum of exactly 12px is legible", () => {
+	expect(getDiagnostics(typography(singleStep(12, 16)))).toEqual([]);
 });
 
-Deno.test("fluid type - a minimum below 12px warns on the step", () => {
+test("fluid type - a minimum below 12px warns on the step", () => {
 	const [diagnostic, ...rest] = getDiagnostics(typography(singleStep(11.99, 16)));
 
-	assertEquals(rest, []);
-	assertEquals(diagnostic?.code, "typography-below-legibility-floor");
-	assertEquals(diagnostic?.severity, "warning");
-	assertEquals(diagnostic?.path, "typography_fluid.body@m");
-	assert(
+	expect(rest).toEqual([]);
+	expect(diagnostic?.code).toEqual("typography-below-legibility-floor");
+	expect(diagnostic?.severity).toEqual("warning");
+	expect(diagnostic?.path).toEqual("typography_fluid.body@m");
+	expect(
 		diagnostic?.message.includes("11.99px") &&
 			diagnostic.message.includes("12px") &&
 			diagnostic.message.includes("minLegibleSize"),
 		diagnostic?.message,
-	);
+	).toBeTruthy();
 });
 
-Deno.test("fluid type - a shrinking negative step is checked at its smaller end", () => {
+test("fluid type - a shrinking negative step is checked at its smaller end", () => {
 	// The scale shrinks from 20px to 16px, so step xs is 20 / 1.2^2 = 13.89px at
 	// 320px and 16 / 1.2^2 = 11.11px at 1280px.
 	const diagnostics = getDiagnostics({
@@ -162,50 +166,49 @@ Deno.test("fluid type - a shrinking negative step is checked at its smaller end"
 		},
 	});
 
-	assertEquals(
-		diagnostics.map(({ code, path }) => ({ code, path })),
-		[{ code: "typography-below-legibility-floor", path: "typography_fluid.body@xs" }],
-	);
-	assert(diagnostics[0]?.message.includes("11.11px"), diagnostics[0]?.message);
+	expect(diagnostics.map(({ code, path }) => ({ code, path }))).toEqual([
+		{ code: "typography-below-legibility-floor", path: "typography_fluid.body@xs" },
+	]);
+	expect(
+		diagnostics[0]?.message.includes("11.11px"),
+		diagnostics[0]?.message,
+	).toBeTruthy();
 });
 
-Deno.test("fluid type - settings.minLegibleSize moves or disables the floor", () => {
-	assertEquals(
+test("fluid type - settings.minLegibleSize moves or disables the floor", () => {
+	expect(
 		codes(getDiagnostics(typography(singleStep(13, 16), { minLegibleSize: 14 }))),
-		["typography-below-legibility-floor"],
-	);
-	assertEquals(
+	).toEqual(["typography-below-legibility-floor"]);
+	expect(
 		getDiagnostics(typography(singleStep(8, 16), { minLegibleSize: false })),
-		[],
-	);
+	).toEqual([]);
 });
 
-Deno.test("fluid type - rejects a minLegibleSize that is not a positive number or false", () => {
+test("fluid type - rejects a minLegibleSize that is not a positive number or false", () => {
 	for (const minLegibleSize of ["12px", true, 0, -1, Number.NaN]) {
 		const config = typography(singleStep(16, 20), {
 			minLegibleSize,
 		} as unknown as FluidSettings);
-		const error = assertThrows(() => generateCSS(config));
+		const error = thrownError(() => generateCSS(config));
 
-		assert(
+		expect(
 			error.message.includes('"typography_fluid.body.settings.minLegibleSize"'),
 			error.message,
-		);
+		).toBeTruthy();
 	}
 });
 
-Deno.test("fluid type - diagnostics leave the generated CSS unchanged", () => {
+test("fluid type - diagnostics leave the generated CSS unchanged", () => {
 	const config = typography(singleStep(8, 16));
 	const css = generateCSS(config);
 
-	assertEquals(codes(getDiagnostics(config)), ["typography-below-legibility-floor"]);
-	assertEquals(
-		css,
+	expect(codes(getDiagnostics(config))).toEqual(["typography-below-legibility-floor"]);
+	expect(css).toEqual(
 		generateCSS(typography(singleStep(8, 16), { minLegibleSize: false })),
 	);
 });
 
-Deno.test("fluid type - rejects a step whose size is 0px", () => {
-	const error = assertThrows(() => generateCSS(typography(singleStep(0, 16))));
-	assert(error.message.includes("greater than 0px"), error.message);
+test("fluid type - rejects a step whose size is 0px", () => {
+	const error = thrownError(() => generateCSS(typography(singleStep(0, 16))));
+	expect(error.message.includes("greater than 0px"), error.message).toBeTruthy();
 });

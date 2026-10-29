@@ -56,30 +56,20 @@ npx cssforge --mode all # npm
 
 The rest of this document writes commands as `cssforge <args>`.
 
-### Alternative installation (Deno and JSR)
+### Alternative installation (JSR)
 
 CSS Forge is also published to [JSR](https://jsr.io/@hebilicious/cssforge) at the same version
-as npm. Use it for Deno projects and for JSR-native imports:
+as npm. Use it for JSR-native imports:
 
 ```bash
-# Deno
-deno add jsr:@hebilicious/cssforge
-
-# npm (10.9 +) or pnpm
+# npm
 npx jsr add @hebilicious/cssforge
+
+# pnpm 10.9+
 pnpm i jsr:@hebilicious/cssforge
 ```
 
-The `jsr:` specifier replaces the package name in imports, and the published CLI entry
-point runs directly with Deno:
-
-```bash
-deno run -A jsr:@hebilicious/cssforge/cli --mode all
-```
-
-```typescript
-import { defineConfig } from "jsr:@hebilicious/cssforge";
-```
+Both keep the package name, so imports stay `import { defineConfig } from "@hebilicious/cssforge";`.
 
 ## Contributing Workflow
 
@@ -97,8 +87,7 @@ moon run cssforge:jsr-dry-run
 ```
 
 `cssforge:smoke-test` packs the package and installs that tarball in clean npm and pnpm
-projects, and `cssforge:jsr-smoke` exercises the JSR entry points (with Deno when it is
-installed).
+projects, and `cssforge:jsr-smoke` runs the JSR entry points with Node.
 
 ## Quick Start
 
@@ -272,8 +261,8 @@ The plugin calls the same `generateCSS` implementation as the CLI, so `virtual:c
 `cssforge --mode css` output byte for byte. The served stylesheet is unlayered, and
 `@import "virtual:cssforge.css" layer(cssforge)` does not work because a CSS import resolves to a
 file; set `write` and import the written file with `layer(cssforge)` to keep the tokens in a layer.
-The CLI stays the integration path for everything else: Deno and JSR, Style Dictionary, CI steps, and
-tools without a bundler.
+The CLI stays the integration path for everything else: JSR, Style Dictionary, CI steps, and tools
+without a bundler.
 
 ## Output Formats
 

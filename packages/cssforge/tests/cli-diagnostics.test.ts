@@ -3,8 +3,8 @@ import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { expect, test } from "vitest";
 import { childEnv } from "./helpers.ts";
-import { assert, assertEquals, Deno } from "./vitest-compat.ts";
 
 const cliPath = fileURLToPath(new URL("../src/cli.ts", import.meta.url));
 
@@ -27,7 +27,7 @@ const configSource = `export default {
 	},
 };`;
 
-Deno.test("cli - prints a build warning to stderr and still writes the output", async () => {
+test("cli - prints a build warning to stderr and still writes the output", async () => {
 	const tempDir = await mkdtemp(join(tmpdir(), "cssforge-diagnostics-cli-"));
 
 	try {
@@ -41,16 +41,16 @@ Deno.test("cli - prints a build warning to stderr and still writes the output", 
 			{ cwd: tempDir, encoding: "utf8", env: childEnv },
 		);
 
-		assertEquals(result.status, 0, result.stderr);
+		expect(result.status, result.stderr).toEqual(0);
 		const warnings = result.stderr
 			.split("\n")
 			.filter((line) => line.startsWith("cssforge: warning: "));
-		assertEquals(warnings.length, 1, result.stderr);
-		assert(warnings[0]?.includes("typography_fluid.body@m"), warnings[0]);
-		assert(
+		expect(warnings.length, result.stderr).toEqual(1);
+		expect(warnings[0]?.includes("typography_fluid.body@m"), warnings[0]).toBeTruthy();
+		expect(
 			(await readFile(cssPath, "utf8")).includes("--typography_fluid-body-m:"),
 			"Expected the CSS output to be written",
-		);
+		).toBeTruthy();
 	} finally {
 		await rm(tempDir, { recursive: true, force: true });
 	}

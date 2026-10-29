@@ -1,9 +1,9 @@
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
+import { expect, test } from "vitest";
 import * as basicExampleModule from "../../../example/basic/cssforge.config.ts";
 import type { CSSForgeConfig } from "../src/mod.ts";
 import { generateCSS } from "../src/mod.ts";
-import { assert, assertEquals, Deno } from "./vitest-compat.ts";
 
 // `example/basic` is excluded from the Moon workspace, so its stylesheet and
 // markup are only observable as files.
@@ -23,7 +23,7 @@ const consumedProperties = (source: string): Set<string> =>
 const importedStylesheets = (css: string): string[] =>
 	[...css.matchAll(/@import\s+["']([^"']+)["']/g)].map((match) => match[1]);
 
-Deno.test("example/basic consumes only custom properties its configuration generates", async () => {
+test("example/basic consumes only custom properties its configuration generates", async () => {
 	const declared = declaredProperties(generateCSS(basicExampleConfig));
 	const consumed = new Set([
 		...consumedProperties(await readFile(exampleFile("index.html"), "utf8")),
@@ -32,18 +32,17 @@ Deno.test("example/basic consumes only custom properties its configuration gener
 
 	const undeclared = [...consumed].filter((name) => !declared.has(name)).sort();
 
-	assertEquals(
+	expect(
 		undeclared,
-		[],
 		`example/basic consumes custom properties its configuration never generates: ${undeclared.join(", ")}`,
-	);
+	).toEqual([]);
 });
 
-Deno.test("example/basic imports the generated stylesheet from the CLI default output path", async () => {
+test("example/basic imports the generated stylesheet from the CLI default output path", async () => {
 	const imports = importedStylesheets(await readFile(exampleFile("main.css"), "utf8"));
 
-	assert(
+	expect(
 		imports.includes("./.cssforge/output.css"),
 		`example/basic/main.css must import "./.cssforge/output.css", got: ${imports.join(", ")}`,
-	);
+	).toBeTruthy();
 });

@@ -37,7 +37,7 @@ Each release publishes the same version to npm and to JSR.
 - Import: `import { defineConfig } from "@hebilicious/cssforge";`
 - Run: the package exposes a `cssforge` executable, so run it directly (`cssforge --mode all`,
   or `npx cssforge --mode all` with npm)
-- Deno: `deno add jsr:@hebilicious/cssforge`, then `deno run -A jsr:@hebilicious/cssforge/cli`
+- JSR: `npx jsr add @hebilicious/cssforge` or `pnpm i jsr:@hebilicious/cssforge`
 - Runtime: Node 24 or newer, which loads `cssforge.config.ts` without a loader or `tsx`
 
 ## Agent workflow
