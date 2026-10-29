@@ -1,3 +1,4 @@
+import { expect, test } from "vitest";
 import {
 	generateCSS,
 	generateJSON,
@@ -6,9 +7,7 @@ import {
 } from "../src/generator.ts";
 // The public entry point, so the diagnostic is proven reachable by consumers.
 import { defineConfig, generateCSS as generateCSSFromPublicEntry } from "../src/mod.ts";
-import { assertDoesNotThrow, assertEquals, assertThrows, Deno } from "./vitest-compat.ts";
-
-const captureError = (run: () => unknown): Error => assertThrows(run);
+import { thrownError } from "./helpers.ts";
 
 /** `primitives.a-b.c.x` and `primitives.a.b-c.x` both join to `--a-b-c-x`. */
 const collidingConfig = () =>
@@ -24,7 +23,7 @@ const collisionMessage =
 
 const palette = { value: { white: { value: { x: { hex: "#ffffff" } } } } };
 
-Deno.test("generator - every output rejects two paths that generate the same key", () => {
+test("generator - every output rejects two paths that generate the same key", () => {
 	const outputs: Array<[string, () => unknown]> = [
 		["generateCSS", () => generateCSS(collidingConfig())],
 		["generateJSON", () => generateJSON(collidingConfig())],
@@ -34,11 +33,11 @@ Deno.test("generator - every output rejects two paths that generate the same key
 	];
 
 	for (const [label, run] of outputs) {
-		assertEquals(captureError(run).message, collisionMessage, label);
+		expect(thrownError(run).message, label).toEqual(collisionMessage);
 	}
 });
 
-Deno.test("generator - a collision is reported from any module", () => {
+test("generator - a collision is reported from any module", () => {
 	const collisions: Array<[string, () => unknown, string]> = [
 		[
 			"colors",
@@ -75,11 +74,11 @@ Deno.test("generator - a collision is reported from any module", () => {
 	];
 
 	for (const [label, run, expected] of collisions) {
-		assertEquals(captureError(run).message, expected, label);
+		expect(thrownError(run).message, label).toEqual(expected);
 	}
 });
 
-Deno.test("generator - a near-miss with distinct keys is unaffected", () => {
+test("generator - a near-miss with distinct keys is unaffected", () => {
 	const config = defineConfig({
 		primitives: {
 			"a-b": { value: { c: { value: { x: "1rem" } } } },
@@ -87,12 +86,12 @@ Deno.test("generator - a near-miss with distinct keys is unaffected", () => {
 		},
 	});
 
-	assertEquals(generateCSS(config).includes("--a-b-c-x: 1rem;"), true);
-	assertEquals(generateCSS(config).includes("--a-d-c-x: 2rem;"), true);
+	expect(generateCSS(config).includes("--a-b-c-x: 1rem;")).toEqual(true);
+	expect(generateCSS(config).includes("--a-d-c-x: 2rem;")).toEqual(true);
 
 	const json = JSON.parse(generateJSON(config));
-	assertEquals(json.primitives["a-b"].c.x.key, "--a-b-c-x");
-	assertEquals(json.primitives.a["d-c"].x.key, "--a-d-c-x");
+	expect(json.primitives["a-b"].c.x.key).toEqual("--a-b-c-x");
+	expect(json.primitives.a["d-c"].x.key).toEqual("--a-d-c-x");
 });
 
 /** A theme color that emits `--primary` when `variantNameOnly` is set. */
@@ -106,7 +105,7 @@ const variantTheme = (
 	},
 });
 
-Deno.test("generator - variantNameOnly themes may reuse a key in different scopes", () => {
+test("generator - variantNameOnly themes may reuse a key in different scopes", () => {
 	const css = generateCSS(
 		defineConfig({
 			colors: {
@@ -123,12 +122,12 @@ Deno.test("generator - variantNameOnly themes may reuse a key in different scope
 		}),
 	);
 
-	assertEquals((css.match(/--primary:/g) ?? []).length, 3);
-	assertEquals(css.includes("@media (prefers-color-scheme: dark) {"), true);
-	assertEquals(css.includes(".ThemePink {"), true);
+	expect((css.match(/--primary:/g) ?? []).length).toEqual(3);
+	expect(css.includes("@media (prefers-color-scheme: dark) {")).toEqual(true);
+	expect(css.includes(".ThemePink {")).toEqual(true);
 });
 
-Deno.test("generator - unscoped declarations that share a key are rejected", () => {
+test("generator - unscoped declarations that share a key are rejected", () => {
 	// Every case below lands in `:root`, so one declaration overwrites the other.
 	const unscoped: Array<[string, () => unknown, string]> = [
 		[
@@ -217,12 +216,12 @@ Deno.test("generator - unscoped declarations that share a key are rejected", () 
 	];
 
 	for (const [label, run, expected] of unscoped) {
-		assertEquals(captureError(run).message, expected, label);
+		expect(thrownError(run).message, label).toEqual(expected);
 	}
 });
 
-Deno.test("generator - an explicit :root selector collides inside a shared at-rule", () => {
-	const error = captureError(() =>
+test("generator - an explicit :root selector collides inside a shared at-rule", () => {
+	const error = thrownError(() =>
 		generateCSS(
 			defineConfig({
 				colors: {
@@ -244,13 +243,12 @@ Deno.test("generator - an explicit :root selector collides inside a shared at-ru
 			}),
 		),
 	);
-	assertEquals(
-		error.message,
+	expect(error.message).toEqual(
 		'Token key collision: "theme.light.background.primary" and "theme.dark.background.primary" both generate "--primary". Rename one of the configuration paths.',
 	);
 });
 
-Deno.test("generator - differing wrappers may share a key", () => {
+test("generator - differing wrappers may share a key", () => {
 	// A wrapper is part of the scope identity, so the same name under two
 	// different wrappers does not overwrite. Covers both modules and both
 	// wrapper kinds.
@@ -349,9 +347,9 @@ Deno.test("generator - differing wrappers may share a key", () => {
 	];
 
 	for (const [label, run, key, wrapper] of accepted) {
-		assertDoesNotThrow(run, label);
+		expect(run, label).not.toThrow();
 		const css = run();
-		assertEquals((css.match(new RegExp(key, "g")) ?? []).length, 2, label);
-		assertEquals(css.includes(wrapper), true, label);
+		expect((css.match(new RegExp(key, "g")) ?? []).length, label).toEqual(2);
+		expect(css.includes(wrapper), label).toEqual(true);
 	}
 });

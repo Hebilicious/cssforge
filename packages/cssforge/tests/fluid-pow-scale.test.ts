@@ -1,4 +1,5 @@
 import { calculateTypeScale } from "utopia-core";
+import { expect, test } from "vitest";
 import { generateJSON, generateTS } from "../src/generator.ts";
 import type { CSSForgeConfig } from "../src/mod.ts";
 import {
@@ -7,8 +8,7 @@ import {
 	generateStyleDictionaryJSON,
 	getDiagnostics,
 } from "../src/mod.ts";
-import { getLines } from "./helpers.ts";
-import { assert, assertEquals, assertThrows, Deno } from "./vitest-compat.ts";
+import { getLines, thrownError } from "./helpers.ts";
 
 type FluidScale = NonNullable<CSSForgeConfig["typography"]["fluid"]>[string];
 type FluidSettings = NonNullable<FluidScale["settings"]>;
@@ -47,10 +47,10 @@ const declarations = (css: string) =>
 const steps = [4, 3, 2, 1, 0, -1, -2] as const;
 const labels = { 4: "3xl", 3: "2xl", 2: "xl", 1: "l", 0: "m", [-1]: "s", [-2]: "xs" };
 
-Deno.test("fluid type - every scale is written as clamp() steps and as pow tokens", () => {
+test("fluid type - every scale is written as clamp() steps and as pow tokens", () => {
 	const utopia = calculateTypeScale({ ...example, labelStyle: "tshirt" });
 
-	assertEquals(getLines(generateCSS(scale(example))).slice(3, -1), [
+	expect(getLines(generateCSS(scale(example))).slice(3, -1)).toEqual([
 		...utopia
 			.slice(0, 5)
 			.map(({ label, clamp }) => `--typography_fluid-body-${label}: ${clamp};`),
@@ -76,7 +76,7 @@ Deno.test("fluid type - every scale is written as clamp() steps and as pow token
 	]);
 });
 
-Deno.test("fluid type - clamp() steps 0 and above are utopia's, byte for byte", () => {
+test("fluid type - clamp() steps 0 and above are utopia's, byte for byte", () => {
 	for (const value of [
 		example,
 		{ ...example, relativeTo: "container" as const },
@@ -95,7 +95,7 @@ Deno.test("fluid type - clamp() steps 0 and above are utopia's, byte for byte", 
 			...value,
 			labelStyle: "tshirt",
 		})) {
-			if (step >= 0) assertEquals(css.get(`--typography_fluid-body-${label}`), clamp);
+			if (step >= 0) expect(css.get(`--typography_fluid-body-${label}`)).toEqual(clamp);
 		}
 	}
 });
@@ -109,7 +109,7 @@ const evaluate = (css: Map<string, string>, name: string, width: number): number
 	const substitute = (value: string): string =>
 		value.replace(/var\((--[\w-]+)\)/g, (_, inner: string) => {
 			const declared = css.get(inner);
-			assert(declared !== undefined, `Undeclared ${inner}`);
+			expect(declared !== undefined, `Undeclared ${inner}`).toBeTruthy();
 			return `(${substitute(declared ?? "")})`;
 		});
 	const expression = substitute(css.get(name) ?? "")
@@ -118,13 +118,13 @@ const evaluate = (css: Map<string, string>, name: string, width: number): number
 		.replaceAll("calc(", "(")
 		.replaceAll("clamp(", "clampPx(")
 		.replaceAll("pow(", "Math.pow(");
-	assert(/^[\d\s.+\-*/(),a-zA-Z]+$/.test(expression), expression);
+	expect(/^[\d\s.+\-*/(),a-zA-Z]+$/.test(expression), expression).toBeTruthy();
 	const clampPx = (min: number, preferred: number, max: number) =>
 		Math.min(max, Math.max(min, preferred));
 	return new Function("clampPx", `return ${expression};`)(clampPx) as number;
 };
 
-Deno.test("fluid type - both representations give every step its size at both widths", () => {
+test("fluid type - both representations give every step its size at both widths", () => {
 	const value = { ...example, minFontSize: 16, maxFontSize: 21, maxTypeScale: 1.333 };
 	const css = declarations(generateCSS(scale(value)));
 
@@ -149,13 +149,19 @@ Deno.test("fluid type - both representations give every step its size at both wi
 		] as const) {
 			const pow = evaluate(css, `--typography_fluid-body-pow-${label}`, width);
 			const clamp = evaluate(css, `--typography_fluid-body-${label}`, width);
-			assert(Math.abs(pow - expected) < 1e-9, `pow ${label} at ${width}px: ${pow}`);
-			assert(Math.abs(clamp - expected) < 0.02, `clamp ${label} at ${width}px: ${clamp}`);
+			expect(
+				Math.abs(pow - expected) < 1e-9,
+				`pow ${label} at ${width}px: ${pow}`,
+			).toBeTruthy();
+			expect(
+				Math.abs(clamp - expected) < 0.02,
+				`clamp ${label} at ${width}px: ${clamp}`,
+			).toBeTruthy();
 		}
 	}
 });
 
-Deno.test("fluid type - JSON, TypeScript and Style Dictionary hold both representations as the CSS writes them", () => {
+test("fluid type - JSON, TypeScript and Style Dictionary hold both representations as the CSS writes them", () => {
 	const config = scale(example);
 	const css = declarations(generateCSS(config));
 	type Token = { key: string; value: string; variable: string };
@@ -172,20 +178,10 @@ Deno.test("fluid type - JSON, TypeScript and Style Dictionary hold both represen
 		...Object.values(powSteps),
 	];
 
-	assertEquals(
-		jsonTokens.map(({ key, value }) => [key, value]),
-		[...css.entries()],
-	);
-	assertEquals(
-		Object.keys(clampSteps),
-		steps.map((step) => `body@${labels[step]}`),
-	);
-	assertEquals(
-		Object.keys(powSteps),
-		steps.map((step) => `pow@${labels[step]}`),
-	);
-	assertEquals(
-		generateTS(config),
+	expect(jsonTokens.map(({ key, value }) => [key, value])).toEqual([...css.entries()]);
+	expect(Object.keys(clampSteps)).toEqual(steps.map((step) => `body@${labels[step]}`));
+	expect(Object.keys(powSteps)).toEqual(steps.map((step) => `pow@${labels[step]}`));
+	expect(generateTS(config)).toEqual(
 		`export const cssForge = ${generateJSON(config)} as const;`,
 	);
 
@@ -204,28 +200,27 @@ Deno.test("fluid type - JSON, TypeScript and Style Dictionary hold both represen
 	};
 	const { pow: sdPow, ...sdClamp } = styleDictionary["typography-fluid"].body;
 	const sdTokens = [...Object.values(sdClamp), ...Object.values(sdPow)];
-	assertEquals(
-		sdTokens.map(({ attributes }) => attributes.cssVariable).sort(),
+	expect(sdTokens.map(({ attributes }) => attributes.cssVariable).sort()).toEqual(
 		[...css.keys()].sort(),
 	);
 
 	// Plain values are primitives; a value made of other tokens is semantic and
 	// names them, as a color mix does.
-	assertEquals(sdPow["min-width"]?.$tier, "primitive");
-	assertEquals(sdClamp.m?.$tier, "primitive");
-	assertEquals(sdPow.progress?.attributes.referencePaths, [
+	expect(sdPow["min-width"]?.$tier).toEqual("primitive");
+	expect(sdClamp.m?.$tier).toEqual("primitive");
+	expect(sdPow.progress?.attributes.referencePaths).toEqual([
 		"typography-fluid.body.pow.min-width",
 		"typography-fluid.body.pow.max-width",
 	]);
-	assertEquals(sdPow.s?.$tier, "semantic");
-	assertEquals(sdPow.s?.attributes.referencePaths, [
+	expect(sdPow.s?.$tier).toEqual("semantic");
+	expect(sdPow.s?.attributes.referencePaths).toEqual([
 		"typography-fluid.body.pow.m",
 		"typography-fluid.body.pow.min-type-scale",
 	]);
-	assertEquals(sdPow.s?.$reference, "typography-fluid.body.pow.m");
+	expect(sdPow.s?.$reference).toEqual("typography-fluid.body.pow.m");
 });
 
-Deno.test("fluid type - a primitive references pow tokens like any other token", () => {
+test("fluid type - a primitive references pow tokens like any other token", () => {
 	const value = { ...example, positiveSteps: 1, negativeSteps: 1, prefix: "text" };
 	const customLabel = { "-1": "small", "0": "base", "1": "large" };
 	const config = defineConfig({
@@ -251,61 +246,53 @@ Deno.test("fluid type - a primitive references pow tokens like any other token",
 	});
 	const css = declarations(generateCSS(config));
 
-	assertEquals(
-		css.get("--heading-h1-fontSize"),
+	expect(css.get("--heading-h1-fontSize")).toEqual(
 		"var(--typography_fluid-body-text-pow-large)",
 	);
-	assertEquals(
-		css.get("--heading-h1-lineHeight"),
+	expect(css.get("--heading-h1-lineHeight")).toEqual(
 		"calc(var(--typography_fluid-body-text-pow-max-type-scale) * 1.1)",
 	);
-	assertEquals(
-		css.get("--heading-h1-padding"),
+	expect(css.get("--heading-h1-padding")).toEqual(
 		"var(--typography_fluid-body-text-small)",
 	);
-	assertEquals(
-		css.get("--typography_fluid-body-text-pow-small"),
+	expect(css.get("--typography_fluid-body-text-pow-small")).toEqual(
 		"calc(var(--typography_fluid-body-text-pow-base) / var(--typography_fluid-body-text-pow-min-type-scale))",
 	);
 	const json = JSON.parse(generateJSON(config)) as {
 		primitives: { heading: { h1: { fontSize: { value: string } } } };
 	};
-	assertEquals(
-		json.primitives.heading.h1.fontSize.value,
+	expect(json.primitives.heading.h1.fontSize.value).toEqual(
 		"var(--typography_fluid-body-text-pow-large)",
 	);
 });
 
-Deno.test("fluid type - a step label that takes a pow name fails as a collision", () => {
+test("fluid type - a step label that takes a pow name fails as a collision", () => {
 	const collision = (customLabel: Record<string, string>) =>
-		assertThrows(() => generateJSON(scale(example, { customLabel }))).message;
+		thrownError(() => generateJSON(scale(example, { customLabel }))).message;
 
-	assertEquals(
-		collision({ "0": "min-width" }),
+	expect(collision({ "0": "min-width" })).toEqual(
 		'Token key collision: "typography_fluid.body.pow.min-width" and "typography_fluid.body.pow@min-width" both generate "--typography_fluid-body-pow-min-width". Rename one of the configuration paths.',
 	);
-	assertEquals(
-		collision({ "1": "pow-min-width" }),
+	expect(collision({ "1": "pow-min-width" })).toEqual(
 		'Token key collision: "typography_fluid.body@pow-min-width" and "typography_fluid.body.pow.min-width" both generate "--typography_fluid-body-pow-min-width". Rename one of the configuration paths.',
 	);
-	assertEquals(
-		collision({ "0": "pow-l", "1": "l" }),
+	expect(collision({ "0": "pow-l", "1": "l" })).toEqual(
 		'Token key collision: "typography_fluid.body@pow-l" and "typography_fluid.body.pow@l" both generate "--typography_fluid-body-pow-l". Rename one of the configuration paths.',
 	);
-	assertThrows(() => generateCSS(scale(example, { customLabel: { "0": "min-width" } })));
+	thrownError(() => generateCSS(scale(example, { customLabel: { "0": "min-width" } })));
 
 	// `pow` is the segment that holds the pow tokens, so no step takes it.
-	const segment = assertThrows(() =>
+	const segment = thrownError(() =>
 		generateCSS(scale(example, { customLabel: { "0": "pow" } })),
 	);
-	assert(
+	expect(
 		segment.message.includes('"typography_fluid.body.settings.customLabel.0"'),
 		segment.message,
-	);
-	assert(segment.message.includes('"pow"'), segment.message);
+	).toBeTruthy();
+	expect(segment.message.includes('"pow"'), segment.message).toBeTruthy();
 });
 
-Deno.test("fluid type - relativeTo picks the unit of both representations", () => {
+test("fluid type - relativeTo picks the unit of both representations", () => {
 	for (const [relativeTo, unit] of [
 		[undefined, "vw"],
 		["viewport-width", "vw"],
@@ -313,27 +300,30 @@ Deno.test("fluid type - relativeTo picks the unit of both representations", () =
 		["container", "cqi"],
 	] as const) {
 		const css = declarations(generateCSS(scale({ ...example, relativeTo })));
-		assert(
+		expect(
 			css
 				.get("--typography_fluid-body-pow-progress")
 				?.startsWith(`clamp(0rem, (100${unit} - `),
 			css.get("--typography_fluid-body-pow-progress"),
-		);
+		).toBeTruthy();
 		for (const label of ["xl", "xs"]) {
 			const clamp = css.get(`--typography_fluid-body-${label}`);
-			assert(clamp?.includes(`${unit}, `), clamp);
+			expect(clamp?.includes(`${unit}, `), clamp).toBeTruthy();
 		}
 	}
 
-	const invalid = assertThrows(() =>
+	const invalid = thrownError(() =>
 		generateJSON(
 			scale({ ...example, relativeTo: "page" } as unknown as FluidScale["value"]),
 		),
 	);
-	assert(invalid.message.includes('"typography_fluid.body.relativeTo"'), invalid.message);
+	expect(
+		invalid.message.includes('"typography_fluid.body.relativeTo"'),
+		invalid.message,
+	).toBeTruthy();
 });
 
-Deno.test("fluid type - two scales never share a pow name", () => {
+test("fluid type - two scales never share a pow name", () => {
 	const css = declarations(
 		generateCSS({
 			typography: {
@@ -345,11 +335,11 @@ Deno.test("fluid type - two scales never share a pow name", () => {
 		}),
 	);
 
-	assertEquals(css.get("--typography_fluid-body-pow-min-width"), "20");
-	assertEquals(css.get("--typography_fluid-display-big-pow-min-width"), "20");
+	expect(css.get("--typography_fluid-body-pow-min-width")).toEqual("20");
+	expect(css.get("--typography_fluid-display-big-pow-min-width")).toEqual("20");
 });
 
-Deno.test("fluid type checks - each step is checked once, at its canonical sizes", () => {
+test("fluid type checks - each step is checked once, at its canonical sizes", () => {
 	// Step xs is 17.28 / 1.2^2 = 12px at the narrow end. At the wide end it is
 	// 20 / 1.2^2 = 13.89px, where utopia's own scale would give 20 / 1.6^2 = 7.81px.
 	const value = {
@@ -360,16 +350,15 @@ Deno.test("fluid type checks - each step is checked once, at its canonical sizes
 		negativeSteps: 2,
 	};
 
-	assertEquals(getDiagnostics(scale(value)), []);
+	expect(getDiagnostics(scale(value))).toEqual([]);
 	const floor = getDiagnostics(scale(value, { minLegibleSize: 13 }));
-	assertEquals(
-		floor.map(({ code, path }) => [code, path]),
-		[["typography-below-legibility-floor", "typography_fluid.body@xs"]],
-	);
-	assert(floor[0]?.message.includes("12px"), floor[0]?.message);
+	expect(floor.map(({ code, path }) => [code, path])).toEqual([
+		["typography-below-legibility-floor", "typography_fluid.body@xs"],
+	]);
+	expect(floor[0]?.message.includes("12px"), floor[0]?.message).toBeTruthy();
 });
 
-Deno.test("fluid type checks - a static scale warns once and names no CSS function", () => {
+test("fluid type checks - a static scale warns once and names no CSS function", () => {
 	const flat = {
 		...example,
 		maxFontSize: 18.5,
@@ -378,10 +367,12 @@ Deno.test("fluid type checks - a static scale warns once and names no CSS functi
 		negativeSteps: 0,
 	};
 	const diagnostics = getDiagnostics(scale(flat));
-	assertEquals(
-		diagnostics.map(({ code, path }) => [code, path]),
-		[["typography-static-scale", "typography_fluid.body"]],
-	);
+	expect(diagnostics.map(({ code, path }) => [code, path])).toEqual([
+		["typography-static-scale", "typography_fluid.body"],
+	]);
 	const message = diagnostics[0]?.message ?? "";
-	assert(!message.includes("clamp()") && !message.includes("pow()"), message);
+	expect(
+		!message.includes("clamp()") && !message.includes("pow()"),
+		message,
+	).toBeTruthy();
 });

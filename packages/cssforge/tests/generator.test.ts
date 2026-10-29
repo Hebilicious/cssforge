@@ -4,11 +4,11 @@ import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { expect, test } from "vitest";
 import { build } from "../src/cli.ts";
 import { defineConfig, generateStyleDictionaryJSON } from "../src/mod.ts";
-import { assertEquals, assertSnapshot, Deno } from "./vitest-compat.ts";
 
-Deno.test("generateStyleDictionaryJSON - preserves references and resolved values", async (t) => {
+test("generateStyleDictionaryJSON - preserves references and resolved values", () => {
 	const config = defineConfig({
 		colors: {
 			palette: {
@@ -67,39 +67,34 @@ Deno.test("generateStyleDictionaryJSON - preserves references and resolved value
 		generateStyleDictionaryJSON(config, { valueMode: "css-reference" }),
 	);
 
-	assertEquals(result.palette.neutral["900"].value, "var(--palette-neutral-900)");
-	assertEquals(result.palette.neutral["900"].type, "color");
-	assertEquals(result.palette.neutral["900"].$tier, "primitive");
-	assertEquals(
-		result.theme.light.content.primary.value,
+	expect(result.palette.neutral["900"].value).toEqual("var(--palette-neutral-900)");
+	expect(result.palette.neutral["900"].type).toEqual("color");
+	expect(result.palette.neutral["900"].$tier).toEqual("primitive");
+	expect(result.theme.light.content.primary.value).toEqual(
 		"var(--theme-light-content-primary)",
 	);
-	assertEquals(result.theme.light.content.primary.$tier, "semantic");
-	assertEquals(result.theme.light.content.primary.$reference, "palette.neutral.900");
-	assertEquals(
-		result.theme.light.content.primary.$resolvedValue,
+	expect(result.theme.light.content.primary.$tier).toEqual("semantic");
+	expect(result.theme.light.content.primary.$reference).toEqual("palette.neutral.900");
+	expect(result.theme.light.content.primary.$resolvedValue).toEqual(
 		"oklch(17.764% 0 none)",
 	);
-	assertEquals(
-		result.theme.light.content.primary.attributes.cssVariable,
+	expect(result.theme.light.content.primary.attributes.cssVariable).toEqual(
 		"--theme-light-content-primary",
 	);
-	assertEquals(result.primitives.button.default.color.attributes.referencePaths, [
+	expect(result.primitives.button.default.color.attributes.referencePaths).toEqual([
 		"theme.light.content.primary",
 	]);
-	assertEquals(
-		result.primitives.button.default.color.attributes.resolvedValue,
+	expect(result.primitives.button.default.color.attributes.resolvedValue).toEqual(
 		"oklch(17.764% 0 none)",
 	);
-	assertEquals(
-		result.primitives.button.default.padding.attributes.resolvedValue,
+	expect(result.primitives.button.default.padding.attributes.resolvedValue).toEqual(
 		"0.5rem",
 	);
 
-	await assertSnapshot(t, result);
+	expect(result).toMatchSnapshot();
 });
 
-Deno.test("generateStyleDictionaryJSON - uses resolved values by default", () => {
+test("generateStyleDictionaryJSON - uses resolved values by default", () => {
 	const config = defineConfig({
 		spacing: {
 			custom: {
@@ -114,14 +109,13 @@ Deno.test("generateStyleDictionaryJSON - uses resolved values by default", () =>
 
 	const result = JSON.parse(generateStyleDictionaryJSON(config));
 
-	assertEquals(result.spacing.custom.size["2"].value, "0.5rem");
-	assertEquals(
-		result.spacing.custom.size["2"].attributes.cssVariableReference,
+	expect(result.spacing.custom.size["2"].value).toEqual("0.5rem");
+	expect(result.spacing.custom.size["2"].attributes.cssVariableReference).toEqual(
 		"var(--spacing-size-2)",
 	);
 });
 
-Deno.test("generateStyleDictionaryJSON - resolves hyphenated CSSForge aliases", () => {
+test("generateStyleDictionaryJSON - resolves hyphenated CSSForge aliases", () => {
 	const config = defineConfig({
 		colors: {
 			palette: {
@@ -152,13 +146,13 @@ Deno.test("generateStyleDictionaryJSON - resolves hyphenated CSSForge aliases", 
 		generateStyleDictionaryJSON(config, { valueMode: "resolved" }),
 	);
 
-	assertEquals(result.primitives.button.default.color.value, "oklch(17.764% 0 none)");
-	assertEquals(result.primitives.button.default.color.attributes.referencePaths, [
+	expect(result.primitives.button.default.color.value).toEqual("oklch(17.764% 0 none)");
+	expect(result.primitives.button.default.color.attributes.referencePaths).toEqual([
 		"palette.neutral.900",
 	]);
 });
 
-Deno.test("generateStyleDictionaryJSON - preserves cycles and unresolved custom properties", () => {
+test("generateStyleDictionaryJSON - preserves cycles and unresolved custom properties", () => {
 	const config = defineConfig({
 		colors: {
 			palette: { value: {} },
@@ -183,12 +177,12 @@ Deno.test("generateStyleDictionaryJSON - preserves cycles and unresolved custom 
 		generateStyleDictionaryJSON(config, { valueMode: "resolved" }),
 	);
 
-	assertEquals(result.theme.light.content.first.value, "var(--second)");
-	assertEquals(result.theme.light.content.second.value, "var(--first)");
-	assertEquals(result.theme.light.content.external.value, "var(--external-property)");
+	expect(result.theme.light.content.first.value).toEqual("var(--second)");
+	expect(result.theme.light.content.second.value).toEqual("var(--first)");
+	expect(result.theme.light.content.external.value).toEqual("var(--external-property)");
 });
 
-Deno.test("generateStyleDictionaryJSON - uses consistent Style Dictionary paths", () => {
+test("generateStyleDictionaryJSON - uses consistent Style Dictionary paths", () => {
 	const config = defineConfig({
 		typography: {
 			fluid: {
@@ -223,24 +217,21 @@ Deno.test("generateStyleDictionaryJSON - uses consistent Style Dictionary paths"
 
 	const result = JSON.parse(generateStyleDictionaryJSON(config));
 
-	assertEquals(
-		result["typography-fluid"].app.detail.attributes.sourcePath,
+	expect(result["typography-fluid"].app.detail.attributes.sourcePath).toEqual(
 		"typography-fluid.app.detail",
 	);
-	assertEquals(
-		result.primitives["text-role"].detail.fontSize.attributes.sourcePath,
+	expect(result.primitives["text-role"].detail.fontSize.attributes.sourcePath).toEqual(
 		"primitives.text-role.detail.fontSize",
 	);
-	assertEquals(result.primitives["text-role"].detail.fontSize.attributes.referencePaths, [
-		"typography-fluid.app.detail",
-	]);
-	assertEquals(
-		result.primitives["text-role"].detail.fontSize.$reference,
+	expect(
+		result.primitives["text-role"].detail.fontSize.attributes.referencePaths,
+	).toEqual(["typography-fluid.app.detail"]);
+	expect(result.primitives["text-role"].detail.fontSize.$reference).toEqual(
 		"typography-fluid.app.detail",
 	);
 });
 
-Deno.test("generateStyleDictionaryJSON - anchors tokens for var() usage matching", () => {
+test("generateStyleDictionaryJSON - anchors tokens for var() usage matching", () => {
 	const config = defineConfig({
 		colors: {
 			theme: {
@@ -264,12 +255,12 @@ Deno.test("generateStyleDictionaryJSON - anchors tokens for var() usage matching
 	const result = JSON.parse(generateStyleDictionaryJSON(config));
 	const token = result.theme.light.content.primary;
 
-	assertEquals(token.attributes.cssVariable, "--theme-light-content-primary");
-	assertEquals(token.attributes.tailwindVariable, token.attributes.cssVariable);
-	assertEquals(token.value, "oklch(17.764% 0 none)");
+	expect(token.attributes.cssVariable).toEqual("--theme-light-content-primary");
+	expect(token.attributes.tailwindVariable).toEqual(token.attributes.cssVariable);
+	expect(token.value).toEqual("oklch(17.764% 0 none)");
 });
 
-Deno.test("generateStyleDictionaryJSON - types tokens by value kind when the module type is coarse", () => {
+test("generateStyleDictionaryJSON - types tokens by value kind when the module type is coarse", () => {
 	const config = defineConfig({
 		typography: {
 			fluid: {
@@ -323,22 +314,21 @@ Deno.test("generateStyleDictionaryJSON - types tokens by value kind when the mod
 
 	const result = JSON.parse(generateStyleDictionaryJSON(config));
 
-	assertEquals(result.primitives["text-role"].detail.fontSize.type, "fontSize");
-	assertEquals(result.primitives["text-role"].detail.lineHeight.type, "lineHeight");
-	assertEquals(
-		result.primitives["text-role"].detail["border-radius"].type,
+	expect(result.primitives["text-role"].detail.fontSize.type).toEqual("fontSize");
+	expect(result.primitives["text-role"].detail.lineHeight.type).toEqual("lineHeight");
+	expect(result.primitives["text-role"].detail["border-radius"].type).toEqual(
 		"borderRadius",
 	);
-	assertEquals(result.primitives["text-role"].detail["box-shadow"].type, "shadow");
-	assertEquals(result.primitives["text-role"].detail.fontSize.attributes.referencePaths, [
-		"typography-fluid.app.detail",
-	]);
-	assertEquals(result["typography-fluid"].app.detail.type, "typography");
-	assertEquals(result.theme.light.content.primary.type, "color");
-	assertEquals(result.spacing.custom.size["4"].type, "spacing");
+	expect(result.primitives["text-role"].detail["box-shadow"].type).toEqual("shadow");
+	expect(
+		result.primitives["text-role"].detail.fontSize.attributes.referencePaths,
+	).toEqual(["typography-fluid.app.detail"]);
+	expect(result["typography-fluid"].app.detail.type).toEqual("typography");
+	expect(result.theme.light.content.primary.type).toEqual("color");
+	expect(result.spacing.custom.size["4"].type).toEqual("spacing");
 });
 
-Deno.test("generateStyleDictionaryJSON - keeps the module type when the value contradicts the name", () => {
+test("generateStyleDictionaryJSON - keeps the module type when the value contradicts the name", () => {
 	const config = defineConfig({
 		colors: {
 			palette: { value: { neutral: { 900: "#111" } } },
@@ -366,16 +356,16 @@ Deno.test("generateStyleDictionaryJSON - keeps the module type when the value co
 	const control = result.primitives.control.rounded;
 
 	// Every leaf name matches a rule, but no value has the expected shape.
-	assertEquals(control.radius.value, "oklch(17.764% 0 none)");
-	assertEquals(control.radius.type, "component");
-	assertEquals(control["font-family"].type, "component");
-	assertEquals(control.opacity.type, "component");
-	assertEquals(control["z-index"].type, "component");
-	assertEquals(control.gap.type, "component");
-	assertEquals(control["letter-spacing"].type, "component");
+	expect(control.radius.value).toEqual("oklch(17.764% 0 none)");
+	expect(control.radius.type).toEqual("component");
+	expect(control["font-family"].type).toEqual("component");
+	expect(control.opacity.type).toEqual("component");
+	expect(control["z-index"].type).toEqual("component");
+	expect(control.gap.type).toEqual("component");
+	expect(control["letter-spacing"].type).toEqual("component");
 });
 
-Deno.test("generateStyleDictionaryJSON - narrows every value kind the file documents", () => {
+test("generateStyleDictionaryJSON - narrows every value kind the file documents", () => {
 	const config = defineConfig({
 		primitives: {
 			type: {
@@ -400,17 +390,17 @@ Deno.test("generateStyleDictionaryJSON - narrows every value kind the file docum
 	const result = JSON.parse(generateStyleDictionaryJSON(config));
 	const display = result.primitives.type.display;
 
-	assertEquals(display["font-family"].type, "fontFamily");
-	assertEquals(display["font-weight"].type, "fontWeight");
-	assertEquals(display.opacity.type, "opacity");
-	assertEquals(display["z-index"].type, "zIndex");
-	assertEquals(display["letter-spacing"].type, "letterSpacing");
-	assertEquals(display["border-radius"].type, "borderRadius");
-	assertEquals(display.duration.type, "number");
-	assertEquals(display.delay.type, "number");
+	expect(display["font-family"].type).toEqual("fontFamily");
+	expect(display["font-weight"].type).toEqual("fontWeight");
+	expect(display.opacity.type).toEqual("opacity");
+	expect(display["z-index"].type).toEqual("zIndex");
+	expect(display["letter-spacing"].type).toEqual("letterSpacing");
+	expect(display["border-radius"].type).toEqual("borderRadius");
+	expect(display.duration.type).toEqual("number");
+	expect(display.delay.type).toEqual("number");
 });
 
-Deno.test("generateStyleDictionaryJSON - every token carries the fields consumers rely on", () => {
+test("generateStyleDictionaryJSON - every token carries the fields consumers rely on", () => {
 	const config = defineConfig({
 		colors: {
 			palette: { value: { neutral: { 900: "#111" } } },
@@ -441,29 +431,27 @@ Deno.test("generateStyleDictionaryJSON - every token carries the fields consumer
 	};
 	collect(result);
 
-	assertEquals(tokens.length, 3);
+	expect(tokens.length).toEqual(3);
 	for (const [tokenPath, token] of tokens) {
-		assertEquals(typeof token.type, "string", `${tokenPath} has a type`);
-		assertEquals(
+		expect(typeof token.type, `${tokenPath} has a type`).toEqual("string");
+		expect(
 			token.attributes.tailwindVariable,
-			token.attributes.cssVariable,
 			`${tokenPath} anchors its CSS variable`,
-		);
+		).toEqual(token.attributes.cssVariable);
 		if (token.$reference) {
 			const referenced = tokens.find(([candidate]) => candidate === token.$reference);
-			assertEquals(referenced !== undefined, true, `${tokenPath} reference resolves`);
+			expect(referenced !== undefined, `${tokenPath} reference resolves`).toEqual(true);
 		}
 		for (const referencePath of token.attributes.referencePaths ?? []) {
-			assertEquals(
+			expect(
 				tokens.some(([candidate]) => candidate === referencePath),
-				true,
 				`${tokenPath} reference path ${referencePath} resolves`,
-			);
+			).toEqual(true);
 		}
 	}
 });
 
-Deno.test("generateStyleDictionaryJSON - rejects token paths that collide after normalization", () => {
+test("generateStyleDictionaryJSON - rejects token paths that collide after normalization", () => {
 	const config = defineConfig({
 		colors: {
 			palette: {
@@ -482,13 +470,12 @@ Deno.test("generateStyleDictionaryJSON - rejects token paths that collide after 
 		error = caught;
 	}
 
-	assertEquals(
-		error instanceof Error ? error.message : "",
+	expect(error instanceof Error ? error.message : "").toEqual(
 		'Token path collision after normalization: "palette.cosmicGold.50" and "palette.cosmic-gold.50" both become "palette.cosmic-gold.50"',
 	);
 });
 
-Deno.test("generateStyleDictionaryJSON - supports legacy value-wrapper reference paths", () => {
+test("generateStyleDictionaryJSON - supports legacy value-wrapper reference paths", () => {
 	const config = defineConfig({
 		colors: {
 			palette: {
@@ -574,26 +561,23 @@ Deno.test("generateStyleDictionaryJSON - supports legacy value-wrapper reference
 
 	const result = JSON.parse(generateStyleDictionaryJSON(config));
 
-	assertEquals(
-		result.gradients["gold-gradient"].primary.$reference,
+	expect(result.gradients["gold-gradient"].primary.$reference).toEqual(
 		"palette.cosmic-gold.50",
 	);
-	assertEquals(result.gradients["gold-gradient"].primary.attributes.referencePaths, [
+	expect(result.gradients["gold-gradient"].primary.attributes.referencePaths).toEqual([
 		"palette.cosmic-gold.50",
 		"palette.cosmic-gold.90",
 	]);
-	assertEquals(result.theme.light.content.primary.$reference, "palette.gray.950");
-	assertEquals(
-		result.primitives.button.default.fontWeight.attributes.resolvedValue,
+	expect(result.theme.light.content.primary.$reference).toEqual("palette.gray.950");
+	expect(result.primitives.button.default.fontWeight.attributes.resolvedValue).toEqual(
 		"400",
 	);
-	assertEquals(
-		result.primitives.button.default.padding.attributes.resolvedValue,
+	expect(result.primitives.button.default.padding.attributes.resolvedValue).toEqual(
 		"0.5rem",
 	);
 });
 
-Deno.test("cli - style-dictionary and all modes write their declared outputs", async () => {
+test("cli - style-dictionary and all modes write their declared outputs", async () => {
 	const tempDir = await mkdtemp(join(tmpdir(), "cssforge-style-dictionary-"));
 
 	try {
@@ -641,13 +625,15 @@ Deno.test("cli - style-dictionary and all modes write their declared outputs", a
 
 		const output = JSON.parse(await readFile(styleDictionaryOutput, "utf8"));
 
-		assertEquals(result.status, 0);
-		assertEquals(result.stderr, "");
-		assertEquals(result.stdout.includes("Generated Style Dictionary JSON written"), true);
-		assertEquals(output.spacing.custom.size["2"].value, "0.5rem");
-		assertEquals(existsSync(cssOutput), false);
-		assertEquals(existsSync(jsonOutput), false);
-		assertEquals(existsSync(tsOutput), false);
+		expect(result.status).toEqual(0);
+		expect(result.stderr).toEqual("");
+		expect(result.stdout.includes("Generated Style Dictionary JSON written")).toEqual(
+			true,
+		);
+		expect(output.spacing.custom.size["2"].value).toEqual("0.5rem");
+		expect(existsSync(cssOutput)).toEqual(false);
+		expect(existsSync(jsonOutput)).toEqual(false);
+		expect(existsSync(tsOutput)).toEqual(false);
 
 		const allResult = spawnSync(
 			process.execPath,
@@ -670,13 +656,13 @@ Deno.test("cli - style-dictionary and all modes write their declared outputs", a
 		);
 		const legacyJson = JSON.parse(await readFile(jsonOutput, "utf8"));
 
-		assertEquals(allResult.status, 0);
-		assertEquals(allResult.stderr, "");
-		assertEquals(existsSync(cssOutput), true);
-		assertEquals(existsSync(jsonOutput), true);
-		assertEquals(existsSync(tsOutput), true);
-		assertEquals(existsSync(styleDictionaryOutput), true);
-		assertEquals(Object.keys(legacyJson.spacing.custom.size["2"]).sort(), [
+		expect(allResult.status).toEqual(0);
+		expect(allResult.stderr).toEqual("");
+		expect(existsSync(cssOutput)).toEqual(true);
+		expect(existsSync(jsonOutput)).toEqual(true);
+		expect(existsSync(tsOutput)).toEqual(true);
+		expect(existsSync(styleDictionaryOutput)).toEqual(true);
+		expect(Object.keys(legacyJson.spacing.custom.size["2"]).sort()).toEqual([
 			"key",
 			"value",
 			"variable",
@@ -686,7 +672,7 @@ Deno.test("cli - style-dictionary and all modes write their declared outputs", a
 	}
 });
 
-Deno.test("cli - style-dictionary mode can emit CSS variables for usage matching", async () => {
+test("cli - style-dictionary mode can emit CSS variables for usage matching", async () => {
 	const tempDir = await mkdtemp(
 		join(tmpdir(), "cssforge-style-dictionary-css-reference-"),
 	);
@@ -723,15 +709,15 @@ Deno.test("cli - style-dictionary mode can emit CSS variables for usage matching
 
 		const output = JSON.parse(await readFile(styleDictionaryOutput, "utf8"));
 
-		assertEquals(result.status, 0);
-		assertEquals(result.stderr, "");
-		assertEquals(output.spacing.custom.size["2"].value, "var(--spacing-size-2)");
+		expect(result.status).toEqual(0);
+		expect(result.stderr).toEqual("");
+		expect(output.spacing.custom.size["2"].value).toEqual("var(--spacing-size-2)");
 	} finally {
 		await rm(tempDir, { recursive: true, force: true });
 	}
 });
 
-Deno.test("build - legacy output modes do not require a Style Dictionary path", async () => {
+test("build - legacy output modes do not require a Style Dictionary path", async () => {
 	const tempDir = await mkdtemp(join(tmpdir(), "cssforge-legacy-build-"));
 
 	try {
@@ -755,8 +741,8 @@ Deno.test("build - legacy output modes do not require a Style Dictionary path", 
 			tsOutput: join(tempDir, "output.ts"),
 		});
 
-		assertEquals(result.success, true);
-		assertEquals(existsSync(cssOutput), true);
+		expect(result.success).toEqual(true);
+		expect(existsSync(cssOutput)).toEqual(true);
 	} finally {
 		await rm(tempDir, { recursive: true, force: true });
 	}

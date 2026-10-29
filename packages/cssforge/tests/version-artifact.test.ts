@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
-import { assert, assertEquals, Deno } from "./vitest-compat.ts";
+import { expect, test } from "vitest";
 
 const packageRoot = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const workspaceRoot = resolve(packageRoot, "../..");
@@ -23,20 +23,20 @@ const run = (
 	env: NodeJS.ProcessEnv = childEnv,
 ): { status: number | null; stdout: string; stderr: string } => {
 	const result = spawnSync(command, args, { cwd, encoding: "utf8", env });
-	assert(
+	expect(
 		result.error === undefined,
 		`${command} could not start: ${result.error?.message}`,
-	);
+	).toBeTruthy();
 
 	return { status: result.status, stdout: result.stdout, stderr: result.stderr };
 };
 
 const readVersion = (path: string): string => {
 	const parsed: unknown = JSON.parse(readFileSync(path, "utf8"));
-	assert(
+	expect(
 		typeof parsed === "object" && parsed !== null && "version" in parsed,
 		`${path} must declare a version`,
-	);
+	).toBeTruthy();
 
 	return String((parsed as { version: unknown }).version);
 };
@@ -47,10 +47,10 @@ const withVersion = (source: string, version: string): string => {
 		/("version"\s*:\s*")[^"]*(")/,
 		(_match, prefix: string, suffix: string) => `${prefix}${version}${suffix}`,
 	);
-	assert(
+	expect(
 		updated !== source || source.includes(`"${version}"`),
 		"no version field to replace",
-	);
+	).toBeTruthy();
 	JSON.parse(updated);
 
 	return updated;
@@ -60,15 +60,18 @@ const withVersion = (source: string, version: string): string => {
 const parsePackFilename = (output: string): string => {
 	const parsed: unknown = JSON.parse(output);
 	const entries = Array.isArray(parsed) ? parsed : Object.values(parsed ?? {});
-	assert(entries.length === 1, `npm pack did not report exactly one tarball: ${output}`);
+	expect(
+		entries.length === 1,
+		`npm pack did not report exactly one tarball: ${output}`,
+	).toBeTruthy();
 
 	const [entry] = entries;
-	assert(
+	expect(
 		typeof entry === "object" &&
 			entry !== null &&
 			typeof (entry as { filename?: unknown }).filename === "string",
 		`npm pack did not report a filename: ${output}`,
-	);
+	).toBeTruthy();
 
 	return (entry as { filename: string }).filename;
 };
@@ -77,11 +80,10 @@ const assertSucceeded = (
 	result: { status: number | null; stdout: string; stderr: string },
 	description: string,
 ): void => {
-	assertEquals(
+	expect(
 		result.status,
-		0,
 		`${description} failed\nstdout:\n${result.stdout}\nstderr:\n${result.stderr}`,
-	);
+	).toEqual(0);
 };
 
 /**
@@ -129,12 +131,12 @@ const buildCli = async (): Promise<{ cli: string; cleanUp: () => Promise<void> }
 	}
 
 	const cli = join(outDir, "cli.js");
-	assert(existsSync(cli), `${cli} is missing after the build`);
+	expect(existsSync(cli), `${cli} is missing after the build`).toBeTruthy();
 
 	return { cli, cleanUp: () => rm(outDir, { recursive: true, force: true }) };
 };
 
-Deno.test("cli - reports the manifest version verbatim, with and without CI", async () => {
+test("cli - reports the manifest version verbatim, with and without CI", async () => {
 	const manifestVersion = readVersion(join(packageRoot, "package.json"));
 	const workDir = await mkdtemp(join(tmpdir(), "cssforge-built-cli-"));
 	const { cli, cleanUp } = await buildCli();
@@ -151,11 +153,10 @@ Deno.test("cli - reports the manifest version verbatim, with and without CI", as
 		] as const) {
 			const result = run(process.execPath, [cli, "--version"], packageRoot, env);
 			assertSucceeded(result, `cssforge --version in ${description}`);
-			assertEquals(
+			expect(
 				result.stdout.trim(),
-				manifestVersion,
 				`cssforge --version in ${description} must print the manifest version verbatim`,
-			);
+			).toEqual(manifestVersion);
 		}
 
 		// citty prints `meta.version` through its own usage output, where a
@@ -163,10 +164,10 @@ Deno.test("cli - reports the manifest version verbatim, with and without CI", as
 		// answered by the CLI itself.
 		const help = run(process.execPath, [cli, "--help"], packageRoot, childEnv);
 		assertSucceeded(help, "cssforge --help");
-		assert(
+		expect(
 			help.stdout.includes(manifestVersion),
 			`cssforge --help must print the manifest version, got:\n${help.stdout}`,
-		);
+		).toBeTruthy();
 
 		// A version flag next to other arguments stays a normal command, which
 		// is how citty resolves its own version flag.
@@ -190,30 +191,30 @@ Deno.test("cli - reports the manifest version verbatim, with and without CI", as
 			{ ...childEnv, CI: "1" },
 		);
 		assertSucceeded(combined, "cssforge --version with other arguments");
-		assert(
+		expect(
 			!combined.stdout.split("\n").some((line) => line.trim() === manifestVersion),
 			"a version flag combined with other arguments must not print the version",
-		);
-		assert(
+		).toBeTruthy();
+		expect(
 			(await readFile(cssOutput, "utf8")).includes("--spacing-size-2"),
 			"a version flag combined with other arguments must still run the command",
-		);
+		).toBeTruthy();
 	} finally {
 		await rm(workDir, { recursive: true, force: true });
 		await cleanUp();
 	}
 }, 180_000);
 
-Deno.test("cli - a packed artifact reports the version its manifest declares", async () => {
+test("cli - a packed artifact reports the version its manifest declares", async () => {
 	const workDir = await mkdtemp(join(tmpdir(), "cssforge-artifact-version-"));
 	const workspace = join(workDir, "workspace");
 
 	try {
 		copyWorkspace(workspace);
-		assert(
+		expect(
 			!existsSync(join(workspace, "node_modules")),
 			"the copied workspace must not carry node_modules",
-		);
+		).toBeTruthy();
 
 		// Write the fixture release version into the copy's metadata. This is
 		// what `changeset version` does to the real workspace, so the generated
@@ -249,10 +250,10 @@ Deno.test("cli - a packed artifact reports the version its manifest declares", a
 		assertSucceeded(packed, "npm pack with the fixture version");
 
 		const filename = parsePackFilename(packed.stdout);
-		assert(
+		expect(
 			filename.includes(fixtureVersion),
 			`the packed tarball ${filename} does not carry the fixture version`,
-		);
+		).toBeTruthy();
 		const tarball = join(workDir, filename);
 
 		const consumer = join(workDir, "consumer");
@@ -277,20 +278,18 @@ Deno.test("cli - a packed artifact reports the version its manifest declares", a
 
 		const installedRoot = join(consumer, "node_modules", "@hebilicious/cssforge");
 		const installedVersion = readVersion(join(installedRoot, "package.json"));
-		assertEquals(
+		expect(
 			installedVersion,
-			fixtureVersion,
 			"the installed artifact does not carry the fixture version",
-		);
+		).toEqual(fixtureVersion);
 
 		const installedCli = join(installedRoot, "dist", "cli.js");
 		const reported = run(process.execPath, [installedCli, "--version"], consumer);
 		assertSucceeded(reported, "the installed artifact --version");
-		assertEquals(
+		expect(
 			reported.stdout.trim(),
-			fixtureVersion,
 			"the installed artifact reports a version that differs from its package.json",
-		);
+		).toEqual(fixtureVersion);
 
 		const executable = join(
 			consumer,
@@ -298,21 +297,23 @@ Deno.test("cli - a packed artifact reports the version its manifest declares", a
 			".bin",
 			process.platform === "win32" ? "cssforge.cmd" : "cssforge",
 		);
-		assert(existsSync(executable), "npm did not expose the cssforge executable");
+		expect(
+			existsSync(executable),
+			"npm did not expose the cssforge executable",
+		).toBeTruthy();
 
 		const viaExecutable = run(executable, ["--version"], consumer);
 		assertSucceeded(viaExecutable, "the installed cssforge executable --version");
-		assertEquals(
+		expect(
 			viaExecutable.stdout.trim(),
-			fixtureVersion,
 			"the installed cssforge executable reports a stale version",
-		);
+		).toEqual(fixtureVersion);
 	} finally {
 		await rm(workDir, { recursive: true, force: true });
 	}
 }, 240_000);
 
-Deno.test("cli - rejects metadata that disagrees with the package version", async () => {
+test("cli - rejects metadata that disagrees with the package version", async () => {
 	const workDir = await mkdtemp(join(tmpdir(), "cssforge-version-check-"));
 	const workspace = join(workDir, "workspace");
 
@@ -331,14 +332,14 @@ Deno.test("cli - rejects metadata that disagrees with the package version", asyn
 		// The gate must observe drift rather than repair it, so it is never
 		// allowed to run the writing mode first.
 		const rejected = check();
-		assert(
+		expect(
 			rejected.status !== 0,
 			"the consistency check accepted a jsr.json that disagrees with package.json",
-		);
-		assert(
+		).toBeTruthy();
+		expect(
 			`${rejected.stderr}${rejected.stdout}`.includes("jsr.json declares 0.9.9"),
 			`the consistency check did not explain the disagreement: ${rejected.stderr}`,
-		);
+		).toBeTruthy();
 
 		// The generated module is the channel JSR publishes, so drift there must
 		// be rejected too.
@@ -352,16 +353,16 @@ Deno.test("cli - rejects metadata that disagrees with the package version", asyn
 			),
 		);
 		const staleGenerated = check();
-		assert(
+		expect(
 			staleGenerated.status !== 0,
 			"the consistency check accepted a generated module that disagrees with package.json",
-		);
-		assert(
+		).toBeTruthy();
+		expect(
 			`${staleGenerated.stderr}${staleGenerated.stdout}`.includes(
 				"src/version.ts declares 9.9.9",
 			),
 			`the consistency check did not explain the generated-module drift: ${staleGenerated.stderr}`,
-		);
+		).toBeTruthy();
 
 		// The published tarball ships this changelog, so a release without a
 		// matching entry must not pass.
@@ -373,14 +374,14 @@ Deno.test("cli - rejects metadata that disagrees with the package version", asyn
 			changelog.replace(/^## .+$/m, "## 0.0.0-no-entry-for-this-version"),
 		);
 		const missingEntry = check();
-		assert(
+		expect(
 			missingEntry.status !== 0,
 			"the consistency check accepted a release with no matching changelog entry",
-		);
-		assert(
+		).toBeTruthy();
+		expect(
 			`${missingEntry.stderr}${missingEntry.stdout}`.includes('has no "## '),
 			`the consistency check did not explain the changelog drift: ${missingEntry.stderr}`,
-		);
+		).toBeTruthy();
 	} finally {
 		await rm(workDir, { recursive: true, force: true });
 	}

@@ -4,15 +4,16 @@
  * JSR publishes the TypeScript source declared in `jsr.json`, not `dist`, so
  * this verifies that those entry points stay publishable and executable: the
  * declared exports exist, the manifest versions agree, and both the module
- * entry and the CLI entry generate output.
+ * entry and the CLI entry generate output when Node runs those sources.
  *
- * Deno is the real consumer of this channel, so when Deno is installed the same
- * checks also run under Deno. Pass `--require-deno` to turn a missing Deno into
- * a failure, which is what CI does.
+ * Node resolves the bare imports of those sources from `node_modules`, so the
+ * `imports` map that JSR publishes with is checked against the runtime
+ * dependencies in `package.json` instead.
  */
 import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { join, matchesGlob, resolve } from "node:path";
 import process from "node:process";
 import { pathToFileURL } from "node:url";
@@ -21,17 +22,14 @@ type JsrManifest = {
 	name: string;
 	version: string;
 	exports: Record<string, string>;
+	imports: Record<string, string>;
 	publish?: { include?: string[] };
 };
 
 type PackageManifest = {
 	name: string;
 	version: string;
-};
-
-type Runtime = {
-	name: string;
-	command: string;
+	dependencies: Record<string, string>;
 };
 
 const packageRoot = resolve(import.meta.dirname, "..");
@@ -52,6 +50,18 @@ const parseJsonFile = (path: string): Record<string, unknown> => {
 	return parsed;
 };
 
+const readStringRecord = (value: unknown, path: string, field: string) => {
+	const record = value ?? {};
+	check(isRecord(record), `${path} "${field}" must be an object`);
+	const entries = Object.entries(record);
+	check(
+		entries.every((entry) => typeof entry[1] === "string"),
+		`${path} "${field}" must map names to strings`,
+	);
+
+	return Object.fromEntries(entries) as Record<string, string>;
+};
+
 /** Reads a manifest and validates the fields this script relies on. */
 const readManifest = (path: string): PackageManifest => {
 	const parsed = parseJsonFile(path);
@@ -60,7 +70,11 @@ const readManifest = (path: string): PackageManifest => {
 		`${path} must declare "name" and "version"`,
 	);
 
-	return { name: parsed.name, version: parsed.version };
+	return {
+		name: parsed.name,
+		version: parsed.version,
+		dependencies: readStringRecord(parsed.dependencies, path, "dependencies"),
+	};
 };
 
 /** Reads the JSR manifest and validates the entries it publishes. */
@@ -87,22 +101,23 @@ const readJsrManifest = (path: string): JsrManifest => {
 		name: parsed.name,
 		version: parsed.version,
 		exports: Object.fromEntries(exports),
+		imports: readStringRecord(parsed.imports, path, "imports"),
 		publish: { include },
 	};
 };
 
-const run = (runtime: Runtime, args: string[], cwd: string): string => {
-	const result = spawnSync(runtime.command, args, {
+const runEntry = (entry: string, args: string[], cwd: string): string => {
+	const result = spawnSync(process.execPath, [entry, ...args], {
 		cwd,
 		encoding: "utf8",
 		env: { ...process.env, TEST: undefined, NODE_ENV: undefined },
 	});
 	if (result.error) {
-		throw new Error(`${runtime.name} could not start: ${result.error.message}`);
+		throw new Error(`node could not start: ${result.error.message}`);
 	}
 	if (result.status !== 0) {
 		throw new Error(
-			`${runtime.name} ${args.join(" ")} exited with code ${result.status}\n` +
+			`node ${entry} ${args.join(" ")} exited with code ${result.status}\n` +
 				`stdout:\n${result.stdout}\nstderr:\n${result.stderr}`,
 		);
 	}
@@ -110,23 +125,7 @@ const run = (runtime: Runtime, args: string[], cwd: string): string => {
 	return result.stdout;
 };
 
-const runEntry = (runtime: Runtime, entry: string, args: string[], cwd: string) =>
-	run(
-		runtime,
-		runtime.name === "deno"
-			? ["run", "-A", "--no-lock", entry, ...args]
-			: [entry, ...args],
-		cwd,
-	);
-
-const findDeno = (): string | undefined => {
-	const result = spawnSync("deno", ["--version"], { encoding: "utf8" });
-
-	return result.status === 0 ? "deno" : undefined;
-};
-
 const main = async (): Promise<void> => {
-	const requireDeno = process.argv.includes("--require-deno");
 	const manifest = readManifest(join(packageRoot, "package.json"));
 	const jsr = readJsrManifest(join(packageRoot, "jsr.json"));
 
@@ -159,57 +158,53 @@ const main = async (): Promise<void> => {
 		`${jsr.exports["./cli"]} is not covered by jsr.json publish.include`,
 	);
 
-	const deno = findDeno();
-	check(!requireDeno || deno !== undefined, "deno is required but was not found");
+	for (const [name, version] of Object.entries(manifest.dependencies)) {
+		const expected = `npm:${name}@${version}`;
+		check(
+			jsr.imports[name] === expected,
+			`jsr.json imports ${name} as ${jsr.imports[name] ?? "nothing"} but package.json depends on ${expected}`,
+		);
+	}
 
-	const runtimes: Runtime[] = [
-		{ name: "node", command: process.execPath },
-		...(deno ? [{ name: "deno", command: deno }] : []),
-	];
-
-	// The fixtures live inside the package so that Deno resolves the bare npm
-	// specifiers of the JSR entries from this package manifest.
-	const workDir = await mkdtemp(join(packageRoot, ".jsr-smoke-"));
+	const workDir = await mkdtemp(join(tmpdir(), "cssforge-jsr-smoke-"));
 	try {
 		const moduleUrl = pathToFileURL(moduleEntry).href;
-		for (const runtime of runtimes) {
-			const configPath = join(workDir, `cssforge.${runtime.name}.config.ts`);
-			const cssOutput = join(workDir, `output.${runtime.name}.css`);
-			await writeFile(
-				configPath,
-				`import { defineConfig } from "${moduleUrl}";
+		const configPath = join(workDir, "cssforge.config.ts");
+		const cssOutput = join(workDir, "output.css");
+		await writeFile(
+			configPath,
+			`import { defineConfig } from "${moduleUrl}";
 
 export default defineConfig({
 	spacing: { custom: { size: { value: { 2: "0.5rem" } } } },
 });
 `,
-				"utf8",
-			);
+			"utf8",
+		);
 
-			runEntry(
-				runtime,
-				cliEntry,
-				["--config", configPath, "--mode", "css", "--css", cssOutput],
-				workDir,
-			);
-			const css = await readFile(cssOutput, "utf8");
-			check(
-				css.includes("--spacing-size-2: 0.5rem;"),
-				`the JSR CLI entry did not generate the expected CSS with ${runtime.name}`,
-			);
+		runEntry(
+			cliEntry,
+			["--config", configPath, "--mode", "css", "--css", cssOutput],
+			workDir,
+		);
+		const css = await readFile(cssOutput, "utf8");
+		check(
+			css.includes("--spacing-size-2: 0.5rem;"),
+			"the JSR CLI entry did not generate the expected CSS",
+		);
 
-			// JSR ships sources, so the CLI metadata there comes from the
-			// generated `src/version.ts` rather than from the build.
-			const reported = runEntry(runtime, cliEntry, ["--version"], workDir).trim();
-			check(
-				reported === manifest.version,
-				`the JSR CLI entry reports ${reported} but package.json is at ${manifest.version}`,
-			);
+		// JSR ships sources, so the CLI metadata there comes from the
+		// generated `src/version.ts` rather than from the build.
+		const reported = runEntry(cliEntry, ["--version"], workDir).trim();
+		check(
+			reported === manifest.version,
+			`the JSR CLI entry reports ${reported} but package.json is at ${manifest.version}`,
+		);
 
-			const moduleCheck = join(workDir, `module-check.${runtime.name}.mjs`);
-			await writeFile(
-				moduleCheck,
-				`const mod = await import(${JSON.stringify(moduleUrl)});
+		const moduleCheck = join(workDir, "module-check.mjs");
+		await writeFile(
+			moduleCheck,
+			`const mod = await import(${JSON.stringify(moduleUrl)});
 
 for (const name of ["defineConfig", "generateCSS", "generateStyleDictionaryJSON"]) {
 	if (typeof mod[name] !== "function") {
@@ -225,14 +220,11 @@ if (!css.includes("--spacing-size-2")) {
 	throw new Error("the JSR module entry did not generate the expected CSS");
 }
 `,
-				"utf8",
-			);
-			runEntry(runtime, moduleCheck, [], workDir);
-		}
-
-		const checked = runtimes.map((runtime) => runtime.name).join(" and ");
+			"utf8",
+		);
+		runEntry(moduleCheck, [], workDir);
 		console.log(
-			`jsr smoke test: ${jsr.name}@${jsr.version} entries ${jsr.exports["."]} and ${jsr.exports["./cli"]} verified with ${checked}`,
+			`jsr smoke test: ${jsr.name}@${jsr.version} entries ${jsr.exports["."]} and ${jsr.exports["./cli"]} verified with node`,
 		);
 	} finally {
 		await rm(workDir, { recursive: true, force: true });

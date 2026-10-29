@@ -1,6 +1,7 @@
+import { expect, test } from "vitest";
 import type { CSSForgeConfig } from "../src/mod.ts";
 import { defineConfig, generateCSS } from "../src/mod.ts";
-import { assert, assertThrows, Deno } from "./vitest-compat.ts";
+import { thrownError } from "./helpers.ts";
 
 /** Settings are read from a JavaScript object at runtime, so every module validates them. */
 
@@ -17,47 +18,47 @@ const fluidValue = {
 
 const palette = { value: { coral: { 100: { hex: "#FF7F50" } } } };
 
-Deno.test("generateCSS - rejects a spacing settings value that is not an object", () => {
+test("generateCSS - rejects a spacing settings value that is not an object", () => {
 	const config = {
 		spacing: { custom: { size: { value: { 2: "8px" }, settings: "rem" } } },
 	} as unknown as CSSForgeConfig;
 
-	const error = assertThrows(() => generateCSS(config));
+	const error = thrownError(() => generateCSS(config));
 
-	assert(
+	expect(
 		error.message.includes('"spacing.custom.size.settings"'),
 		`Expected the error to name the scale. Received: ${error.message}`,
-	);
+	).toBeTruthy();
 });
 
-Deno.test("generateCSS - rejects an unknown spacing setting", () => {
+test("generateCSS - rejects an unknown spacing setting", () => {
 	const config = {
 		spacing: { custom: { size: { value: { 2: "8px" }, settings: { remm: 16 } } } },
 	} as unknown as CSSForgeConfig;
 
-	const error = assertThrows(() => generateCSS(config));
+	const error = thrownError(() => generateCSS(config));
 
-	assert(
+	expect(
 		error.message.includes('"remm"') && error.message.includes('"pxToRem"'),
 		`Expected the error to name the key and the accepted ones. Received: ${error.message}`,
-	);
+	).toBeTruthy();
 });
 
-Deno.test("generateCSS - rejects an unknown typography setting", () => {
+test("generateCSS - rejects an unknown typography setting", () => {
 	const config = {
 		typography: { fluid: { base: { value: fluidValue, settings: { customLabl: {} } } } },
 	} as unknown as CSSForgeConfig;
 
-	const error = assertThrows(() => generateCSS(config));
+	const error = thrownError(() => generateCSS(config));
 
-	assert(
+	expect(
 		error.message.includes('"typography_fluid.base.settings"') &&
 			error.message.includes('"customLabel"'),
 		`Expected the error to name the path and the accepted key. Received: ${error.message}`,
-	);
+	).toBeTruthy();
 });
 
-Deno.test("generateCSS - rejects settings a primitive group does not read", () => {
+test("generateCSS - rejects settings a primitive group does not read", () => {
 	const config = {
 		primitives: {
 			button: {
@@ -67,16 +68,16 @@ Deno.test("generateCSS - rejects settings a primitive group does not read", () =
 		},
 	} as unknown as CSSForgeConfig;
 
-	const error = assertThrows(() => generateCSS(config));
+	const error = thrownError(() => generateCSS(config));
 
-	assert(
+	expect(
 		error.message.includes('"primitives.button.settings"') &&
 			error.message.includes("reads no settings"),
 		`Expected the error to name the group and the level. Received: ${error.message}`,
-	);
+	).toBeTruthy();
 });
 
-Deno.test("generateCSS - rejects an unknown primitive variant setting", () => {
+test("generateCSS - rejects an unknown primitive variant setting", () => {
 	const config = {
 		primitives: {
 			button: {
@@ -90,16 +91,16 @@ Deno.test("generateCSS - rejects an unknown primitive variant setting", () => {
 		},
 	} as unknown as CSSForgeConfig;
 
-	const error = assertThrows(() => generateCSS(config));
+	const error = thrownError(() => generateCSS(config));
 
-	assert(
+	expect(
 		error.message.includes('"primitives.button.default.settings"') &&
 			error.message.includes('"foo"'),
 		`Expected the error to name the variant and the key. Received: ${error.message}`,
-	);
+	).toBeTruthy();
 });
 
-Deno.test("generateCSS - a valid settings object still generates", () => {
+test("generateCSS - a valid settings object still generates", () => {
 	const config = defineConfig({
 		colors: { palette },
 		spacing: {
@@ -117,7 +118,7 @@ Deno.test("generateCSS - a valid settings object still generates", () => {
 
 	const css = generateCSS(config);
 
-	assert(css.includes("--spacing-size-2: 0.5rem;"), css);
-	assert(css.includes("--typography_fluid-base-mid:"), css);
-	assert(css.includes("--button-default-padding: 8px;"), css);
+	expect(css.includes("--spacing-size-2: 0.5rem;"), css).toBeTruthy();
+	expect(css.includes("--typography_fluid-base-mid:"), css).toBeTruthy();
+	expect(css.includes("--button-default-padding: 8px;"), css).toBeTruthy();
 });

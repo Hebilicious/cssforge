@@ -1,8 +1,8 @@
+import { expect, test } from "vitest";
 import { defineConfig } from "../src/mod.ts";
 import { processPrimitives } from "../src/modules/primitive.ts";
-import { assertEquals, assertSnapshot, Deno } from "./vitest-compat.ts";
 
-Deno.test("processPrimitives - processes button with variables", async (t) => {
+test("processPrimitives - processes button with variables", () => {
 	const config = defineConfig({
 		typography: {
 			fluid: {
@@ -64,12 +64,12 @@ Deno.test("processPrimitives - processes button with variables", async (t) => {
 		"--button-small-padding: var(--spacing-size-2) var(--spacing-size-3);",
 	].join("\n");
 
-	assertEquals(result.css.root, expected);
-	await assertSnapshot(t, result.css);
-	await assertSnapshot(t, Array.from(result.resolveMap.entries()));
+	expect(result.css.root).toEqual(expected);
+	expect(result.css).toMatchSnapshot();
+	expect(Array.from(result.resolveMap.entries())).toMatchSnapshot();
 });
 
-Deno.test("processPrimitives - processes buttons with settings", async (t) => {
+test("processPrimitives - processes buttons with settings", () => {
 	const config = defineConfig({
 		primitives: {
 			button: {
@@ -106,12 +106,12 @@ Deno.test("processPrimitives - processes buttons with settings", async (t) => {
 		"--button-big-radius: 1rem;",
 	].join("\n");
 
-	assertEquals(result.css.root, expected);
-	await assertSnapshot(t, result.css);
-	await assertSnapshot(t, Array.from(result.resolveMap.entries()));
+	expect(result.css.root).toEqual(expected);
+	expect(result.css).toMatchSnapshot();
+	expect(Array.from(result.resolveMap.entries())).toMatchSnapshot();
 });
 
-Deno.test("processPrimitives - references colors, gradients, and themes", async (t) => {
+test("processPrimitives - references colors, gradients, and themes", () => {
 	const config = defineConfig({
 		colors: {
 			palette: {
@@ -181,12 +181,12 @@ Deno.test("processPrimitives - references colors, gradients, and themes", async 
 		"--card-default-border-color: var(--palette-coral-50);",
 	].join("\n");
 
-	assertEquals(result.css.root, expected);
-	await assertSnapshot(t, result.css);
-	await assertSnapshot(t, Array.from(result.resolveMap.entries()));
+	expect(result.css.root).toEqual(expected);
+	expect(result.css).toMatchSnapshot();
+	expect(Array.from(result.resolveMap.entries())).toMatchSnapshot();
 });
 
-Deno.test("processPrimitives - uses fluid spacing references", async (t) => {
+test("processPrimitives - uses fluid spacing references", () => {
 	const config = defineConfig({
 		spacing: {
 			fluid: {
@@ -225,12 +225,12 @@ Deno.test("processPrimitives - uses fluid spacing references", async (t) => {
 		"/* box */",
 		"--box-default-padding: var(--spacing_fluid-gap-gs-s) var(--spacing_fluid-gap-gs-m);",
 	].join("\n");
-	assertEquals(primitives.css.root, expected);
-	await assertSnapshot(t, primitives.css);
-	await assertSnapshot(t, Array.from(primitives.resolveMap.entries()));
+	expect(primitives.css.root).toEqual(expected);
+	expect(primitives.css).toMatchSnapshot();
+	expect(Array.from(primitives.resolveMap.entries())).toMatchSnapshot();
 });
 
-Deno.test("processPrimitives - converts multiple px values with pxToRem enabled", async () => {
+test("processPrimitives - converts multiple px values with pxToRem enabled", () => {
 	const config = defineConfig({
 		primitives: {
 			box: {
@@ -254,10 +254,10 @@ Deno.test("processPrimitives - converts multiple px values with pxToRem enabled"
 		"--box-padded-margin: 0 0 0.25rem;",
 	].join("\n");
 
-	assertEquals(result.css.root, expected);
+	expect(result.css.root).toEqual(expected);
 });
 
-Deno.test("processPrimitives - preserves px in functions with pxToRem enabled", async () => {
+test("processPrimitives - preserves px in functions with pxToRem enabled", () => {
 	const config = defineConfig({
 		primitives: {
 			btn: {
@@ -281,10 +281,10 @@ Deno.test("processPrimitives - preserves px in functions with pxToRem enabled", 
 		"--btn-rounded-border: 0.0625rem solid var(--color, #000);",
 	].join("\n");
 
-	assertEquals(result.css.root, expected);
+	expect(result.css.root).toEqual(expected);
 });
 
-Deno.test("processPrimitives - resolves hyphenated aliases with fallbacks end to end", async (t) => {
+test("processPrimitives - resolves hyphenated aliases with fallbacks end to end", () => {
 	const config = defineConfig({
 		colors: {
 			palette: {
@@ -338,7 +338,7 @@ Deno.test("processPrimitives - resolves hyphenated aliases with fallbacks end to
 		"--panel-default-border-color: var(--brand-color, #fff);",
 	].join("\n");
 
-	assertEquals(result.css.root, expected);
-	await assertSnapshot(t, result.css);
-	await assertSnapshot(t, Array.from(result.resolveMap.entries()));
+	expect(result.css.root).toEqual(expected);
+	expect(result.css).toMatchSnapshot();
+	expect(Array.from(result.resolveMap.entries())).toMatchSnapshot();
 });

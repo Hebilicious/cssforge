@@ -1,3 +1,4 @@
+import { expect, test } from "vitest";
 import { generateJSON, generateTS } from "../src/generator.ts";
 import type { CSSForgeConfig, Diagnostic } from "../src/mod.ts";
 import {
@@ -6,7 +7,7 @@ import {
 	getDiagnostics,
 	processMotion,
 } from "../src/mod.ts";
-import { assert, assertEquals, assertThrows, Deno } from "./vitest-compat.ts";
+import { thrownError } from "./helpers.ts";
 
 const motion = (config: CSSForgeConfig["motion"]): Partial<CSSForgeConfig> => ({
 	motion: config,
@@ -22,13 +23,16 @@ const easing = (value: string) => motion({ easing: { ui: { value: { enter: value
 const codes = (diagnostics: Diagnostic[]) => diagnostics.map(({ code }) => code);
 
 const assertRejected = (config: unknown, parts: string[]) => {
-	const error = assertThrows(() => generateCSS(config as Partial<CSSForgeConfig>));
+	const error = thrownError(() => generateCSS(config as Partial<CSSForgeConfig>));
 	for (const part of parts) {
-		assert(error.message.includes(part), `Expected "${part}" in: ${error.message}`);
+		expect(
+			error.message.includes(part),
+			`Expected "${part}" in: ${error.message}`,
+		).toBeTruthy();
 	}
 };
 
-Deno.test("motion - emits duration and easing tokens per group", () => {
+test("motion - emits duration and easing tokens per group", () => {
 	const css = generateCSS(
 		motion({
 			duration: {
@@ -41,8 +45,7 @@ Deno.test("motion - emits duration and easing tokens per group", () => {
 		}),
 	);
 
-	assertEquals(
-		css,
+	expect(css).toEqual(
 		[
 			"/*____ CSSForge ____*/",
 			":root {",
@@ -57,13 +60,13 @@ Deno.test("motion - emits duration and easing tokens per group", () => {
 	);
 });
 
-Deno.test("motion - processMotion resolves motion.<kind>.<group>.<name> paths", () => {
+test("motion - processMotion resolves motion.<kind>.<group>.<name> paths", () => {
 	const { resolveMap } = processMotion({
 		duration: { ui: { value: { press: "120ms" } } },
 		easing: { ui: { value: { out: "ease-out" } } },
 	});
 
-	assertEquals(Object.fromEntries(resolveMap), {
+	expect(Object.fromEntries(resolveMap)).toEqual({
 		"motion.duration.ui.press": {
 			key: "--motion-duration-ui-press",
 			value: "120ms",
@@ -83,7 +86,7 @@ Deno.test("motion - processMotion resolves motion.<kind>.<group>.<name> paths", 
 	});
 });
 
-Deno.test("motion - primitives reference motion tokens through variables", () => {
+test("motion - primitives reference motion tokens through variables", () => {
 	const css = generateCSS({
 		...motion({
 			duration: { ui: { value: { press: "120ms" } } },
@@ -101,15 +104,15 @@ Deno.test("motion - primitives reference motion tokens through variables", () =>
 		},
 	});
 
-	assert(
+	expect(
 		css.includes(
 			"--button-default-transition: transform var(--motion-duration-ui-press) var(--motion-easing-ui-out);",
 		),
 		css,
-	);
+	).toBeTruthy();
 });
 
-Deno.test("motion - a reference may keep the value segment, as spacing allows", () => {
+test("motion - a reference may keep the value segment, as spacing allows", () => {
 	const css = generateCSS({
 		...motion({ duration: { ui: { value: { press: "120ms" } } } }),
 		primitives: {
@@ -123,14 +126,14 @@ Deno.test("motion - a reference may keep the value segment, as spacing allows", 
 			},
 		},
 	});
-	assert(
+	expect(
 		css.includes("--button-default-duration: var(--motion-duration-ui-press);"),
 		css,
-	);
+	).toBeTruthy();
 });
 
-Deno.test("motion - an unknown motion reference names the path", () => {
-	const error = assertThrows(() =>
+test("motion - an unknown motion reference names the path", () => {
+	const error = thrownError(() =>
 		generateCSS({
 			...motion({ duration: { ui: { value: { press: "120ms" } } } }),
 			primitives: {
@@ -145,34 +148,36 @@ Deno.test("motion - an unknown motion reference names the path", () => {
 			},
 		}),
 	);
-	assert(error.message.includes("motion.duration.ui.missing"), error.message);
+	expect(
+		error.message.includes("motion.duration.ui.missing"),
+		error.message,
+	).toBeTruthy();
 });
 
-Deno.test("motion - JSON, TypeScript and Style Dictionary outputs carry the tokens", () => {
+test("motion - JSON, TypeScript and Style Dictionary outputs carry the tokens", () => {
 	const config = motion({
 		duration: { ui: { value: { press: "120ms" } } },
 		easing: { ui: { value: { out: "ease-out" } } },
 	});
 
 	const json = JSON.parse(generateJSON(config));
-	assertEquals(json.motion.duration.ui.press, {
+	expect(json.motion.duration.ui.press).toEqual({
 		key: "--motion-duration-ui-press",
 		value: "120ms",
 		variable: "--motion-duration-ui-press: 120ms;",
 	});
-	assert(generateTS(config).includes('"key": "--motion-easing-ui-out"'));
+	expect(generateTS(config).includes('"key": "--motion-easing-ui-out"')).toBeTruthy();
 
 	const tokens = JSON.parse(generateStyleDictionaryJSON(config));
-	assertEquals(tokens.motion.duration.ui.press.value, "120ms");
-	assertEquals(tokens.motion.duration.ui.press.type, "duration");
-	assertEquals(tokens.motion.easing.ui.out.type, "easing");
-	assertEquals(
-		tokens.motion.easing.ui.out.attributes.cssVariable,
+	expect(tokens.motion.duration.ui.press.value).toEqual("120ms");
+	expect(tokens.motion.duration.ui.press.type).toEqual("duration");
+	expect(tokens.motion.easing.ui.out.type).toEqual("easing");
+	expect(tokens.motion.easing.ui.out.attributes.cssVariable).toEqual(
 		"--motion-easing-ui-out",
 	);
 });
 
-Deno.test("motion - a token colliding with a primitive key is rejected", () => {
+test("motion - a token colliding with a primitive key is rejected", () => {
 	assertRejected(
 		{
 			...motion({ duration: { ui: { value: { press: "120ms" } } } }),
@@ -186,13 +191,13 @@ Deno.test("motion - a token colliding with a primitive key is rejected", () => {
 	);
 });
 
-Deno.test("motion - accepts durations in ms or s, including zero", () => {
+test("motion - accepts durations in ms or s, including zero", () => {
 	for (const value of ["0ms", "0s", "120ms", "0.2s", ".15s", "1.5ms"]) {
-		assertEquals(getDiagnostics(duration(value)), [], value);
+		expect(getDiagnostics(duration(value)), value).toEqual([]);
 	}
 });
 
-Deno.test("motion - rejects a duration that is not a non-negative ms or s value", () => {
+test("motion - rejects a duration that is not a non-negative ms or s value", () => {
 	for (const value of [
 		"120",
 		"0",
@@ -216,7 +221,7 @@ Deno.test("motion - rejects a duration that is not a non-negative ms or s value"
 	]);
 });
 
-Deno.test("motion - accepts CSS easing functions", () => {
+test("motion - accepts CSS easing functions", () => {
 	for (const value of [
 		"linear",
 		"ease",
@@ -237,11 +242,11 @@ Deno.test("motion - accepts CSS easing functions", () => {
 		"linear(0, 0.5 25% 75%, 1)",
 		"linear(0, 25% 75% 0.5, 1)",
 	]) {
-		assertEquals(codes(getDiagnostics(easing(value))), [], value);
+		expect(codes(getDiagnostics(easing(value))), value).toEqual([]);
 	}
 });
 
-Deno.test("motion - rejects values that are not CSS easing functions", () => {
+test("motion - rejects values that are not CSS easing functions", () => {
 	for (const value of [
 		"",
 		"ease-inn",
@@ -268,7 +273,7 @@ Deno.test("motion - rejects values that are not CSS easing functions", () => {
 	}
 });
 
-Deno.test("motion - rejects malformed groups and settings", () => {
+test("motion - rejects malformed groups and settings", () => {
 	assertRejected(motion({ durations: {} } as never), ['"motion"', '"durations"']);
 	assertRejected(motion({ duration: { ui: { press: "120ms" } } } as never), [
 		'"motion.duration.ui"',
@@ -293,37 +298,37 @@ Deno.test("motion - rejects malformed groups and settings", () => {
 	]);
 });
 
-Deno.test("motion - a UI duration over 300ms warns, 300ms does not", () => {
-	assertEquals(getDiagnostics(duration("300ms")), []);
-	assertEquals(getDiagnostics(duration("0.3s")), []);
+test("motion - a UI duration over 300ms warns, 300ms does not", () => {
+	expect(getDiagnostics(duration("300ms"))).toEqual([]);
+	expect(getDiagnostics(duration("0.3s"))).toEqual([]);
 
 	const [diagnostic, ...rest] = getDiagnostics(duration("0.301s"));
-	assertEquals(rest, []);
-	assertEquals(diagnostic?.code, "motion-long-duration");
-	assertEquals(diagnostic?.severity, "warning");
-	assertEquals(diagnostic?.path, "motion.duration.ui.press");
+	expect(rest).toEqual([]);
+	expect(diagnostic?.code).toEqual("motion-long-duration");
+	expect(diagnostic?.severity).toEqual("warning");
+	expect(diagnostic?.path).toEqual("motion.duration.ui.press");
 	for (const part of ["motion.duration.ui.press", "301ms", "300ms", "settings.long"]) {
-		assert(
+		expect(
 			diagnostic?.message.includes(part),
 			`Expected "${part}" in: ${diagnostic?.message}`,
-		);
+		).toBeTruthy();
 	}
 });
 
-Deno.test("motion - a long group allows up to 500ms and warns above it", () => {
-	assertEquals(getDiagnostics(duration("400ms", { long: true })), []);
-	assertEquals(getDiagnostics(duration("500ms", { long: true })), []);
+test("motion - a long group allows up to 500ms and warns above it", () => {
+	expect(getDiagnostics(duration("400ms", { long: true }))).toEqual([]);
+	expect(getDiagnostics(duration("500ms", { long: true }))).toEqual([]);
 
 	const [diagnostic] = getDiagnostics(duration("501ms", { long: true }));
-	assertEquals(diagnostic?.code, "motion-long-duration");
-	assert(diagnostic?.message.includes("500ms"), diagnostic?.message);
+	expect(diagnostic?.code).toEqual("motion-long-duration");
+	expect(diagnostic?.message.includes("500ms"), diagnostic?.message).toBeTruthy();
 
-	assertEquals(codes(getDiagnostics(duration("400ms", { long: false }))), [
+	expect(codes(getDiagnostics(duration("400ms", { long: false })))).toEqual([
 		"motion-long-duration",
 	]);
 });
 
-Deno.test("motion - ease-in and ease-in shaped curves warn", () => {
+test("motion - ease-in and ease-in shaped curves warn", () => {
 	for (const value of [
 		"ease-in",
 		"cubic-bezier(0.42, 0, 1, 1)",
@@ -332,16 +337,16 @@ Deno.test("motion - ease-in and ease-in shaped curves warn", () => {
 		"cubic-bezier(0.6, -0.28, 0.735, 0.045)",
 	]) {
 		const diagnostics = getDiagnostics(easing(value));
-		assertEquals(codes(diagnostics), ["motion-ease-in"], value);
-		assertEquals(diagnostics[0]?.path, "motion.easing.ui.enter");
-		assert(
+		expect(codes(diagnostics), value).toEqual(["motion-ease-in"]);
+		expect(diagnostics[0]?.path).toEqual("motion.easing.ui.enter");
+		expect(
 			diagnostics[0]?.message.includes("motion.easing.ui.enter"),
 			diagnostics[0]?.message,
-		);
+		).toBeTruthy();
 	}
 });
 
-Deno.test("motion - ease-out, ease-in-out and linear curves do not warn", () => {
+test("motion - ease-out, ease-in-out and linear curves do not warn", () => {
 	for (const value of [
 		"ease",
 		"ease-out",
@@ -355,6 +360,6 @@ Deno.test("motion - ease-out, ease-in-out and linear curves do not warn", () => 
 		"steps(4)",
 		"linear(0, 0.1 50%, 1)",
 	]) {
-		assertEquals(getDiagnostics(easing(value)), [], value);
+		expect(getDiagnostics(easing(value)), value).toEqual([]);
 	}
 });

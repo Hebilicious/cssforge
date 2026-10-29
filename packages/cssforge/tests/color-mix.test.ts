@@ -1,4 +1,5 @@
 import Color from "colorjs.io";
+import { expect, test } from "vitest";
 import { generateJSON, generateTS } from "../src/generator.ts";
 import type { CSSForgeConfig } from "../src/mod.ts";
 import {
@@ -7,7 +8,7 @@ import {
 	generateStyleDictionaryJSON,
 	processColors,
 } from "../src/mod.ts";
-import { assert, assertEquals, assertThrows, Deno } from "./vitest-compat.ts";
+import { thrownError } from "./helpers.ts";
 
 /** The sRGB hex of an oklch color, derived without the mix implementation. */
 const hexOf = (l: number, c: number, h: number) =>
@@ -16,16 +17,16 @@ const hexOf = (l: number, c: number, h: number) =>
 const accent = { base: { hex: "#336699" } };
 
 const throwsAt = (config: unknown, ...fragments: string[]) => {
-	const error = assertThrows(() => generateCSS(config as CSSForgeConfig));
+	const error = thrownError(() => generateCSS(config as CSSForgeConfig));
 	for (const fragment of fragments) {
-		assert(
+		expect(
 			error.message.includes(fragment),
 			`Expected the error to include ${fragment}. Received: ${error.message}`,
-		);
+		).toBeTruthy();
 	}
 };
 
-Deno.test("generateCSS - a palette mix emits color-mix with a var() reference", () => {
+test("generateCSS - a palette mix emits color-mix with a var() reference", () => {
 	const css = generateCSS(
 		defineConfig({
 			colors: {
@@ -41,15 +42,15 @@ Deno.test("generateCSS - a palette mix emits color-mix with a var() reference", 
 		}),
 	);
 
-	assert(
+	expect(
 		css.includes(
 			"--palette-accent-hover: color-mix(in oklch, var(--palette-accent-base), black 15%);",
 		),
 		css,
-	);
+	).toBeTruthy();
 });
 
-Deno.test("generateCSS - a theme mix derives a variant from a palette color", () => {
+test("generateCSS - a theme mix derives a variant from a palette color", () => {
 	const css = generateCSS(
 		defineConfig({
 			colors: {
@@ -71,15 +72,15 @@ Deno.test("generateCSS - a theme mix derives a variant from a palette color", ()
 		}),
 	);
 
-	assert(
+	expect(
 		css.includes(
 			"--theme-light-action-subtle: color-mix(in oklch, var(--palette-accent-base), transparent 88%);",
 		),
 		css,
-	);
+	).toBeTruthy();
 });
 
-Deno.test("generateCSS - a theme mix can reference an earlier theme token", () => {
+test("generateCSS - a theme mix can reference an earlier theme token", () => {
 	const css = generateCSS(
 		defineConfig({
 			colors: {
@@ -103,15 +104,15 @@ Deno.test("generateCSS - a theme mix can reference an earlier theme token", () =
 		}),
 	);
 
-	assert(
+	expect(
 		css.includes(
 			"--theme-light-action-hover: color-mix(in oklch, var(--theme-light-action-base), white 10%);",
 		),
 		css,
-	);
+	).toBeTruthy();
 });
 
-Deno.test("generateCSS - literal colors are emitted as written", () => {
+test("generateCSS - literal colors are emitted as written", () => {
 	const css = generateCSS(
 		defineConfig({
 			colors: {
@@ -126,15 +127,15 @@ Deno.test("generateCSS - literal colors are emitted as written", () => {
 		}),
 	);
 
-	assert(
+	expect(
 		css.includes(
 			"--palette-brand-blend: color-mix(in oklch, #ff0000, oklch(50% 0.2 264) 50%);",
 		),
 		css,
-	);
+	).toBeTruthy();
 });
 
-Deno.test("generateCSS - a fallback format declares the statically mixed color", () => {
+test("generateCSS - a fallback format declares the statically mixed color", () => {
 	const css = generateCSS(
 		defineConfig({
 			colors: {
@@ -153,13 +154,13 @@ Deno.test("generateCSS - a fallback format declares the statically mixed color",
 	const [l, c, h] = new Color("#336699").to("oklch").coords;
 	const fallback = css.slice(css.indexOf("@supports"));
 
-	assert(
+	expect(
 		fallback.includes(`--palette-accent-hover: ${hexOf(l * 0.85, c * 0.85, h)};`),
 		css,
-	);
+	).toBeTruthy();
 });
 
-Deno.test("generateJSON - an achromatic operand keeps the other color's hue", () => {
+test("generateJSON - an achromatic operand keeps the other color's hue", () => {
 	const config = defineConfig({
 		colors: {
 			palette: {
@@ -179,10 +180,10 @@ Deno.test("generateJSON - an achromatic operand keeps the other color's hue", ()
 
 	const tint = JSON.parse(generateJSON(config)).palette.base.tint;
 
-	assertEquals(tint.color.hex.string, hexOf(0.75, 0.1, 264));
+	expect(tint.color.hex.string).toEqual(hexOf(0.75, 0.1, 264));
 });
 
-Deno.test("generateJSON - mixing with transparent keeps the color and sets its alpha", () => {
+test("generateJSON - mixing with transparent keeps the color and sets its alpha", () => {
 	const config = defineConfig({
 		colors: {
 			palette: {
@@ -201,13 +202,13 @@ Deno.test("generateJSON - mixing with transparent keeps the color and sets its a
 
 	const subtle = JSON.parse(generateJSON(config)).palette.accent.subtle;
 
-	assertEquals(subtle.color.rgb, {
+	expect(subtle.color.rgb).toEqual({
 		string: "rgb(51 102 153 / 0.12)",
 		array: [51, 102, 153, 0.12],
 	});
 });
 
-Deno.test("generateJSON - alpha weights lightness and chroma but not the hue", () => {
+test("generateJSON - alpha weights lightness and chroma but not the hue", () => {
 	const config = defineConfig({
 		colors: {
 			palette: {
@@ -230,10 +231,10 @@ Deno.test("generateJSON - alpha weights lightness and chroma but not the hue", (
 
 	const blend = JSON.parse(generateJSON(config)).palette.base.blend;
 
-	assertEquals(blend.color.hex.string, expected);
+	expect(blend.color.hex.string).toEqual(expected);
 });
 
-Deno.test("generateJSON and generateTS - a mix token keeps its var() reference", () => {
+test("generateJSON and generateTS - a mix token keeps its var() reference", () => {
 	const config = defineConfig({
 		colors: {
 			palette: {
@@ -248,15 +249,15 @@ Deno.test("generateJSON and generateTS - a mix token keeps its var() reference",
 	});
 	const value = "color-mix(in oklch, var(--palette-accent-base), black 15%)";
 
-	assertEquals(JSON.parse(generateJSON(config)).palette.accent.hover, {
+	expect(JSON.parse(generateJSON(config)).palette.accent.hover).toEqual({
 		key: "--palette-accent-hover",
 		value,
 		variable: `--palette-accent-hover: ${value};`,
 	});
-	assert(generateTS(config).includes(`"value": "${value}"`));
+	expect(generateTS(config).includes(`"value": "${value}"`)).toBeTruthy();
 });
 
-Deno.test("processColors - a mix token records the paths it references", () => {
+test("processColors - a mix token records the paths it references", () => {
 	const { resolveMap } = processColors({
 		palette: {
 			value: {
@@ -271,15 +272,15 @@ Deno.test("processColors - a mix token records the paths it references", () => {
 		},
 	});
 
-	assertEquals(resolveMap.get("palette.accent.hover")?.referencePaths, [
+	expect(resolveMap.get("palette.accent.hover")?.referencePaths).toEqual([
 		"palette.accent.base",
 	]);
-	assertEquals(resolveMap.get("palette.accent.hover")?.tier, "semantic");
-	assertEquals(resolveMap.get("palette.accent.literal")?.referencePaths, undefined);
-	assertEquals(resolveMap.get("palette.accent.literal")?.tier, "primitive");
+	expect(resolveMap.get("palette.accent.hover")?.tier).toEqual("semantic");
+	expect(resolveMap.get("palette.accent.literal")?.referencePaths).toEqual(undefined);
+	expect(resolveMap.get("palette.accent.literal")?.tier).toEqual("primitive");
 });
 
-Deno.test("generateStyleDictionaryJSON - a mix token resolves its reference", () => {
+test("generateStyleDictionaryJSON - a mix token resolves its reference", () => {
 	const config = defineConfig({
 		colors: {
 			palette: {
@@ -297,13 +298,13 @@ Deno.test("generateStyleDictionaryJSON - a mix token resolves its reference", ()
 	const base = tokens.palette.accent.base.value;
 	const hover = tokens.palette.accent.hover;
 
-	assertEquals(hover.value, `color-mix(in oklch, ${base}, black 15%)`);
-	assertEquals(hover.type, "color");
-	assertEquals(hover.$tier, "semantic");
-	assertEquals(hover.$reference, "palette.accent.base");
+	expect(hover.value).toEqual(`color-mix(in oklch, ${base}, black 15%)`);
+	expect(hover.type).toEqual("color");
+	expect(hover.$tier).toEqual("semantic");
+	expect(hover.$reference).toEqual("palette.accent.base");
 });
 
-Deno.test("generateCSS - rejects an unknown key in a mix", () => {
+test("generateCSS - rejects an unknown key in a mix", () => {
 	throwsAt(
 		{
 			colors: {
@@ -324,7 +325,7 @@ Deno.test("generateCSS - rejects an unknown key in a mix", () => {
 	);
 });
 
-Deno.test("generateCSS - rejects a key beside mix", () => {
+test("generateCSS - rejects a key beside mix", () => {
 	throwsAt(
 		{
 			colors: {
@@ -346,7 +347,7 @@ Deno.test("generateCSS - rejects a key beside mix", () => {
 	);
 });
 
-Deno.test("generateCSS - rejects an amount outside 0 to 100", () => {
+test("generateCSS - rejects an amount outside 0 to 100", () => {
 	for (const amount of [-1, 101, "15", Number.NaN]) {
 		throwsAt(
 			{
@@ -366,7 +367,7 @@ Deno.test("generateCSS - rejects an amount outside 0 to 100", () => {
 	}
 });
 
-Deno.test("generateCSS - rejects a missing operand", () => {
+test("generateCSS - rejects a missing operand", () => {
 	throwsAt(
 		{
 			colors: {
@@ -384,7 +385,7 @@ Deno.test("generateCSS - rejects a missing operand", () => {
 	);
 });
 
-Deno.test("generateCSS - rejects an interpolation space other than oklch", () => {
+test("generateCSS - rejects an interpolation space other than oklch", () => {
 	throwsAt(
 		{
 			colors: {
@@ -410,7 +411,7 @@ Deno.test("generateCSS - rejects an interpolation space other than oklch", () =>
 	);
 });
 
-Deno.test("generateCSS - rejects a null interpolation space", () => {
+test("generateCSS - rejects a null interpolation space", () => {
 	throwsAt(
 		{
 			colors: {
@@ -430,7 +431,7 @@ Deno.test("generateCSS - rejects a null interpolation space", () => {
 	);
 });
 
-Deno.test("generateCSS - a tiny amount is written without exponent notation", () => {
+test("generateCSS - a tiny amount is written without exponent notation", () => {
 	const css = generateCSS(
 		defineConfig({
 			colors: {
@@ -448,15 +449,15 @@ Deno.test("generateCSS - a tiny amount is written without exponent notation", ()
 		}),
 	);
 
-	assert(
+	expect(
 		css.includes(
 			"--palette-accent-tiny: color-mix(in oklch, var(--palette-accent-base), black 0.0001%);",
 		),
 		css,
-	);
+	).toBeTruthy();
 });
 
-Deno.test("generateCSS - rejects a token path that does not resolve", () => {
+test("generateCSS - rejects a token path that does not resolve", () => {
 	throwsAt(
 		{
 			colors: {
@@ -477,7 +478,7 @@ Deno.test("generateCSS - rejects a token path that does not resolve", () => {
 	);
 });
 
-Deno.test("generateCSS - rejects a token path that is not a color", () => {
+test("generateCSS - rejects a token path that is not a color", () => {
 	throwsAt(
 		{
 			colors: {
@@ -505,7 +506,7 @@ Deno.test("generateCSS - rejects a token path that is not a color", () => {
 	);
 });
 
-Deno.test("generateCSS - rejects a literal that is not a CSS color", () => {
+test("generateCSS - rejects a literal that is not a CSS color", () => {
 	throwsAt(
 		{
 			colors: {
@@ -524,7 +525,7 @@ Deno.test("generateCSS - rejects a literal that is not a CSS color", () => {
 	);
 });
 
-Deno.test("generateCSS - rejects an invalid theme mix instead of skipping the theme", () => {
+test("generateCSS - rejects an invalid theme mix instead of skipping the theme", () => {
 	throwsAt(
 		{
 			colors: {
@@ -544,7 +545,7 @@ Deno.test("generateCSS - rejects an invalid theme mix instead of skipping the th
 	);
 });
 
-Deno.test("generateCSS - rejects a mix with alpha when its format rejects alpha", () => {
+test("generateCSS - rejects a mix with alpha when its format rejects alpha", () => {
 	throwsAt(
 		{
 			colors: {

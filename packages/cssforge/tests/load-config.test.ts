@@ -3,10 +3,10 @@ import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { expect, test } from "vitest";
 import type { LoadedConfig } from "../src/mod.ts";
 import { loadConfig } from "../src/mod.ts";
 import { childEnv } from "./helpers.ts";
-import { assert, assertEquals, Deno } from "./vitest-compat.ts";
 
 const configSource = `import { size } from "./tokens.ts";
 import { nestedSize } from "./nested.ts";
@@ -56,7 +56,7 @@ const runScenario = (dir: string): ScenarioResult => {
 		.filter(Boolean)
 		.pop();
 
-	assertEquals(result.status, 0, `the loader scenario failed: ${result.stderr}`);
+	expect(result.status, `the loader scenario failed: ${result.stderr}`).toEqual(0);
 
 	if (output === undefined) {
 		throw new Error("the loader scenario printed no result");
@@ -98,12 +98,12 @@ const rejectWith = async (
 	throw new Error(message);
 };
 
-Deno.test("loadConfig - returns the default export and every local file the config loaded", async () => {
+test("loadConfig - returns the default export and every local file the config loaded", async () => {
 	await inConfigDir(configFiles, async (dir) => {
 		const { first } = runScenario(dir);
 
-		assertEquals(first.config.spacing?.custom?.size?.value, { 2: "0.5rem", 4: "1rem" });
-		assertEquals(first.dependencies.map((path) => path.replace(dir, "<dir>")).sort(), [
+		expect(first.config.spacing?.custom?.size?.value).toEqual({ 2: "0.5rem", 4: "1rem" });
+		expect(first.dependencies.map((path) => path.replace(dir, "<dir>")).sort()).toEqual([
 			"<dir>/cssforge.config.ts",
 			"<dir>/nested.ts",
 			"<dir>/tokens.ts",
@@ -111,7 +111,7 @@ Deno.test("loadConfig - returns the default export and every local file the conf
 	});
 });
 
-Deno.test("loadConfig - loads a TypeScript config whatever the package type declares", async () => {
+test("loadConfig - loads a TypeScript config whatever the package type declares", async () => {
 	// An explicit `"type": "commonjs"` makes Node read `.ts` as CommonJS and turns
 	// off module syntax detection, so `export default` would be a syntax error.
 	const manifests = [
@@ -126,31 +126,28 @@ Deno.test("loadConfig - loads a TypeScript config whatever the package type decl
 			async (dir) => {
 				const { first } = runScenario(dir);
 
-				assertEquals(
-					first.config.spacing?.custom?.size?.value,
+				expect(first.config.spacing?.custom?.size?.value, `type field: ${label}`).toEqual(
 					{ 2: "0.5rem", 4: "1rem" },
-					`type field: ${label}`,
 				);
-				assertEquals(
+				expect(
 					first.dependencies.map((path) => path.replace(dir, "<dir>")).sort(),
-					["<dir>/cssforge.config.ts", "<dir>/nested.ts", "<dir>/tokens.ts"],
 					`type field: ${label}`,
-				);
+				).toEqual(["<dir>/cssforge.config.ts", "<dir>/nested.ts", "<dir>/tokens.ts"]);
 			},
 		);
 	}
 });
 
-Deno.test("loadConfig - re-evaluates a token module the config imports on the next load", async () => {
+test("loadConfig - re-evaluates a token module the config imports on the next load", async () => {
 	await inConfigDir(configFiles, async (dir) => {
 		const { first, second } = runScenario(dir);
 
-		assertEquals(first.config.spacing?.custom?.size?.value, { 2: "0.5rem", 4: "1rem" });
-		assertEquals(second.config.spacing?.custom?.size?.value, { 2: "2rem", 4: "1rem" });
+		expect(first.config.spacing?.custom?.size?.value).toEqual({ 2: "0.5rem", 4: "1rem" });
+		expect(second.config.spacing?.custom?.size?.value).toEqual({ 2: "2rem", 4: "1rem" });
 	});
 });
 
-Deno.test("loadConfig - reports the config path when the file does not exist", async () => {
+test("loadConfig - reports the config path when the file does not exist", async () => {
 	await inConfigDir({}, async (dir) => {
 		const missing = join(dir, "cssforge.config.ts");
 		const error = await rejectWith(
@@ -158,14 +155,14 @@ Deno.test("loadConfig - reports the config path when the file does not exist", a
 			"loadConfig must reject for a missing config file",
 		);
 
-		assert(
+		expect(
 			error.message.startsWith(`Could not load the CSS Forge config at ${missing}`),
 			`error must name ${missing}: ${error.message}`,
-		);
+		).toBeTruthy();
 	});
 });
 
-Deno.test("loadConfig - names the config path when the module throws while loading", async () => {
+test("loadConfig - names the config path when the module throws while loading", async () => {
 	await inConfigDir(
 		{ "cssforge.config.ts": `throw new Error("the token data is corrupt");\n` },
 		async (dir) => {
@@ -175,21 +172,21 @@ Deno.test("loadConfig - names the config path when the module throws while loadi
 				"loadConfig must reject when the config module throws",
 			);
 
-			assert(
+			expect(
 				error.message.startsWith(`Could not load the CSS Forge config at ${path}`),
 				`error must name ${path}: ${error.message}`,
-			);
-			assert(
+			).toBeTruthy();
+			expect(
 				(error.cause as Error | undefined)?.message.includes(
 					"the token data is corrupt",
 				) === true,
 				`the module error must be the cause: ${String(error.cause)}`,
-			);
+			).toBeTruthy();
 		},
 	);
 });
 
-Deno.test("loadConfig - rejects a module whose default export is not a config object", async () => {
+test("loadConfig - rejects a module whose default export is not a config object", async () => {
 	await inConfigDir(
 		{ "cssforge.config.ts": `export const spacing = {};\n` },
 		async (dir) => {
@@ -199,11 +196,14 @@ Deno.test("loadConfig - rejects a module whose default export is not a config ob
 				"loadConfig must reject a config without a default export",
 			);
 
-			assert(error.message.includes(path), `error must name ${path}: ${error.message}`);
-			assert(
+			expect(
+				error.message.includes(path),
+				`error must name ${path}: ${error.message}`,
+			).toBeTruthy();
+			expect(
 				error.message.includes("default export"),
 				`error must describe the missing default export: ${error.message}`,
-			);
+			).toBeTruthy();
 		},
 	);
 });

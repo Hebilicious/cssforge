@@ -1,6 +1,6 @@
+import { expect, test } from "vitest";
 import { defineConfig, processTypography } from "../src/mod.ts";
 import { getLines } from "./helpers.ts";
-import { assertEquals, assertSnapshot, Deno } from "./vitest-compat.ts";
 
 /** The paths of a fluid scale's tokens: its clamp() steps, then its pow tokens. */
 const fluidPaths = (scale: string, labels: string[]) => [
@@ -19,7 +19,7 @@ const fluidPaths = (scale: string, labels: string[]) => [
 	...labels.map((label) => `typography_fluid.${scale}.pow@${label}`),
 ];
 
-Deno.test("processTypography - generates correct CSS variables", async (t) => {
+test("processTypography - generates correct CSS variables", () => {
 	const config = defineConfig({
 		typography: {
 			fluid: {
@@ -42,29 +42,30 @@ Deno.test("processTypography - generates correct CSS variables", async (t) => {
 	const expectedSizes = ["4xl", "3xl", "2xl", "xl", "l", "m", "s", "xs", "2xs"];
 	const result = processTypography(config.typography);
 	const lines = getLines(result.css.root);
-	assertEquals(lines.length, 2 * expectedSizes.length + 9);
+	expect(lines.length).toEqual(2 * expectedSizes.length + 9);
 
 	// Test a specific value for precision
 	const xlLine = lines.find((line) => line.includes("--typography_fluid-arial-xl:"));
-	assertEquals(
-		xlLine,
+	expect(xlLine).toEqual(
 		"--typography_fluid-arial-xl: clamp(1.3672rem, 1.3111rem + 0.2803vw, 1.5625rem);",
 	);
 
-	assertEquals(Array.from(result.resolveMap.keys()), fluidPaths("arial", expectedSizes));
+	expect(Array.from(result.resolveMap.keys())).toEqual(
+		fluidPaths("arial", expectedSizes),
+	);
 
 	// Test that we have all the expected size variables
 	expectedSizes.forEach((size) => {
 		const hasSize = lines.some((line) =>
 			line.includes(`--typography_fluid-arial-${size}:`),
 		);
-		assertEquals(hasSize, true, `Missing size ${size}`);
+		expect(hasSize, `Missing size ${size}`).toEqual(true);
 	});
-	await assertSnapshot(t, result.css);
-	await assertSnapshot(t, Array.from(result.resolveMap.entries()));
+	expect(result.css).toMatchSnapshot();
+	expect(Array.from(result.resolveMap.entries())).toMatchSnapshot();
 });
 
-Deno.test("typography - can handle custom labels and prefixes", async (t) => {
+test("typography - can handle custom labels and prefixes", () => {
 	const config = defineConfig({
 		typography: {
 			fluid: {
@@ -102,17 +103,15 @@ Deno.test("typography - can handle custom labels and prefixes", async (t) => {
 	const expectedSizes = ["xs", "s", "m", "l", "xl", "xxl", "h4", "h3", "h2", "h1"];
 	const result = processTypography(config.typography);
 	const lines = getLines(result.css.root);
-	assertEquals(lines.length, 2 * expectedSizes.length + 9);
+	expect(lines.length).toEqual(2 * expectedSizes.length + 9);
 
 	// Test a specific value for precision
 	const xlLine = lines.find((line) => line.includes("--typography_fluid-arial-text-xl:"));
-	assertEquals(
-		xlLine,
+	expect(xlLine).toEqual(
 		"--typography_fluid-arial-text-xl: clamp(1.3672rem, 1.3111rem + 0.2803vw, 1.5625rem);",
 	);
 
-	assertEquals(
-		Array.from(result.resolveMap.keys()),
+	expect(Array.from(result.resolveMap.keys())).toEqual(
 		fluidPaths("arial", expectedSizes.toReversed()),
 	);
 
@@ -121,13 +120,13 @@ Deno.test("typography - can handle custom labels and prefixes", async (t) => {
 		const hasSize = lines.some((line) =>
 			line.includes(`--typography_fluid-arial-text-${size}:`),
 		);
-		assertEquals(hasSize, true, `Missing size ${size}`);
+		expect(hasSize, `Missing size ${size}`).toEqual(true);
 	});
-	await assertSnapshot(t, result.css);
-	await assertSnapshot(t, Array.from(result.resolveMap.entries()));
+	expect(result.css).toMatchSnapshot();
+	expect(Array.from(result.resolveMap.entries())).toMatchSnapshot();
 });
 
-Deno.test("processTypography - can process weights", async (t) => {
+test("processTypography - can process weights", () => {
 	const positiveSteps = 3;
 	const negativeSteps = 3;
 	const config = defineConfig({
@@ -155,9 +154,9 @@ Deno.test("processTypography - can process weights", async (t) => {
 	const result = processTypography(config.typography);
 	const lines = getLines(result.css.root);
 	// Each step twice, the 9 pow inputs and helpers, and the weight.
-	assertEquals(lines.length, 2 * (positiveSteps + negativeSteps + 1) + 9 + 1);
+	expect(lines.length).toEqual(2 * (positiveSteps + negativeSteps + 1) + 9 + 1);
 
-	assertEquals(Array.from(result.resolveMap.keys()), [
+	expect(Array.from(result.resolveMap.keys())).toEqual([
 		...fluidPaths("arial", ["2xl", "xl", "l", "m", "s", "xs", "2xs"]),
 		"typography.weight.arial.regular",
 	]);
@@ -165,7 +164,7 @@ Deno.test("processTypography - can process weights", async (t) => {
 	const xlLine = lines.find((line) =>
 		line.includes("--typography-weight-arial-regular:"),
 	);
-	assertEquals(xlLine, "--typography-weight-arial-regular: 500;");
-	await assertSnapshot(t, result.css);
-	await assertSnapshot(t, Array.from(result.resolveMap.entries()));
+	expect(xlLine).toEqual("--typography-weight-arial-regular: 500;");
+	expect(result.css).toMatchSnapshot();
+	expect(Array.from(result.resolveMap.entries())).toMatchSnapshot();
 });

@@ -137,11 +137,6 @@ jobs:
           moon-version: "2.0.0"
           auto-install: true
 
-      - name: Setup Deno
-        uses: denoland/setup-deno@v2
-        with:
-          deno-version: v2.x
-
       - name: Check release metadata consistency
         run: moon run --force cssforge:version-check
 

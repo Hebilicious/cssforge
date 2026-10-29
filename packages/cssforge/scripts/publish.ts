@@ -3,7 +3,7 @@
  *
  * npm is the primary channel and is published with trusted publishing (OIDC),
  * which the release workflow enables through `id-token: write`. JSR stays
- * available as the secondary channel for Deno users.
+ * available as the secondary channel for JSR-native imports.
  *
  * A version that is already on the channel is skipped instead of republished,
  * so a failed or retried release run never fails on an already-published npm
@@ -12,7 +12,8 @@
  * Usage: node ./scripts/publish.ts <npm|jsr> [--dry-run]
  */
 import { spawnSync } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import process from "node:process";
 
@@ -87,9 +88,9 @@ const run = (command: string, args: string[], dryRun: boolean): void => {
 	}
 };
 
-const capture = (command: string, args: string[]): string => {
+const capture = (command: string, args: string[], cwd = packageRoot): string => {
 	const result = spawnSync(command, args, {
-		cwd: packageRoot,
+		cwd,
 		encoding: "utf8",
 	});
 	if (result.error) {
@@ -107,43 +108,70 @@ const capture = (command: string, args: string[]): string => {
 
 /**
  * A published JSR entry point that fails to run is silent, so the release has to
- * observe real output. The minimum dependency age is disabled because the
- * version was published seconds ago.
+ * observe real output. Node consumers install JSR packages through its npm
+ * compatibility registry, as `npx jsr add` does, so the check installs the
+ * published version from there into an empty project and runs both entries.
  */
 const verifyJsrChannel = (manifest: PackageManifest): void => {
-	const specifier = `jsr:${manifest.name}@${manifest.version}`;
-	const help = capture("deno", [
-		"run",
-		"-A",
-		"--no-lock",
-		"--minimum-dependency-age=0",
-		`${specifier}/cli`,
-		"--help",
-	]);
-	if (!help.includes("USAGE")) {
-		throw new Error(`${specifier}/cli did not print its usage`);
-	}
+	// `@scope/name` is served as `@jsr/scope__name`.
+	const npmName = `@jsr/${manifest.name.slice(1).replace("/", "__")}`;
+	const specifier = `${npmName}@${manifest.version}`;
+	const projectDir = mkdtempSync(join(tmpdir(), "cssforge-jsr-verify-"));
+	try {
+		writeFileSync(
+			join(projectDir, "package.json"),
+			'{ "private": true, "type": "module" }\n',
+		);
+		writeFileSync(join(projectDir, ".npmrc"), "@jsr:registry=https://npm.jsr.io\n");
+		// Retries must ask the registry again rather than reuse a cached
+		// package document that predates the publish.
+		capture(
+			"npm",
+			["install", "--prefer-online", "--no-audit", "--no-fund", specifier],
+			projectDir,
+		);
 
-	const moduleCheck = [
-		`const mod = await import(${JSON.stringify(specifier)});`,
-		`const css = mod.generateCSS(mod.defineConfig({ spacing: { custom: { size: { value: { 2: "0.5rem" } } } } }));`,
-		`if (!css.includes("--spacing-size-2")) {`,
-		`	throw new Error("the published JSR module entry did not generate the expected CSS");`,
-		`}`,
-		`console.log("module entry ok");`,
-	].join("\n");
-	const result = capture("deno", [
-		"eval",
-		"--no-lock",
-		"--minimum-dependency-age=0",
-		moduleCheck,
-	]);
-	if (!result.includes("module entry ok")) {
-		throw new Error(`${specifier} did not import cleanly: ${result}`);
+		const cliPath = capture(
+			process.execPath,
+			[
+				"--input-type=module",
+				"--eval",
+				`import { fileURLToPath } from "node:url";
+console.log(fileURLToPath(import.meta.resolve(${JSON.stringify(`${npmName}/cli`)})));`,
+			],
+			projectDir,
+		).trim();
+		const help = capture(process.execPath, [cliPath, "--help"], projectDir);
+		if (!help.includes("USAGE")) {
+			throw new Error(`${specifier}/cli did not print its usage`);
+		}
+
+		const moduleCheck = [
+			`const mod = await import(${JSON.stringify(npmName)});`,
+			`const css = mod.generateCSS(mod.defineConfig({ spacing: { custom: { size: { value: { 2: "0.5rem" } } } } }));`,
+			`if (!css.includes("--spacing-size-2")) {`,
+			`	throw new Error("the published JSR module entry did not generate the expected CSS");`,
+			`}`,
+			`console.log("module entry ok");`,
+		].join("\n");
+		const result = capture(
+			process.execPath,
+			["--input-type=module", "--eval", moduleCheck],
+			projectDir,
+		);
+		if (!result.includes("module entry ok")) {
+			throw new Error(`${specifier} did not import cleanly: ${result}`);
+		}
+	} finally {
+		rmSync(projectDir, { recursive: true, force: true });
 	}
 };
 
-const verifyWithRetry = async (verify: () => void, attempts = 3): Promise<void> => {
+/**
+ * JSR builds the npm compatibility tarball after the publish completes, so the
+ * new version can take a minute to become installable.
+ */
+const verifyWithRetry = async (verify: () => void, attempts = 6): Promise<void> => {
 	for (let attempt = 1; attempt <= attempts; attempt++) {
 		try {
 			verify();
@@ -153,9 +181,9 @@ const verifyWithRetry = async (verify: () => void, attempts = 3): Promise<void> 
 				throw error;
 			}
 			console.log(
-				`jsr: verification attempt ${attempt} failed, retrying in 5s: ${(error as Error).message}`,
+				`jsr: verification attempt ${attempt} failed, retrying in 15s: ${(error as Error).message}`,
 			);
-			await new Promise((resolve) => setTimeout(resolve, 5000));
+			await new Promise((resolve) => setTimeout(resolve, 15_000));
 		}
 	}
 };

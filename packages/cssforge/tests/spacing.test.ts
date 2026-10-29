@@ -1,8 +1,8 @@
+import { expect, test } from "vitest";
 import { defineConfig } from "../src/config.ts";
 import { processSpacing } from "../src/modules/spacing.ts";
-import { assertEquals, assertSnapshot, Deno } from "./vitest-compat.ts";
 
-Deno.test("processSpacing - generates correct spacing scale", async (t) => {
+test("processSpacing - generates correct spacing scale", () => {
 	const config = defineConfig({
 		spacing: {
 			custom: {
@@ -20,20 +20,20 @@ Deno.test("processSpacing - generates correct spacing scale", async (t) => {
 		"--spacing-size-3: 0.75rem;",
 		"--spacing-size-s: 1rem;",
 	].join("\n");
-	assertEquals(result.css.root, expected);
+	expect(result.css.root).toEqual(expected);
 
-	assertEquals(Array.from(result.resolveMap.keys()), [
+	expect(Array.from(result.resolveMap.keys())).toEqual([
 		"spacing.custom.size.1",
 		"spacing.custom.size.2",
 		"spacing.custom.size.3",
 		"spacing.custom.size.s",
 	]);
-	await assertSnapshot(t, result.css.root);
-	await assertSnapshot(t, Array.from(result.resolveMap.entries()));
+	expect(result.css.root).toMatchSnapshot();
+	expect(Array.from(result.resolveMap.entries())).toMatchSnapshot();
 });
 
 // Test with string keys
-Deno.test("processSpacing - handles settings", async (t) => {
+test("processSpacing - handles settings", () => {
 	const config = defineConfig({
 		spacing: {
 			custom: {
@@ -57,19 +57,19 @@ Deno.test("processSpacing - handles settings", async (t) => {
 		"--spacing-scale-lg: 0.75rem;",
 	].join("\n");
 
-	assertEquals(result.css.root, expected);
+	expect(result.css.root).toEqual(expected);
 
-	assertEquals(Array.from(result.resolveMap.keys()), [
+	expect(Array.from(result.resolveMap.keys())).toEqual([
 		"spacing.custom.size.1",
 		"spacing.custom.size.2",
 		"spacing.custom.scale.md",
 		"spacing.custom.scale.lg",
 	]);
-	await assertSnapshot(t, result.css.root);
-	await assertSnapshot(t, Array.from(result.resolveMap.entries()));
+	expect(result.css.root).toMatchSnapshot();
+	expect(Array.from(result.resolveMap.entries())).toMatchSnapshot();
 });
 
-Deno.test("processSpacing - generates fluid spacing (prefix)", async (t) => {
+test("processSpacing - generates fluid spacing (prefix)", () => {
 	const config = defineConfig({
 		spacing: {
 			fluid: {
@@ -100,9 +100,9 @@ Deno.test("processSpacing - generates fluid spacing (prefix)", async (t) => {
 		"--spacing_fluid-base-foo-s-m: clamp(0.25rem, -0.1667rem + 2.0833vw, 1.5rem);",
 		"--spacing_fluid-base-foo-m-l: clamp(0.25rem, -0.6667rem + 4.5833vw, 3rem);",
 	].join("\n");
-	assertEquals(css.root, expected);
+	expect(css.root).toEqual(expected);
 
-	assertEquals(Array.from(resolveMap.keys()), [
+	expect(Array.from(resolveMap.keys())).toEqual([
 		"spacing_fluid.base@xs",
 		"spacing_fluid.base@s",
 		"spacing_fluid.base@m",
@@ -112,11 +112,11 @@ Deno.test("processSpacing - generates fluid spacing (prefix)", async (t) => {
 		"spacing_fluid.base@s-m",
 		"spacing_fluid.base@m-l",
 	]);
-	await assertSnapshot(t, css.root);
-	await assertSnapshot(t, Array.from(resolveMap.entries()));
+	expect(css.root).toMatchSnapshot();
+	expect(Array.from(resolveMap.entries())).toMatchSnapshot();
 });
 
-Deno.test("processSpacing - fluid without prefix falls back to scale name", async (t) => {
+test("processSpacing - fluid without prefix falls back to scale name", () => {
 	const config = defineConfig({
 		spacing: {
 			fluid: {
@@ -141,20 +141,20 @@ Deno.test("processSpacing - fluid without prefix falls back to scale name", asyn
 		"--spacing_fluid-rhythm-xs-s: clamp(0rem, -0.4167rem + 2.0833vw, 1.25rem);",
 		"--spacing_fluid-rhythm-s-m: clamp(0.125rem, -0.25rem + 1.875vw, 1.25rem);",
 	].join("\n");
-	assertEquals(css.root, expected);
+	expect(css.root).toEqual(expected);
 
-	assertEquals(Array.from(resolveMap.keys()), [
+	expect(Array.from(resolveMap.keys())).toEqual([
 		"spacing_fluid.rhythm@xs",
 		"spacing_fluid.rhythm@s",
 		"spacing_fluid.rhythm@m",
 		"spacing_fluid.rhythm@xs-s",
 		"spacing_fluid.rhythm@s-m",
 	]);
-	await assertSnapshot(t, css.root);
-	await assertSnapshot(t, Array.from(resolveMap.entries()));
+	expect(css.root).toMatchSnapshot();
+	expect(Array.from(resolveMap.entries())).toMatchSnapshot();
 });
 
-Deno.test("processSpacing - combines fluid and custom spacing", async (t) => {
+test("processSpacing - combines fluid and custom spacing", () => {
 	const config = defineConfig({
 		spacing: {
 			fluid: {
@@ -192,8 +192,8 @@ Deno.test("processSpacing - combines fluid and custom spacing", async (t) => {
 		"--spacing-gap-1: 4px;",
 		"--spacing-gap-2: 8px;",
 	].join("\n");
-	assertEquals(css.root, expected);
-	assertEquals(Array.from(resolveMap.keys()), [
+	expect(css.root).toEqual(expected);
+	expect(Array.from(resolveMap.keys())).toEqual([
 		"spacing_fluid.base@xs",
 		"spacing_fluid.base@s",
 		"spacing_fluid.base@m",
@@ -202,11 +202,11 @@ Deno.test("processSpacing - combines fluid and custom spacing", async (t) => {
 		"spacing.custom.gap.1",
 		"spacing.custom.gap.2",
 	]);
-	await assertSnapshot(t, css.root);
-	await assertSnapshot(t, Array.from(resolveMap.entries()));
+	expect(css.root).toMatchSnapshot();
+	expect(Array.from(resolveMap.entries())).toMatchSnapshot();
 });
 
-Deno.test("processSpacing - handles multiple px values in a single spacing value", async () => {
+test("processSpacing - handles multiple px values in a single spacing value", () => {
 	const config = defineConfig({
 		spacing: {
 			custom: {
@@ -234,10 +234,10 @@ Deno.test("processSpacing - handles multiple px values in a single spacing value
 		"--spacing-pad-exponent: 6.25rem;",
 		"--spacing-pad-shadow: 0 0 0.25rem red, 0 0 0.5rem blue;",
 	].join("\n");
-	assertEquals(result.css.root, expected);
+	expect(result.css.root).toEqual(expected);
 });
 
-Deno.test("processSpacing - preserves px values inside calc and var functions", async () => {
+test("processSpacing - preserves px values inside calc and var functions", () => {
 	const config = defineConfig({
 		spacing: {
 			custom: {
@@ -259,10 +259,10 @@ Deno.test("processSpacing - preserves px values inside calc and var functions", 
 		"--spacing-size-var_px: var(--x, 4px);",
 		"--spacing-size-nested: calc(infinity * 1px);",
 	].join("\n");
-	assertEquals(result.css.root, expected);
+	expect(result.css.root).toEqual(expected);
 });
 
-Deno.test("processSpacing - handles mixed px and non-px values", async () => {
+test("processSpacing - handles mixed px and non-px values", () => {
 	const config = defineConfig({
 		spacing: {
 			custom: {
@@ -278,5 +278,5 @@ Deno.test("processSpacing - handles mixed px and non-px values", async () => {
 
 	const result = processSpacing(config.spacing);
 	const expected = "--spacing-border-shorthand: 0.0625rem solid red;";
-	assertEquals(result.css.root, expected);
+	expect(result.css.root).toEqual(expected);
 });

@@ -1,8 +1,8 @@
 import Color from "colorjs.io";
+import { expect, test } from "vitest";
 import { generateJSON, generateTS } from "../src/generator.ts";
 import type { CSSForgeConfig } from "../src/mod.ts";
 import { defineConfig, generateCSS, generateStyleDictionaryJSON } from "../src/mod.ts";
-import { assert, assertEquals, assertThrows, Deno } from "./vitest-compat.ts";
 
 /** The value declared for `key` inside the generated `@supports` block. */
 const declaredValue = (css: string, key: string): string => {
@@ -18,7 +18,7 @@ const declaredValue = (css: string, key: string): string => {
 const tokenColor = (config: Partial<CSSForgeConfig>) =>
 	JSON.parse(generateJSON(config)).palette.coral["100"].color;
 
-Deno.test("generateCSS - a format emits its CSS value under @supports", () => {
+test("generateCSS - a format emits its CSS value under @supports", () => {
 	const config = defineConfig({
 		colors: {
 			palette: {
@@ -32,8 +32,7 @@ Deno.test("generateCSS - a format emits its CSS value under @supports", () => {
 		},
 	});
 
-	assertEquals(
-		generateCSS(config),
+	expect(generateCSS(config)).toEqual(
 		[
 			"/*____ CSSForge ____*/",
 			":root {",
@@ -52,7 +51,7 @@ Deno.test("generateCSS - a format emits its CSS value under @supports", () => {
 	);
 });
 
-Deno.test("generateJSON - hex produces the string, digits and number outputs", () => {
+test("generateJSON - hex produces the string, digits and number outputs", () => {
 	const config = defineConfig({
 		colors: {
 			palette: {
@@ -64,12 +63,12 @@ Deno.test("generateJSON - hex produces the string, digits and number outputs", (
 		},
 	});
 
-	assertEquals(tokenColor(config), {
+	expect(tokenColor(config)).toEqual({
 		hex: { string: "#ff7f50", digits: "ff7f50", number: 16744272 },
 	});
 });
 
-Deno.test("generateJSON - rgb produces the string and array outputs", () => {
+test("generateJSON - rgb produces the string and array outputs", () => {
 	const config = defineConfig({
 		colors: {
 			palette: {
@@ -79,12 +78,12 @@ Deno.test("generateJSON - rgb produces the string and array outputs", () => {
 		},
 	});
 
-	assertEquals(tokenColor(config), {
+	expect(tokenColor(config)).toEqual({
 		rgb: { string: "rgb(255 127 80)", array: [255, 127, 80] },
 	});
 });
 
-Deno.test("generateJSON - a color with alpha carries it in every output", () => {
+test("generateJSON - a color with alpha carries it in every output", () => {
 	const config = defineConfig({
 		colors: {
 			palette: {
@@ -101,13 +100,13 @@ Deno.test("generateJSON - a color with alpha carries it in every output", () => 
 		},
 	});
 
-	assertEquals(tokenColor(config), {
+	expect(tokenColor(config)).toEqual({
 		hex: { string: "#0000001f", digits: "0000001f", number: 31 },
 		rgb: { string: "rgb(0 0 0 / 0.12)", array: [0, 0, 0, 0.12] },
 	});
 });
 
-Deno.test("generateCSS - fallback selects the format of the CSS declaration", () => {
+test("generateCSS - fallback selects the format of the CSS declaration", () => {
 	const config = defineConfig({
 		colors: {
 			palette: {
@@ -121,14 +120,14 @@ Deno.test("generateCSS - fallback selects the format of the CSS declaration", ()
 
 	const css = generateCSS(config);
 
-	assertEquals(declaredValue(css, "--palette-coral-100"), "rgb(255 127 80)");
-	assertEquals(tokenColor(config), {
+	expect(declaredValue(css, "--palette-coral-100")).toEqual("rgb(255 127 80)");
+	expect(tokenColor(config)).toEqual({
 		hex: { string: "#ff7f50" },
 		rgb: { string: "rgb(255 127 80)" },
 	});
 });
 
-Deno.test("generateCSS - fallback false keeps the formats out of the CSS", () => {
+test("generateCSS - fallback false keeps the formats out of the CSS", () => {
 	const config = defineConfig({
 		colors: {
 			palette: {
@@ -140,11 +139,11 @@ Deno.test("generateCSS - fallback false keeps the formats out of the CSS", () =>
 
 	const css = generateCSS(config);
 
-	assertEquals(css.includes("@supports"), false);
-	assertEquals(tokenColor(config), { hex: { string: "#ff7f50" } });
+	expect(css.includes("@supports")).toEqual(false);
+	expect(tokenColor(config)).toEqual({ hex: { string: "#ff7f50" } });
 });
 
-Deno.test("generateJSON - a format generates at the alpha it sets", () => {
+test("generateJSON - a format generates at the alpha it sets", () => {
 	const config = defineConfig({
 		colors: {
 			palette: {
@@ -165,14 +164,14 @@ Deno.test("generateJSON - a format generates at the alpha it sets", () => {
 
 	// The value keeps the alpha the color carries, and only the format that
 	// asked for an alpha is generated at that opacity.
-	assertEquals(token.value, "oklch(0% 0 none)");
-	assertEquals(token.color, {
+	expect(token.value).toEqual("oklch(0% 0 none)");
+	expect(token.color).toEqual({
 		hex: { string: "#00000080", digits: "00000080" },
 		rgb: { string: "rgb(0 0 0)", array: [0, 0, 0] },
 	});
 });
 
-Deno.test("generateCSS - the declaration uses the alpha of the fallback format", () => {
+test("generateCSS - the declaration uses the alpha of the fallback format", () => {
 	const config = defineConfig({
 		colors: {
 			palette: {
@@ -187,10 +186,10 @@ Deno.test("generateCSS - the declaration uses the alpha of the fallback format",
 		},
 	});
 
-	assertEquals(declaredValue(generateCSS(config), "--palette-coral-100"), "#00000080");
+	expect(declaredValue(generateCSS(config), "--palette-coral-100")).toEqual("#00000080");
 });
 
-Deno.test("generateJSON - alpha false generates no alpha channel", () => {
+test("generateJSON - alpha false generates no alpha channel", () => {
 	const config = defineConfig({
 		colors: {
 			palette: {
@@ -207,13 +206,13 @@ Deno.test("generateJSON - alpha false generates no alpha channel", () => {
 		},
 	});
 
-	assertEquals(tokenColor(config), {
+	expect(tokenColor(config)).toEqual({
 		hex: { string: "#ff7f50" },
 		rgb: { array: [255, 127, 80] },
 	});
 });
 
-Deno.test("generateJSON - a color merges its formats into the palette's", () => {
+test("generateJSON - a color merges its formats into the palette's", () => {
 	const config = defineConfig({
 		colors: {
 			palette: {
@@ -235,14 +234,14 @@ Deno.test("generateJSON - a color merges its formats into the palette's", () => 
 
 	// The palette's rgb survives, the color adds hex, and the color's
 	// `fallback: false` still wins over the palette's choice.
-	assertEquals(tokenColor(config), {
+	expect(tokenColor(config)).toEqual({
 		rgb: { string: "rgb(255 127 80)" },
 		hex: { number: 0xff7f5080 },
 	});
-	assertEquals(generateCSS(config).includes("@supports"), false);
+	expect(generateCSS(config).includes("@supports")).toEqual(false);
 });
 
-Deno.test("generateJSON - a format set to false removes the inherited format", () => {
+test("generateJSON - a format set to false removes the inherited format", () => {
 	const config = defineConfig({
 		colors: {
 			palette: {
@@ -260,14 +259,14 @@ Deno.test("generateJSON - a format set to false removes the inherited format", (
 
 	const tokens = JSON.parse(generateJSON(config)).palette;
 
-	assertEquals(tokens.coral["100"].color, { rgb: { string: "rgb(255 127 80)" } });
-	assertEquals(tokens.plain["100"].color, {
+	expect(tokens.coral["100"].color).toEqual({ rgb: { string: "rgb(255 127 80)" } });
+	expect(tokens.plain["100"].color).toEqual({
 		hex: { string: "#ff7f50" },
 		rgb: { string: "rgb(255 127 80)" },
 	});
 });
 
-Deno.test("generateJSON - a format set to false at the palette level is not generated", () => {
+test("generateJSON - a format set to false at the palette level is not generated", () => {
 	const config = defineConfig({
 		colors: {
 			palette: {
@@ -277,10 +276,10 @@ Deno.test("generateJSON - a format set to false at the palette level is not gene
 		},
 	});
 
-	assertEquals(tokenColor(config), { rgb: { string: "rgb(255 127 80)" } });
+	expect(tokenColor(config)).toEqual({ rgb: { string: "rgb(255 127 80)" } });
 });
 
-Deno.test("generateCSS - the declaration defaults to the first format with a CSS value", () => {
+test("generateCSS - the declaration defaults to the first format with a CSS value", () => {
 	// `hex` produces no CSS value here, so the declaration has to come from
 	// `rgb` instead of failing on the first generated format.
 	const config = defineConfig({
@@ -292,13 +291,12 @@ Deno.test("generateCSS - the declaration defaults to the first format with a CSS
 		},
 	});
 
-	assertEquals(
-		declaredValue(generateCSS(config), "--palette-coral-100"),
+	expect(declaredValue(generateCSS(config), "--palette-coral-100")).toEqual(
 		"rgb(255 127 80)",
 	);
 });
 
-Deno.test("generateCSS - formats without a CSS value emit no declaration", () => {
+test("generateCSS - formats without a CSS value emit no declaration", () => {
 	const config = defineConfig({
 		colors: {
 			palette: {
@@ -310,11 +308,11 @@ Deno.test("generateCSS - formats without a CSS value emit no declaration", () =>
 
 	const css = generateCSS(config);
 
-	assertEquals(css.includes("@supports"), false);
-	assertEquals(tokenColor(config), { hex: { number: 16744272 } });
+	expect(css.includes("@supports")).toEqual(false);
+	expect(tokenColor(config)).toEqual({ hex: { number: 16744272 } });
 });
 
-Deno.test("generateCSS - the colorFormats option appends a default format", () => {
+test("generateCSS - the colorFormats option appends a default format", () => {
 	const config = defineConfig({
 		colors: {
 			palette: {
@@ -325,19 +323,18 @@ Deno.test("generateCSS - the colorFormats option appends a default format", () =
 
 	const css = generateCSS(config, { colorFormats: ["rgb"] });
 
-	assertEquals(declaredValue(css, "--palette-coral-100"), "rgb(255 127 80)");
-	assertEquals(
+	expect(declaredValue(css, "--palette-coral-100")).toEqual("rgb(255 127 80)");
+	expect(
 		JSON.parse(generateJSON(config, { colorFormats: ["hex", "rgb"] })).palette.coral[
 			"100"
 		].color,
-		{
-			hex: { string: "#ff7f50" },
-			rgb: { string: "rgb(255 127 80)" },
-		},
-	);
+	).toEqual({
+		hex: { string: "#ff7f50" },
+		rgb: { string: "rgb(255 127 80)" },
+	});
 });
 
-Deno.test("generateCSS - the declaration mirrors the color selector and at-rule", () => {
+test("generateCSS - the declaration mirrors the color selector and at-rule", () => {
 	const config = defineConfig({
 		colors: {
 			palette: {
@@ -362,7 +359,7 @@ Deno.test("generateCSS - the declaration mirrors the color selector and at-rule"
 
 	const css = generateCSS(config);
 
-	assert(
+	expect(
 		css.endsWith(
 			[
 				"@media (prefers-color-scheme: dark) {",
@@ -390,10 +387,10 @@ Deno.test("generateCSS - the declaration mirrors the color selector and at-rule"
 			].join("\n"),
 		),
 		`Expected the fallback blocks at the end of:\n${css}`,
-	);
+	).toBeTruthy();
 });
 
-Deno.test("generateCSS - a palette color without variants emits no color block", () => {
+test("generateCSS - a palette color without variants emits no color block", () => {
 	const config = defineConfig({
 		colors: {
 			palette: {
@@ -403,10 +400,10 @@ Deno.test("generateCSS - a palette color without variants emits no color block",
 		},
 	});
 
-	assertEquals(generateCSS(config).includes("@supports"), false);
+	expect(generateCSS(config).includes("@supports")).toEqual(false);
 });
 
-Deno.test("generateCSS - an alpha percentage keeps its decimals", () => {
+test("generateCSS - an alpha percentage keeps its decimals", () => {
 	// 0.549 * 100 is not exact in binary, and the value is what users compare.
 	const config = defineConfig({
 		colors: {
@@ -419,14 +416,13 @@ Deno.test("generateCSS - an alpha percentage keeps its decimals", () => {
 
 	const css = generateCSS(config);
 
-	assertEquals(
+	expect(
 		css.includes("--palette-soft-100: oklch(15.325% 0.0149 284.50542 / 54.9%);"),
-		true,
-	);
-	assertEquals(declaredValue(css, "--palette-soft-100"), "#0b0b128c");
+	).toEqual(true);
+	expect(declaredValue(css, "--palette-soft-100")).toEqual("#0b0b128c");
 });
 
-Deno.test("generateCSS - a wide gamut color uses the CSS gamut mapped sRGB value", () => {
+test("generateCSS - a wide gamut color uses the CSS gamut mapped sRGB value", () => {
 	// `oklch(70% 0.4 20)` cannot be shown in sRGB: its conversion is
 	// `rgb(336 -117 10)`, and clipping each channel would give `#ff000a`. The
 	// declaration keeps the authored hue instead, which is how a browser maps
@@ -442,11 +438,11 @@ Deno.test("generateCSS - a wide gamut color uses the CSS gamut mapped sRGB value
 
 	const declared = declaredValue(generateCSS(config), "--palette-vivid-100");
 
-	assertEquals(declared === "#ff000a", false);
-	assertEquals(new Color(declared).inGamut("srgb", { epsilon: 0 }), true);
+	expect(declared === "#ff000a").toEqual(false);
+	expect(new Color(declared).inGamut("srgb", { epsilon: 0 })).toEqual(true);
 });
 
-Deno.test("generateJSON - an out-of-sRGB color is flagged as gamut mapped", () => {
+test("generateJSON - an out-of-sRGB color is flagged as gamut mapped", () => {
 	const config = defineConfig({
 		colors: {
 			palette: {
@@ -462,28 +458,27 @@ Deno.test("generateJSON - an out-of-sRGB color is flagged as gamut mapped", () =
 	const tokens = JSON.parse(generateJSON(config)).palette;
 	const styleDictionary = JSON.parse(generateStyleDictionaryJSON(config)).palette;
 
-	assertEquals(tokens.vivid["100"].gamutMapped, true);
-	assertEquals(tokens.vivid["100"].color.hex.string, "#ff5464");
-	assertEquals(tokens.plain["100"].gamutMapped, undefined);
-	assertEquals(styleDictionary.vivid["100"].$gamutMapped, true);
-	assertEquals(styleDictionary.vivid["100"].attributes.gamutMapped, true);
-	assertEquals(styleDictionary.plain["100"].$gamutMapped, undefined);
+	expect(tokens.vivid["100"].gamutMapped).toEqual(true);
+	expect(tokens.vivid["100"].color.hex.string).toEqual("#ff5464");
+	expect(tokens.plain["100"].gamutMapped).toEqual(undefined);
+	expect(styleDictionary.vivid["100"].$gamutMapped).toEqual(true);
+	expect(styleDictionary.vivid["100"].attributes.gamutMapped).toEqual(true);
+	expect(styleDictionary.plain["100"].$gamutMapped).toEqual(undefined);
 });
 
-Deno.test("generateJSON - a color with no sRGB format is not flagged", () => {
+test("generateJSON - a color with no sRGB format is not flagged", () => {
 	const config = defineConfig({
 		colors: {
 			palette: { value: { vivid: { 100: { oklch: "oklch(70% 0.4 20)" } } } },
 		},
 	});
 
-	assertEquals(
-		JSON.parse(generateJSON(config)).palette.vivid["100"].gamutMapped,
+	expect(JSON.parse(generateJSON(config)).palette.vivid["100"].gamutMapped).toEqual(
 		undefined,
 	);
 });
 
-Deno.test("generateCSS - a later theme declaration wins over a format", () => {
+test("generateCSS - a later theme declaration wins over a format", () => {
 	const config = defineConfig({
 		colors: {
 			palette: {
@@ -509,14 +504,17 @@ Deno.test("generateCSS - a later theme declaration wins over a format", () => {
 	const shim = css.indexOf("@supports not (color: oklch(0% 0 0))");
 	const theme = css.indexOf(".dark {");
 
-	assert(
+	expect(
 		declaration >= 0 && shim > declaration,
 		`Expected the shim after the value. Received:\n${css}`,
-	);
-	assert(theme > shim, `Expected the theme after the shim. Received:\n${css}`);
+	).toBeTruthy();
+	expect(
+		theme > shim,
+		`Expected the theme after the shim. Received:\n${css}`,
+	).toBeTruthy();
 });
 
-Deno.test("generateJSON - the hex alpha byte rounds from the exact alpha", () => {
+test("generateJSON - the hex alpha byte rounds from the exact alpha", () => {
 	// Rounding the alpha to three decimals first moved 12.35% off the byte a
 	// browser paints.
 	const config = defineConfig({
@@ -528,13 +526,13 @@ Deno.test("generateJSON - the hex alpha byte rounds from the exact alpha", () =>
 		},
 	});
 
-	assertEquals(JSON.parse(generateJSON(config)).palette.soft["100"].color, {
+	expect(JSON.parse(generateJSON(config)).palette.soft["100"].color).toEqual({
 		hex: { string: "#0000001f" },
 		rgb: { string: "rgb(0 0 0 / 0.123)" },
 	});
 });
 
-Deno.test("generateStyleDictionaryJSON - exposes the color outputs beside the resolved value", () => {
+test("generateStyleDictionaryJSON - exposes the color outputs beside the resolved value", () => {
 	const config = defineConfig({
 		colors: {
 			palette: {
@@ -550,16 +548,16 @@ Deno.test("generateStyleDictionaryJSON - exposes the color outputs beside the re
 
 	const token = JSON.parse(generateStyleDictionaryJSON(config)).palette.coral["100"];
 
-	assertEquals(token.$color, {
+	expect(token.$color).toEqual({
 		hex: { string: "#ff7f50", number: 16744272 },
 		rgb: { array: [255, 127, 80] },
 	});
-	assertEquals(token.attributes.color, token.$color);
-	assertEquals(token.$resolvedValue, "oklch(73.511% 0.16799 40.24666)");
-	assertEquals(token.$gamutMapped, undefined);
+	expect(token.attributes.color).toEqual(token.$color);
+	expect(token.$resolvedValue).toEqual("oklch(73.511% 0.16799 40.24666)");
+	expect(token.$gamutMapped).toEqual(undefined);
 });
 
-Deno.test("generateJSON and generateTS - the color outputs are part of the token object", () => {
+test("generateJSON and generateTS - the color outputs are part of the token object", () => {
 	const config = defineConfig({
 		colors: {
 			palette: {
@@ -582,14 +580,13 @@ Deno.test("generateJSON and generateTS - the color outputs are part of the token
 		},
 	};
 
-	assertEquals(generateJSON(config), JSON.stringify(expected, null, 2));
-	assertEquals(
-		generateTS(config),
+	expect(generateJSON(config)).toEqual(JSON.stringify(expected, null, 2));
+	expect(generateTS(config)).toEqual(
 		`export const cssForge = ${JSON.stringify(expected, null, 2)} as const;`,
 	);
 });
 
-Deno.test("generateJSON - token objects omit the color field when none is configured", () => {
+test("generateJSON - token objects omit the color field when none is configured", () => {
 	const config = defineConfig({
 		colors: {
 			palette: {
@@ -598,7 +595,7 @@ Deno.test("generateJSON - token objects omit the color field when none is config
 		},
 	});
 
-	assertEquals(JSON.parse(generateJSON(config)), {
+	expect(JSON.parse(generateJSON(config))).toEqual({
 		palette: {
 			coral: {
 				"100": {
@@ -611,7 +608,7 @@ Deno.test("generateJSON - token objects omit the color field when none is config
 	});
 });
 
-Deno.test("generateCSS - a whitespace-only selector is read as the root scope", () => {
+test("generateCSS - a whitespace-only selector is read as the root scope", () => {
 	const config = defineConfig({
 		colors: {
 			palette: {
@@ -626,8 +623,7 @@ Deno.test("generateCSS - a whitespace-only selector is read as the root scope", 
 		},
 	});
 
-	assertEquals(
-		generateCSS(config),
+	expect(generateCSS(config)).toEqual(
 		[
 			"/*____ CSSForge ____*/",
 			":root {",
@@ -646,7 +642,7 @@ Deno.test("generateCSS - a whitespace-only selector is read as the root scope", 
 	);
 });
 
-Deno.test("generateCSS - a shorthand color may keep a variant named color", () => {
+test("generateCSS - a shorthand color may keep a variant named color", () => {
 	const config = defineConfig({
 		colors: {
 			palette: {
@@ -655,8 +651,7 @@ Deno.test("generateCSS - a shorthand color may keep a variant named color", () =
 		},
 	});
 
-	assertEquals(
+	expect(
 		generateCSS(config).includes("--palette-coral-color: oklch(100% 0 none);"),
-		true,
-	);
+	).toEqual(true);
 });

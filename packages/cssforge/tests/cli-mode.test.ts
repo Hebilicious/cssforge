@@ -4,7 +4,7 @@ import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { assertEquals, Deno } from "./vitest-compat.ts";
+import { expect, test } from "vitest";
 
 const cliPath = fileURLToPath(new URL("../src/cli.ts", import.meta.url));
 
@@ -46,7 +46,7 @@ const outputArgs = (paths: ReturnType<typeof outputsOf>) => [
 	paths.styleDictionary,
 ];
 
-Deno.test("cli - each supported mode writes only its declared outputs", async () => {
+test("cli - each supported mode writes only its declared outputs", async () => {
 	const tempDir = await mkdtemp(join(tmpdir(), "cssforge-mode-outputs-"));
 
 	try {
@@ -68,13 +68,11 @@ Deno.test("cli - each supported mode writes only its declared outputs", async ()
 				tempDir,
 			);
 
-			assertEquals(result.status, 0, `mode ${mode} should exit 0`);
-			assertEquals(result.stderr, "");
+			expect(result.status, `mode ${mode} should exit 0`).toEqual(0);
+			expect(result.stderr).toEqual("");
 			for (const [name, path] of Object.entries(paths)) {
-				assertEquals(
-					existsSync(path),
+				expect(existsSync(path), `mode ${mode} output ${name}`).toEqual(
 					(produced as readonly string[]).includes(name),
-					`mode ${mode} output ${name}`,
 				);
 			}
 			for (const path of Object.values(paths)) {
@@ -86,7 +84,7 @@ Deno.test("cli - each supported mode writes only its declared outputs", async ()
 	}
 });
 
-Deno.test("cli - omitted mode defaults to all", async () => {
+test("cli - omitted mode defaults to all", async () => {
 	const tempDir = await mkdtemp(join(tmpdir(), "cssforge-mode-default-"));
 
 	try {
@@ -96,17 +94,17 @@ Deno.test("cli - omitted mode defaults to all", async () => {
 
 		const result = runCli(["--config", configPath, ...outputArgs(paths)], tempDir);
 
-		assertEquals(result.status, 0);
-		assertEquals(result.stderr, "");
+		expect(result.status).toEqual(0);
+		expect(result.stderr).toEqual("");
 		for (const path of Object.values(paths)) {
-			assertEquals(existsSync(path), true, `${path} should exist`);
+			expect(existsSync(path), `${path} should exist`).toEqual(true);
 		}
 	} finally {
 		await rm(tempDir, { recursive: true, force: true });
 	}
 });
 
-Deno.test("cli - the -m alias selects the output mode", async () => {
+test("cli - the -m alias selects the output mode", async () => {
 	const tempDir = await mkdtemp(join(tmpdir(), "cssforge-mode-alias-"));
 
 	try {
@@ -119,17 +117,17 @@ Deno.test("cli - the -m alias selects the output mode", async () => {
 			tempDir,
 		);
 
-		assertEquals(result.status, 0);
-		assertEquals(result.stderr, "");
-		assertEquals(existsSync(paths.json), true);
-		assertEquals(existsSync(paths.css), false);
-		assertEquals(existsSync(paths.ts), false);
+		expect(result.status).toEqual(0);
+		expect(result.stderr).toEqual("");
+		expect(existsSync(paths.json)).toEqual(true);
+		expect(existsSync(paths.css)).toEqual(false);
+		expect(existsSync(paths.ts)).toEqual(false);
 	} finally {
 		await rm(tempDir, { recursive: true, force: true });
 	}
 });
 
-Deno.test("cli - an unsupported mode fails without touching existing outputs", async () => {
+test("cli - an unsupported mode fails without touching existing outputs", async () => {
 	const tempDir = await mkdtemp(join(tmpdir(), "cssforge-mode-invalid-"));
 
 	try {
@@ -144,22 +142,22 @@ Deno.test("cli - an unsupported mode fails without touching existing outputs", a
 			tempDir,
 		);
 
-		assertEquals(result.status, 1);
-		assertEquals(result.stderr.includes("Invalid output mode"), true);
-		assertEquals(result.stderr.includes("typo"), true);
+		expect(result.status).toEqual(1);
+		expect(result.stderr.includes("Invalid output mode")).toEqual(true);
+		expect(result.stderr.includes("typo")).toEqual(true);
 		for (const mode of ["css", "json", "ts", "style-dictionary", "all"]) {
-			assertEquals(result.stderr.includes(mode), true, `stderr should name ${mode}`);
+			expect(result.stderr.includes(mode), `stderr should name ${mode}`).toEqual(true);
 		}
-		assertEquals(await readFile(paths.css, "utf8"), "/* pre-existing css */");
-		assertEquals(await readFile(paths.json, "utf8"), "/* pre-existing json */");
-		assertEquals(existsSync(paths.ts), false);
-		assertEquals(existsSync(paths.styleDictionary), false);
+		expect(await readFile(paths.css, "utf8")).toEqual("/* pre-existing css */");
+		expect(await readFile(paths.json, "utf8")).toEqual("/* pre-existing json */");
+		expect(existsSync(paths.ts)).toEqual(false);
+		expect(existsSync(paths.styleDictionary)).toEqual(false);
 	} finally {
 		await rm(tempDir, { recursive: true, force: true });
 	}
 });
 
-Deno.test("cli - watch mode rejects an unsupported mode without writing outputs", async () => {
+test("cli - watch mode rejects an unsupported mode without writing outputs", async () => {
 	const tempDir = await mkdtemp(join(tmpdir(), "cssforge-mode-watch-invalid-"));
 
 	try {
@@ -181,10 +179,10 @@ Deno.test("cli - watch mode rejects an unsupported mode without writing outputs"
 			child.on("close", resolve);
 		});
 
-		assertEquals(exitCode, 0, `watch() rejected: ${stderr}`);
-		assertEquals(stderr.includes("Invalid output mode"), true);
-		assertEquals(stdout.includes("Watching"), false);
-		assertEquals(existsSync(paths.css), false);
+		expect(exitCode, `watch() rejected: ${stderr}`).toEqual(0);
+		expect(stderr.includes("Invalid output mode")).toEqual(true);
+		expect(stdout.includes("Watching")).toEqual(false);
+		expect(existsSync(paths.css)).toEqual(false);
 	} finally {
 		await rm(tempDir, { recursive: true, force: true });
 	}

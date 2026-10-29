@@ -35,10 +35,6 @@ with npm, `pnpm cssforge` with pnpm):
 - Extra color formats:
   - `npx cssforge --mode all --color-formats hex,rgb`
 
-Deno projects run the same CLI from the secondary JSR channel:
-
-- `deno run -A jsr:@hebilicious/cssforge/cli --mode all`
-
 ## Programmatic API
 
 From `README.md`:
