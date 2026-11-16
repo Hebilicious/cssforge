@@ -1,6 +1,6 @@
 /**
  * Writes the AcidCat catalog of the CSS Forge tools, `cssforge.acidcat.json`,
- * from the application in `src/app.ts`.
+ * from the application in `src/capabilities.ts`.
  *
  * The application is the source of the catalog; never edit the JSON by hand.
  * `tests/acidcat.test.ts` fails when the committed catalog differs from the
@@ -11,7 +11,7 @@
 import { writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { renderCatalog } from "@acid-cat/core-ts";
-import { cssforge, toJsonSchema } from "../src/app.ts";
+import { cssforge, toJsonSchema } from "../src/capabilities.ts";
 
 const catalogPath = resolve(import.meta.dirname, "../cssforge.acidcat.json");
 

@@ -12,8 +12,8 @@ All patterns below are derived from README configuration examples.
   (`true` keeps it, a 0-1 number sets it, `false` rejects the color).
 - `settings.color.fallback` names the format whose `string` value becomes the CSS declaration,
   or `false` for none. Without it, the first format with a CSS value is used. A color's
-  formats merge into the palette's per format, and `--color-formats hex,rgb` adds formats at
-  run time. Unknown settings are rejected with the configuration path. Tokens carry
+  formats merge into the palette's per format, and `--color-formats hex --color-formats rgb`
+  adds formats at run time. Unknown settings are rejected with the configuration path. Tokens carry
   `gamutMapped: true` when the color is outside sRGB.
 ## Spacing
 

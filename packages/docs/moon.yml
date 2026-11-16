@@ -33,8 +33,8 @@ tasks:
     command: "node"
     args:
       - "../cssforge/dist/cli.js"
-      - "--prefix"
-      - "."
+      - "tokens"
+      - "build"
       - "--config"
       - "./cssforge.config.ts"
       - "--mode"

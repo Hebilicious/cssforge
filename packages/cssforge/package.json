@@ -20,6 +20,11 @@
 			"import": "./dist/cli.js",
 			"default": "./dist/cli.js"
 		},
+		"./capabilities": {
+			"types": "./dist/capabilities.d.ts",
+			"import": "./dist/capabilities.js",
+			"default": "./dist/capabilities.js"
+		},
 		"./package.json": "./package.json"
 	},
 	"repository": {

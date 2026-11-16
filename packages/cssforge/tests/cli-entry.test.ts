@@ -43,7 +43,17 @@ test("cli - runs when the entry point is invoked through a symlink", async () =>
 
 		const generate = spawnSync(
 			process.execPath,
-			[linkedCliPath, "--config", configPath, "--mode", "css", "--css", cssOutput],
+			[
+				linkedCliPath,
+				"tokens",
+				"build",
+				"--config",
+				configPath,
+				"--mode",
+				"css",
+				"--css",
+				cssOutput,
+			],
 			{ cwd: tempDir, encoding: "utf8", env: childEnv },
 		);
 

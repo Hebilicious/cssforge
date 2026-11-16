@@ -12,7 +12,7 @@ import {
 	toJsonSchema,
 	tokensBuild,
 	tokensGenerate,
-} from "../src/app.ts";
+} from "../src/capabilities.ts";
 import { childEnv } from "./helpers.ts";
 
 const cliPath = fileURLToPath(new URL("../src/cli.ts", import.meta.url));
@@ -32,7 +32,11 @@ afterEach(async () => {
 });
 
 const openSession = () =>
-	createSession(cssforge, { target: "cli", context: { cwd: projectDir }, toJsonSchema });
+	createSession(cssforge, {
+		target: "library",
+		context: { cwd: projectDir },
+		toJsonSchema,
+	});
 
 test("catalog - the committed catalog is the one the application writes", async () => {
 	const committed = await readFile(
@@ -46,7 +50,7 @@ test("catalog - the committed catalog is the one the application writes", async 
 	).toEqual(renderCatalog(cssforge, { toJsonSchema }));
 });
 
-test("app - tokens.generate gives an output as text and writes nothing", async () => {
+test("library - tokens.generate gives an output as text and writes nothing", async () => {
 	await using session = openSession();
 
 	const result = await session.call(tokensGenerate, { format: "css" });
@@ -58,7 +62,7 @@ test("app - tokens.generate gives an output as text and writes nothing", async (
 	expect(result.value.dependencies).toEqual([join(projectDir, "cssforge.config.ts")]);
 });
 
-test("app - tokens.build writes each output under the root of the input", async () => {
+test("library - tokens.build writes each output under the root of the input", async () => {
 	await using session = openSession();
 
 	const result = await session.call(tokensBuild, {
@@ -75,7 +79,7 @@ test("app - tokens.build writes each output under the root of the input", async 
 	expect(await readFile(cssPath, "utf8")).toContain("--spacing-size-2: 0.5rem;");
 });
 
-test("app - config.check tells a missing file from a rejected configuration", async () => {
+test("library - config.check tells a missing file from a rejected configuration", async () => {
 	await using session = openSession();
 	await writeFile(
 		join(projectDir, "invalid.config.ts"),
@@ -117,40 +121,6 @@ const startCli = (args: string[]) => {
 	const exited = new Promise<number | null>((resolve) => child.on("close", resolve));
 	return { child, nextLine, exited };
 };
-
-test("cli - the watch flag writes one occurrence per build until interrupted", async () => {
-	const cssPath = join(projectDir, "output.css");
-	const { child, nextLine, exited } = startCli(["-w", "--mode", "css", "--css", cssPath]);
-
-	try {
-		const first = await nextLine();
-		expect(first.data).toEqual({
-			ok: true,
-			files: [{ format: "css", path: cssPath }],
-			diagnostics: [],
-			dependencies: [join(projectDir, "cssforge.config.ts")],
-		});
-		expect(await readFile(cssPath, "utf8")).toContain("--spacing-size-2: 0.5rem;");
-
-		// The first occurrence comes once every file of the build is watched, so a
-		// change right after it gives a new build.
-		await writeFile(
-			join(projectDir, "cssforge.config.ts"),
-			spacingConfig("16px"),
-			"utf8",
-		);
-
-		const second = await nextLine();
-		expect((second.data as { ok: boolean }).ok).toEqual(true);
-		expect(await readFile(cssPath, "utf8")).toContain("--spacing-size-2: 1rem;");
-
-		child.kill("SIGINT");
-		// 130 is the exit code of an interrupted watch in the AcidCat CLI binding.
-		expect(await exited).toEqual(130);
-	} finally {
-		child.kill();
-	}
-}, 30_000);
 
 test("mcp - cssforge mcp serves the capabilities as tools", async () => {
 	const { child, nextLine, exited } = startCli(["mcp"]);

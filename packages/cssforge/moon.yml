@@ -272,7 +272,7 @@ tasks:
       runInCI: false
   catalog-check:
     # The committed catalog conforms to the AcidCat specification and is in
-    # canonical form. tests/acidcat.test.ts checks that it matches src/app.ts.
+    # canonical form. tests/acidcat.test.ts checks that it matches src/capabilities.ts.
     command: "acid-cat"
     args: ["check", "--strict", "cssforge.acidcat.json"]
     inputs:

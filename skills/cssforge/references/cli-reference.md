@@ -1,7 +1,7 @@
 # CLI Reference
 
-The command line, the MCP server and the typed API come from one AcidCat application:
-`packages/cssforge/src/app.ts`. Its catalog is `packages/cssforge/cssforge.acidcat.json`. The
+The command line, the MCP server and the library target come from the capabilities in
+`packages/cssforge/src/capabilities.ts`. Its catalog is `packages/cssforge/cssforge.acidcat.json`. The
 entry point is `packages/cssforge/src/cli.ts`, and the operations are in
 `packages/cssforge/src/forge.ts`.
 
@@ -19,15 +19,11 @@ Each command answers with JSON on stdout.
 - `cssforge mcp`: serve the same capabilities as MCP tools through stdio.
 - `cssforge list`: every command with its flags.
 
-`cssforge [flags]`, with no command, is `cssforge tokens build [flags]`; `-w` / `--watch` makes it
-`watch tokens.built`.
-
 ## Flags
 
 - `--config`: config path (default `./cssforge.config.ts`)
-- `--root`: directory that relative paths resolve against (default: the working directory).
-  The earlier `--prefix` still works without a command.
-- `--mode`, `-m` (without a command): `css | json | ts | style-dictionary | all` (default `all`;
+- `--root`: directory that relative paths resolve against (default: the working directory)
+- `--mode`: `css | json | ts | style-dictionary | all` (default `all`;
   `tokens build` and `watch tokens.built`)
 - `--format`: `css | json | ts | style-dictionary` (default `css`; `tokens generate`)
 - `--css`: css output path (default `./.cssforge/output.css`)
@@ -37,7 +33,7 @@ Each command answers with JSON on stdout.
 - `--style-dictionary-value-mode`: `resolved | css-reference` (default `resolved`)
 - `--color-formats`: sRGB formats generated alongside oklch (`hex`, `rgb`), appended to the
   formats `settings.color.formats` declares. Repeat the flag (`--color-formats hex
-  --color-formats rgb`) or give a JSON array. Without a command, `hex,rgb` still works.
+  --color-formats rgb`) or give a JSON array.
 
 ## Results and exit codes
 
@@ -70,3 +66,6 @@ From `README.md`:
   the ones the config declares
 - `getDiagnostics(config)` returns the build warnings as `{ code, severity, path, message }`,
   the same ones the CLI reports
+- `import { createSession, cssforge, tokensBuild, toJsonSchema } from
+  "@hebilicious/cssforge/capabilities"`, then `createSession(cssforge, { target: "library",
+  context: { cwd }, toJsonSchema })`, calls the same capabilities as the CLI, with types

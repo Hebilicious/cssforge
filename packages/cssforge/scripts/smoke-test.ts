@@ -181,9 +181,10 @@ const assertReportsVersion = (
 
 /**
  * `pnpm run <script> -- --version` forwards the separator, so the CLI receives
- * `-- --version`. The CLI drops a leading `--`, but how a package manager
- * forwards arguments is its own behaviour, so this only records which output
- * was observed.
+ * `-- --version` and drops the `--`. `run` fails when the command fails, so a
+ * CLI that rejects the separator fails the smoke test. Whether the version is
+ * printed depends on how the package manager forwards arguments, so this only
+ * records it.
  */
 const observeScriptVersion = (consumer: Consumer): string => {
 	const output = run(consumer.manager, ["run", "cssforge", "--", "--version"], {
@@ -274,10 +275,19 @@ if (!css.includes("--spacing-size-2")) {
 	throw new Error(\`generateCSS did not produce the expected variable: \${css}\`);
 }
 
-const cli = await import("${packageName}/cli");
+// The library target: a typed call into the same capability as the CLI.
+const { createSession, cssforge, tokensGenerate, toJsonSchema } = await import(
+	"${packageName}/capabilities"
+);
+await using session = createSession(cssforge, {
+	target: "library",
+	context: { cwd: process.cwd() },
+	toJsonSchema,
+});
+const generated = await session.call(tokensGenerate, { format: "css" });
 
-if (typeof cli.build !== "function") {
-	throw new Error("the ./cli export does not expose build()");
+if (!generated.ok || !generated.value.content.includes("--spacing-size-2")) {
+	throw new Error(\`tokens.generate did not produce the expected variable: \${JSON.stringify(generated)}\`);
 }
 
 console.log("programmatic usage ok");
@@ -289,14 +299,14 @@ const typeCheckSource = `import {
 	generateStyleDictionaryJSON,
 	type CSSForgeConfig,
 } from "${packageName}";
-import type { BuildOptions } from "${packageName}/cli";
+import type { BuildInput } from "${packageName}/capabilities";
 
 const config: Partial<CSSForgeConfig> = defineConfig({
 	spacing: { custom: { size: { value: { 2: "0.5rem" } } } },
 });
 const css: string = generateCSS(config);
 const tokens: string = generateStyleDictionaryJSON(config);
-const options: Partial<BuildOptions> = { mode: "css" };
+const options: Partial<BuildInput> = { mode: "css" };
 
 export { css, tokens, options };
 `;
@@ -329,6 +339,8 @@ const verifyTarball = (manifest: PackageManifest, packed: PackResult): void => {
 		"dist/mod.d.ts",
 		"dist/cli.js",
 		"dist/cli.d.ts",
+		"dist/capabilities.js",
+		"dist/capabilities.d.ts",
 	]) {
 		check(files.has(required), `the tarball is missing ${required}`);
 	}
@@ -379,8 +391,11 @@ const verifyQuickStart = async (consumer: Consumer): Promise<void> => {
 		"junction",
 	);
 
-	// The documented command with no arguments.
-	run(manager, scriptInvocation(manager, []), { cwd: quickStartDir, env });
+	// The documented command.
+	run(manager, scriptInvocation(manager, ["tokens", "build"]), {
+		cwd: quickStartDir,
+		env,
+	});
 
 	const outputDir = join(quickStartDir, ".cssforge");
 	const css = readFileSync(join(outputDir, "output.css"), "utf8");
@@ -500,7 +515,7 @@ const verifyOutputPaths = async (consumer: Consumer): Promise<void> => {
 		);
 		await writeFile(join(shapeDir, "cssforge.config.ts"), fixtureConfig, "utf8");
 
-		const args = ["--mode", "all", "--config", "./cssforge.config.ts"];
+		const args = ["tokens", "build", "--mode", "all", "--config", "./cssforge.config.ts"];
 		const expected = new Map<string, string>();
 
 		for (const kind of outputKinds) {
@@ -626,7 +641,14 @@ const verifyConsumer = async (consumer: Consumer): Promise<void> => {
 
 	run(
 		manager,
-		scriptInvocation(manager, ["--mode", "all", "--config", "./cssforge.config.ts"]),
+		scriptInvocation(manager, [
+			"tokens",
+			"build",
+			"--mode",
+			"all",
+			"--config",
+			"./cssforge.config.ts",
+		]),
 		{
 			cwd: projectDir,
 			env,

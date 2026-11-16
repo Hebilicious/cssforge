@@ -5,7 +5,8 @@
 	"license": "MIT",
 	"exports": {
 		".": "./src/mod.ts",
-		"./cli": "./src/cli.ts"
+		"./cli": "./src/cli.ts",
+		"./capabilities": "./src/capabilities.ts"
 	},
 	"imports": {
 		"@acid-cat/core-ts": "npm:@acid-cat/core-ts@0.11.1",

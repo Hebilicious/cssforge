@@ -25,7 +25,7 @@ The root `README.md` is canonical. Its generated package copy at `packages/cssfo
 
 - [Public exports](https://github.com/Hebilicious/cssforge/blob/main/packages/cssforge/src/mod.ts)
 - [Configuration types](https://github.com/Hebilicious/cssforge/blob/main/packages/cssforge/src/config.ts)
-- [CLI and MCP capabilities](https://github.com/Hebilicious/cssforge/blob/main/packages/cssforge/src/app.ts), and their [catalog](https://github.com/Hebilicious/cssforge/blob/main/packages/cssforge/cssforge.acidcat.json)
+- [CLI and MCP capabilities](https://github.com/Hebilicious/cssforge/blob/main/packages/cssforge/src/capabilities.ts), and their [catalog](https://github.com/Hebilicious/cssforge/blob/main/packages/cssforge/cssforge.acidcat.json)
 - [Generated reference source](https://github.com/Hebilicious/cssforge/blob/main/README.md)
 - [Example projects](https://github.com/Hebilicious/cssforge/tree/main/example)
 

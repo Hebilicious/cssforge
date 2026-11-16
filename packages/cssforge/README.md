@@ -50,8 +50,8 @@ pnpm add -D @hebilicious/cssforge
 The package installs a `cssforge` executable:
 
 ```bash
-pnpm cssforge --mode all # pnpm
-npx cssforge --mode all # npm
+pnpm cssforge tokens build # pnpm
+npx cssforge tokens build # npm
 ```
 
 The rest of this document writes commands as `cssforge <args>`.
@@ -152,7 +152,7 @@ export default defineConfig({
 2. Run CSS Forge with the CLI :
 
 ```bash
-cssforge # Basic usage
+cssforge tokens build # Basic usage
 cssforge --help # To see all commands
 cssforge watch tokens.built # To watch for changes
 ```
@@ -258,7 +258,7 @@ cssforge({
 real file, or when a bundler has no CSS handling for virtual modules.
 
 The plugin calls the same `generateCSS` implementation as the CLI, so `virtual:cssforge.css` matches
-`cssforge --mode css` output byte for byte. The served stylesheet is unlayered, and
+`cssforge tokens build --mode css` output byte for byte. The served stylesheet is unlayered, and
 `@import "virtual:cssforge.css" layer(cssforge)` does not work because a CSS import resolves to a
 file; set `write` and import the written file with `layer(cssforge)` to keep the tokens in a layer.
 The CLI stays the integration path for everything else: JSR, Style Dictionary, CI steps, and tools
@@ -316,7 +316,7 @@ A level with one child is collapsed, so `palette: { value: { coral: ... } }` bec
 The TypeScript output is a typed module. Put it in your source tree:
 
 ```bash
-cssforge --mode ts --ts ./src/design-tokens.ts
+cssforge tokens build --mode ts --ts ./src/design-tokens.ts
 ```
 
 ```typescript
@@ -348,7 +348,7 @@ the compiler options the Quick Start documents.
 The JSON output is the same tree without the `as const` wrapper:
 
 ```bash
-cssforge --mode json --json ./src/design-tokens.json
+cssforge tokens build --mode json --json ./src/design-tokens.json
 ```
 
 ```javascript
@@ -1987,11 +1987,11 @@ The pow representation of a step adds a `pow` segment, as in
 Each command answers with JSON on stdout.
 
 ```bash
-# Write every output of ./cssforge.config.ts. `cssforge` with flags and no command is the same.
+# Write every output of ./cssforge.config.ts
 cssforge tokens build
 
 # Watch mode: build now, then after each change of the config or a module it imports.
-# Each build is one JSON line. `cssforge -w` is the same.
+# Each build is one JSON line.
 cssforge watch tokens.built
 
 # Custom paths and output
@@ -2034,8 +2034,24 @@ config is missing or cannot be evaluated), `InvalidConfig` (CSS Forge rejects a 
 `WriteFailed`. An invalid flag exits with `3` and a message on stderr. An interrupted watch
 exits with `130`.
 
-The flags of the earlier versions still work without a command: `cssforge --mode css`,
-`-m css`, `-w`, `--prefix <dir>` (now `--root`) and `--color-formats hex,rgb`.
+Code can make the same calls with types, through `@hebilicious/cssforge/capabilities`:
+
+```typescript
+import {
+  createSession,
+  cssforge,
+  tokensBuild,
+  toJsonSchema,
+} from "@hebilicious/cssforge/capabilities";
+
+await using session = createSession(cssforge, {
+  target: "library",
+  context: { cwd: process.cwd() },
+  toJsonSchema,
+});
+const result = await session.call(tokensBuild, { mode: "css" });
+if (!result.ok) console.error(result.error._tag, result.error.message);
+```
 
 ## Programmatic Usage
 
@@ -2089,7 +2105,7 @@ you already generate.
 Use `style-dictionary` mode to generate only the token file:
 
 ```bash
-cssforge --mode style-dictionary --style-dictionary ./.cssforge/tokens.json
+cssforge tokens build --mode style-dictionary --style-dictionary ./.cssforge/tokens.json
 ```
 
 Use `--mode all` to generate it together with the CSS, TypeScript, and regular JSON outputs.
@@ -2164,7 +2180,7 @@ Dictionary will transform the file.
 
 ```bash
 # Keep CSS variables as values for usage matching
-cssforge --mode style-dictionary --style-dictionary ./.cssforge/tokens.json --style-dictionary-value-mode css-reference
+cssforge tokens build --mode style-dictionary --style-dictionary ./.cssforge/tokens.json --style-dictionary-value-mode css-reference
 ```
 
 ### Programmatic API

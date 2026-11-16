@@ -1,11 +1,11 @@
 import { spawnSync } from "node:child_process";
+import { existsSync } from "node:fs";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { expect, test } from "vitest";
-import { build, parseColorFormats } from "../src/cli.ts";
-import { childEnv, thrownError } from "./helpers.ts";
+import { childEnv } from "./helpers.ts";
 
 const cliPath = fileURLToPath(new URL("../src/cli.ts", import.meta.url));
 
@@ -24,15 +24,7 @@ const configSource = `export default {
 	},
 };`;
 
-interface BuildPaths {
-	config: string;
-	css: string;
-	json: string;
-	ts: string;
-	styleDictionary: string;
-}
-
-const pathsIn = (tempDir: string): BuildPaths => ({
+const pathsIn = (tempDir: string) => ({
 	config: join(tempDir, "cssforge.config.ts"),
 	css: join(tempDir, "output.css"),
 	json: join(tempDir, "output.json"),
@@ -40,44 +32,35 @@ const pathsIn = (tempDir: string): BuildPaths => ({
 	styleDictionary: join(tempDir, "tokens.sd.json"),
 });
 
-const buildWithFormats = (paths: BuildPaths, colorFormats: unknown) =>
-	build({
-		config: paths.config,
-		mode: "all",
-		cssOutput: paths.css,
-		jsonOutput: paths.json,
-		tsOutput: paths.ts,
-		styleDictionaryOutput: paths.styleDictionary,
-		colorFormats: colorFormats as never,
-	});
+const buildArgs = (paths: ReturnType<typeof pathsIn>, ...extra: string[]) => [
+	"tokens",
+	"build",
+	"--config",
+	paths.config,
+	"--css",
+	paths.css,
+	"--json",
+	paths.json,
+	"--ts",
+	paths.ts,
+	"--style-dictionary",
+	paths.styleDictionary,
+	...extra,
+];
 
-test("parseColorFormats - reads a comma separated list and drops duplicates", () => {
-	expect(parseColorFormats(undefined)).toEqual(undefined);
-	expect(parseColorFormats("")).toEqual([]);
-	expect(parseColorFormats("hex, rgb")).toEqual(["hex", "rgb"]);
-	expect(parseColorFormats("rgb,hex,rgb")).toEqual(["rgb", "hex"]);
-});
-
-test("parseColorFormats - rejects a format the generator cannot emit", () => {
-	const error = thrownError(() => parseColorFormats("hex,hsl"));
-
-	expect(
-		error.message.includes("hsl") && error.message.includes("hex"),
-		`Expected the error to name the rejected value and the accepted formats. Received: ${error.message}`,
-	).toBeTruthy();
-});
-
-test("build - --color-formats adds the formats to every output", async () => {
+test("cli - --color-formats adds the formats to every output", async () => {
 	const tempDir = await mkdtemp(join(tmpdir(), "cssforge-color-formats-"));
 
 	try {
 		const paths = pathsIn(tempDir);
 		await writeFile(paths.config, configSource, "utf8");
 
-		const result = await buildWithFormats(paths, parseColorFormats("hex,rgb"));
+		const result = runCli(
+			buildArgs(paths, "--color-formats", "hex", "--color-formats", "rgb"),
+			tempDir,
+		);
 
-		expect(result.success).toEqual(true);
-
+		expect(result.status, result.stderr).toEqual(0);
 		const css = await readFile(paths.css, "utf8");
 		const json = JSON.parse(await readFile(paths.json, "utf8"));
 		const ts = await readFile(paths.ts, "utf8");
@@ -98,73 +81,14 @@ test("build - --color-formats adds the formats to every output", async () => {
 	}
 });
 
-test("build - rejects an unknown color format for JavaScript callers", async () => {
+test("cli - --color-formats rejects an unknown format and writes nothing", async () => {
 	const tempDir = await mkdtemp(join(tmpdir(), "cssforge-color-formats-invalid-"));
 
 	try {
 		const paths = pathsIn(tempDir);
 		await writeFile(paths.config, configSource, "utf8");
 
-		const result = await buildWithFormats(paths, ["hsl"]);
-
-		expect(result.success).toEqual(false);
-		const message =
-			result.error instanceof Error ? result.error.message : String(result.error);
-		expect(message.includes("hsl")).toEqual(true);
-	} finally {
-		await rm(tempDir, { recursive: true, force: true });
-	}
-});
-
-test("cli - --color-formats writes the formats through the CLI entry", async () => {
-	const tempDir = await mkdtemp(join(tmpdir(), "cssforge-color-formats-cli-"));
-
-	try {
-		const paths = pathsIn(tempDir);
-		await writeFile(paths.config, configSource, "utf8");
-
-		const result = runCli(
-			[
-				"--config",
-				paths.config,
-				"--mode",
-				"css",
-				"--css",
-				paths.css,
-				"--color-formats",
-				"hex,rgb",
-			],
-			tempDir,
-		);
-
-		expect(result.status, result.stderr).toEqual(0);
-		const css = await readFile(paths.css, "utf8");
-		expect(css.includes("--palette-coral-100: #ff7f50;")).toEqual(true);
-	} finally {
-		await rm(tempDir, { recursive: true, force: true });
-	}
-});
-
-test("cli - --color-formats reports an unknown format", async () => {
-	const tempDir = await mkdtemp(join(tmpdir(), "cssforge-color-formats-cli-invalid-"));
-
-	try {
-		const paths = pathsIn(tempDir);
-		await writeFile(paths.config, configSource, "utf8");
-
-		const result = runCli(
-			[
-				"--config",
-				paths.config,
-				"--mode",
-				"css",
-				"--css",
-				paths.css,
-				"--color-formats",
-				"hex,hsl",
-			],
-			tempDir,
-		);
+		const result = runCli(buildArgs(paths, "--color-formats", '["hex","hsl"]'), tempDir);
 
 		// 3 is the exit code of invalid input in the AcidCat CLI binding.
 		expect(result.status).toEqual(3);
@@ -172,6 +96,9 @@ test("cli - --color-formats reports an unknown format", async () => {
 			kind: "invalid-input",
 			message: 'color-formats.1: Received "hsl". Expected one of: hex, rgb.',
 		});
+		for (const output of [paths.css, paths.json, paths.ts, paths.styleDictionary]) {
+			expect(existsSync(output), `${output} must not be written`).toEqual(false);
+		}
 	} finally {
 		await rm(tempDir, { recursive: true, force: true });
 	}

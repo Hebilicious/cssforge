@@ -37,7 +37,17 @@ test("cli - reports a build warning in its result and still writes the output", 
 
 		const result = spawnSync(
 			process.execPath,
-			[cliPath, "--config", configPath, "--mode", "css", "--css", cssPath],
+			[
+				cliPath,
+				"tokens",
+				"build",
+				"--config",
+				configPath,
+				"--mode",
+				"css",
+				"--css",
+				cssPath,
+			],
 			{ cwd: tempDir, encoding: "utf8", env: childEnv },
 		);
 

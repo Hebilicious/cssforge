@@ -1,7 +1,25 @@
 /**
- * The capabilities of the CSS Forge tools. The command line (`cssforge`) and
- * the MCP server (`cssforge mcp`) both serve them, and the catalog
- * `cssforge.acidcat.json` describes them.
+ * The capabilities of the CSS Forge tools. The command line (`cssforge`), the
+ * MCP server (`cssforge mcp`) and code (the `library` target) all use them, and
+ * the catalog `cssforge.acidcat.json` describes them.
+ *
+ * @example
+ * ```ts
+ * import {
+ *   createSession,
+ *   cssforge,
+ *   tokensBuild,
+ *   toJsonSchema,
+ * } from "@hebilicious/cssforge/capabilities";
+ *
+ * await using session = createSession(cssforge, {
+ *   target: "library",
+ *   context: { cwd: process.cwd() },
+ *   toJsonSchema,
+ * });
+ * const result = await session.call(tokensBuild, { mode: "css" });
+ * if (!result.ok) console.error(result.error.message);
+ * ```
  *
  * @module
  */
@@ -38,6 +56,13 @@ import type { ColorFormat } from "./lib.ts";
 import { supportedColorFormats } from "./modules/colors.ts";
 import { type JsonSchema, schema } from "./schema.ts";
 
+/**
+ * `createSession` opens a session on {@link cssforge}, for typed calls from
+ * code. A call gives `{ ok: false, error }` for a failure of the capability,
+ * and rejects with a `CallFailureError` for an input that is not valid, a
+ * cancellation or a defect.
+ */
+export { CallFailureError, createSession } from "@acid-cat/core-ts";
 export { toJsonSchema } from "./schema.ts";
 
 /** The services of the CSS Forge capabilities. */
@@ -324,7 +349,7 @@ const capability = capabilitiesFor<ForgeContext>();
 const event = eventsFor<ForgeContext>();
 
 /** The targets that use every capability. */
-const everyone = ["cli", "mcp"];
+const everyone = ["cli", "mcp", "library"];
 
 /** `cssforge tokens build`: generate the outputs of a configuration and write them. */
 export const tokensBuild: Capability<
@@ -450,6 +475,10 @@ export const cssforge: App<ForgeContext> = defineApp<ForgeContext>({
 		mcp: {
 			bindings: ["mcp"],
 			description: "The MCP server of `cssforge mcp`, for agents.",
+		},
+		library: {
+			bindings: ["typescript"],
+			description: "Typed calls from code, through @hebilicious/cssforge/capabilities.",
 		},
 	},
 	capabilities: [tokensBuild, tokensGenerate, configCheck],

@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join, resolve, win32 } from "node:path";
 import { fileURLToPath } from "node:url";
 import { expect, test } from "vitest";
-import { writeFileRecursive } from "../src/cli.ts";
+import { writeFileRecursive } from "../src/forge.ts";
 import { childEnv } from "./helpers.ts";
 
 const cssForgeConfig = `export default {
@@ -128,6 +128,8 @@ for (const { label, entry } of cliEntries) {
 					process.execPath,
 					[
 						entry,
+						"tokens",
+						"build",
 						"--config",
 						"./cssforge.config.ts",
 						"--mode",
