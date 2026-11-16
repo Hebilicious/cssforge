@@ -8,9 +8,8 @@ import { expect, test } from "vitest";
 
 const cliPath = fileURLToPath(new URL("../src/cli.ts", import.meta.url));
 
-// citty prints usage through consola, which silences log output in test
-// environments (`TEST` and `NODE_ENV=test`, both set by vitest). Consumers run
-// the CLI from a shell, so the child process gets a non-test environment.
+// Consumers run the CLI from a shell, so the child process gets a non-test
+// environment (vitest sets `TEST` and `NODE_ENV=test`).
 const childEnv = { ...process.env };
 delete childEnv.TEST;
 delete childEnv.NODE_ENV;
@@ -142,9 +141,9 @@ test("cli - an unsupported mode fails without touching existing outputs", async 
 			tempDir,
 		);
 
-		expect(result.status).toEqual(1);
-		expect(result.stderr.includes("Invalid output mode")).toEqual(true);
-		expect(result.stderr.includes("typo")).toEqual(true);
+		// 3 is the exit code of invalid input in the AcidCat CLI binding.
+		expect(result.status).toEqual(3);
+		expect(result.stderr.includes("--mode must be one of")).toEqual(true);
 		for (const mode of ["css", "json", "ts", "style-dictionary", "all"]) {
 			expect(result.stderr.includes(mode), `stderr should name ${mode}`).toEqual(true);
 		}

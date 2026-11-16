@@ -1,89 +1,206 @@
 #!/usr/bin/env node
-import { realpathSync } from "node:fs";
-import fs from "node:fs/promises";
-import { dirname, resolve } from "node:path";
-import process from "node:process";
-import { fileURLToPath } from "node:url";
-import chokidar from "chokidar";
-import type { CommandDef } from "citty";
 /**
- * This module provides the command-line interface (CLI) for CSSForge.
- * It allows generating CSS variables from a configuration file, with options
- * to watch for changes and specify output formats.
+ * The `cssforge` command line, and the MCP server it starts.
+ *
+ * The commands come from the CSS Forge application in `app.ts` through the
+ * AcidCat CLI binding:
+ *
+ * - `cssforge tokens build [flags]` writes the outputs of a configuration.
+ * - `cssforge tokens generate [flags]` prints one output as JSON.
+ * - `cssforge config check [flags]` validates a configuration.
+ * - `cssforge watch tokens.built [flags]` builds after each change.
+ * - `cssforge mcp` serves the same capabilities to an agent over MCP (stdio).
+ * - `cssforge list` describes every command.
+ *
+ * `cssforge [flags]`, with no command, is `cssforge tokens build [flags]`, and
+ * `-w` / `--watch` turns it into the watch. This keeps the command line of the
+ * earlier versions working.
+ *
+ * The module also exports `build()` and `watch()`, the programmatic API of the
+ * earlier versions. They run the same operations and log to the console.
  *
  * @module
  */
-import { defineCommand, runMain } from "citty";
+
+import { realpathSync } from "node:fs";
+import { resolve } from "node:path";
+import process from "node:process";
+import { fileURLToPath } from "node:url";
+import type { CliCommand } from "@acid-cat/core-ts";
+import { runCli, runMcpStdio } from "@acid-cat/core-ts";
+import { cssforge, type ForgeContext } from "./app.ts";
 import {
-	generateCSS,
-	generateJSON,
-	generateStyleDictionaryJSON,
-	generateTS,
-	getDiagnostics,
-} from "./generator.ts";
-import type { ColorFormat, GenerateOptions } from "./lib.ts";
-import { loadConfig } from "./loader.ts";
+	type BuildReport,
+	type BuildSettings,
+	buildOutputs,
+	defaultOutputPaths,
+	ForgeError,
+	formatsOf,
+	type OutputFormat,
+	type OutputMode,
+	outputModes,
+	type StyleDictionaryValueMode,
+	styleDictionaryValueModes,
+	watchOutputs,
+	writeFileRecursive,
+} from "./forge.ts";
+import type { ColorFormat } from "./lib.ts";
 import { isColorFormat, supportedColorFormats } from "./modules/colors.ts";
+import { toJsonSchema } from "./schema.ts";
 import { version } from "./version.ts";
 
+export { writeFileRecursive };
+
+// --- Command line -----------------------------------------------------------------------------
+
+/** The flags of the version, which the generic command line answers when one is the only argument. */
+const versionFlags = new Set(["--version", "-v"]);
+/** The flags of the help, which the generic command line answers when one is the first argument. */
+const helpFlags = new Set(["--help", "-h"]);
+
+/** The entries of a comma separated value, such as `hex,rgb`: trimmed, without empty entries or duplicates. */
+const commaList = (value: string): string[] => [
+	...new Set(
+		value
+			.split(",")
+			.map((entry) => entry.trim())
+			.filter((entry) => entry !== ""),
+	),
+];
+
 /**
- * Writes a file, creating its parent directory first. The parent comes from the
- * platform-aware `dirname` of `node:path`, so `C:\project\.cssforge\output.css`
- * creates `C:\project\.cssforge` rather than a directory at the output file path.
+ * Turns the flags-only command line of the earlier versions into a command of
+ * the current one. Arguments that start with a command are returned unchanged.
  *
- * `parentDirectory` is injectable so the Windows path shape can be exercised on
- * any platform.
+ * - No arguments, or flags only: `tokens build` with those flags.
+ * - `-w` or `--watch`: `watch tokens.built` with the other flags.
+ * - `-m <mode>`: `--mode <mode>`.
+ * - `--prefix <directory>`: `--root <directory>`. An empty prefix is dropped.
+ * - `--color-formats hex,rgb`: the list as a JSON array.
+ * - `--version` next to other flags: dropped, as the earlier versions did.
+ * - A leading `--`, which `pnpm run` passes on: dropped.
  */
-export const writeFileRecursive = (
-	path: string,
-	data: string,
-	parentDirectory: (outputPath: string) => string = dirname,
-): Promise<void> =>
-	fs
-		.mkdir(parentDirectory(path), { recursive: true })
-		.then(() => fs.writeFile(path, data));
+export function translateArguments(args: readonly string[]): string[] {
+	// `pnpm run cssforge -- <flags>` passes the separator on to the binary.
+	if (args[0] === "--") return translateArguments(args.slice(1));
 
-const outputModes = ["css", "json", "ts", "style-dictionary", "all"] as const;
-type OutputMode = (typeof outputModes)[number];
+	const [first] = args;
+	const answeredByCli =
+		first !== undefined &&
+		(!first.startsWith("-") ||
+			helpFlags.has(first) ||
+			(args.length === 1 && versionFlags.has(first)));
+	if (answeredByCli) return [...args];
+
+	let watching = false;
+	const flags: string[] = [];
+	const remaining = args.values();
+	for (const arg of remaining) {
+		const [name = arg, inline] = arg.split(/=(.*)/s, 2);
+		const value = () => inline ?? remaining.next().value ?? "";
+
+		if (versionFlags.has(name)) {
+			// Ignored next to other arguments, as in the earlier versions.
+		} else if (name === "-w" || name === "--watch") {
+			watching = inline === undefined || inline === "true";
+		} else if (name === "-m") {
+			flags.push("--mode", value());
+		} else if (name === "--prefix") {
+			const prefix = value();
+			if (prefix !== "") flags.push("--root", prefix);
+		} else if (name === "--color-formats") {
+			// The schema of the command validates each format.
+			flags.push("--color-formats", JSON.stringify(commaList(value())));
+		} else {
+			flags.push(arg);
+		}
+	}
+
+	return watching ? ["watch", "tokens.built", ...flags] : ["tokens", "build", ...flags];
+}
+
+/** `cssforge mcp`: the MCP server of the CSS Forge tools, through standard input and output. */
+const mcpCommand: CliCommand<ForgeContext> = {
+	name: "mcp",
+	description:
+		"Serve the CSS Forge tools to an agent over MCP, through standard input and output.",
+	run: async (args, { context, stdout, stderr, signal }) => {
+		const [first] = args;
+		if (first !== undefined && helpFlags.has(first)) {
+			stdout(`Usage: cssforge mcp\n\n${mcpCommand.description}`);
+			return 0;
+		}
+		if (first !== undefined) {
+			stderr(`Unexpected argument ${first}.`);
+			return 3;
+		}
+		// An interrupt closes the input, which ends the session and the server.
+		signal?.addEventListener("abort", () => process.stdin.destroy(), { once: true });
+		try {
+			// Standard output carries only MCP messages from here on.
+			await runMcpStdio(
+				cssforge,
+				{ name: "cssforge", version, context, toJsonSchema },
+				{ input: process.stdin, write: (text) => process.stdout.write(text) },
+			);
+		} catch (error) {
+			// A closed input reads as a premature close.
+			if (signal?.aborted !== true) throw error;
+		}
+		return signal?.aborted === true ? 130 : 0;
+	},
+};
+
+/** Runs the command line with `args`, and gives the exit code. */
+export function main(args: readonly string[], signal?: AbortSignal): Promise<number> {
+	return runCli(
+		cssforge,
+		{
+			name: "cssforge",
+			version,
+			context: { cwd: process.cwd() },
+			toJsonSchema,
+			description: `cssforge ${version}\n\nGenerate CSS custom properties, JSON, TypeScript and Style Dictionary tokens from a CSS Forge configuration.\n\nWith flags and no command, cssforge runs tokens build; -w runs watch tokens.built.`,
+			commands: [mcpCommand],
+		},
+		translateArguments(args),
+		{
+			stdout: (text) => process.stdout.write(`${text}\n`),
+			stderr: (text) => process.stderr.write(`${text}\n`),
+			signal,
+		},
+	);
+}
+
+// --- Programmatic API of the earlier versions -------------------------------------------------
+
 const outputModeList = outputModes.join(", ");
-
-/** The version flag form the CLI answers directly, without citty's consola. */
-const versionFlag = "--version";
-const styleDictionaryValueModes = ["css-reference", "resolved"] as const;
-type StyleDictionaryValueMode = (typeof styleDictionaryValueModes)[number];
+const colorFormatList = supportedColorFormats.join(", ");
 
 const isOutputMode = (value: unknown): value is OutputMode =>
 	typeof value === "string" && outputModes.some((mode) => mode === value);
 
-const invalidOutputModeMessage = (mode: unknown) =>
-	`Invalid output mode: ${String(mode)}. Accepted modes: ${outputModeList}.`;
-
 const isStyleDictionaryValueMode = (value: unknown): value is StyleDictionaryValueMode =>
 	typeof value === "string" && styleDictionaryValueModes.some((mode) => mode === value);
 
-/** The color formats the CLI accepts, as its help and errors list them. */
-const colorFormatList = supportedColorFormats.join(", ");
+const invalidOutputModeMessage = (mode: unknown) =>
+	`Invalid output mode: ${String(mode)}. Accepted modes: ${outputModeList}.`;
 
 const invalidColorFormatMessage = (format: unknown) =>
 	`Invalid color format: ${String(format)}. Accepted formats: ${colorFormatList}.`;
 
 /**
- * Reads the extra color formats from the comma separated `--color-formats`
- * value, such as `hex,rgb`. Duplicates are dropped, and an unknown format is
- * rejected with the accepted ones.
+ * Reads the extra color formats from a comma separated value, such as
+ * `hex,rgb`. Duplicates are dropped, and an unknown format is rejected with the
+ * accepted ones.
  */
 export function parseColorFormats(value: unknown): ColorFormat[] | undefined {
 	if (value === undefined) return undefined;
 
-	const formats: ColorFormat[] = [];
-	for (const entry of String(value).split(",")) {
-		const format = entry.trim();
-		if (format === "") continue;
+	return commaList(String(value)).map((format) => {
 		if (!isColorFormat(format)) throw new Error(invalidColorFormatMessage(format));
-		if (!formats.includes(format)) formats.push(format);
-	}
-
-	return formats;
+		return format;
+	});
 }
 
 /**
@@ -104,10 +221,7 @@ export interface BuildOptions {
 	styleDictionaryValueMode?: StyleDictionaryValueMode;
 	/** Path for the TypeScript output file. */
 	tsOutput: string;
-	/**
-	 * Extra color formats generated alongside `oklch()`, added to the formats
-	 * the configuration declares. The `--color-formats` flag sets it.
-	 */
+	/** Extra color formats generated alongside `oklch()`, added to the formats the configuration declares. */
 	colorFormats?: readonly ColorFormat[];
 }
 
@@ -124,85 +238,67 @@ export interface BuildResult {
 	dependencies?: string[];
 }
 
+/** Checks the options at run time, for JavaScript callers, and gives the build settings. */
+function settingsOf(options: BuildOptions): BuildSettings {
+	const { mode, styleDictionaryValueMode = "resolved", colorFormats = [] } = options;
+	if (!isOutputMode(mode)) throw new Error(invalidOutputModeMessage(mode));
+	if (!isStyleDictionaryValueMode(styleDictionaryValueMode)) {
+		throw new Error(`Invalid Style Dictionary value mode: ${styleDictionaryValueMode}`);
+	}
+	for (const format of colorFormats) {
+		if (!isColorFormat(format)) throw new Error(invalidColorFormatMessage(format));
+	}
+	return {
+		config: options.config,
+		mode,
+		outputs: {
+			css: options.cssOutput,
+			json: options.jsonOutput,
+			ts: options.tsOutput,
+			"style-dictionary":
+				options.styleDictionaryOutput ?? defaultOutputPaths["style-dictionary"],
+		},
+		colorFormats,
+		styleDictionaryValueMode,
+	};
+}
+
+const outputLabels: Record<OutputFormat, string> = {
+	css: "CSS",
+	json: "JSON",
+	ts: "TypeScript",
+	"style-dictionary": "Style Dictionary JSON",
+};
+
+/** Logs a successful build: its warnings, then each file as the caller named it. */
+function logReport(report: BuildReport, settings: BuildSettings): void {
+	for (const diagnostic of report.diagnostics) {
+		console.warn(`cssforge: warning: ${diagnostic.message}`);
+	}
+	for (const format of formatsOf(settings.mode)) {
+		console.log(
+			`✔ Generated ${outputLabels[format]} written to ${settings.outputs?.[format]}`,
+		);
+	}
+}
+
+const errorOf = (error: unknown) =>
+	error instanceof ForgeError && error.cause instanceof Error ? error.cause : error;
+
 /**
  * Builds the CSS, JSON, and/or TypeScript files based on the configuration.
  * @param options The build options.
  * @returns A promise that resolves to an object indicating success or failure.
  */
-export async function build({
-	config,
-	tsOutput,
-	cssOutput,
-	jsonOutput,
-	styleDictionaryOutput,
-	styleDictionaryValueMode = "resolved",
-	colorFormats = [],
-	mode,
-}: BuildOptions): Promise<BuildResult> {
+export async function build(options: BuildOptions): Promise<BuildResult> {
 	try {
-		if (!isOutputMode(mode)) {
-			// A TypeScript cast does not validate runtime input, so JavaScript
-			// callers reach this check.
-			throw new Error(invalidOutputModeMessage(mode));
-		}
-		if (!isStyleDictionaryValueMode(styleDictionaryValueMode)) {
-			throw new Error(`Invalid Style Dictionary value mode: ${styleDictionaryValueMode}`);
-		}
-		for (const format of colorFormats) {
-			// A TypeScript cast does not validate runtime input, so JavaScript
-			// callers reach this check.
-			if (!isColorFormat(format)) throw new Error(invalidColorFormatMessage(format));
-		}
-		const absoluteCssOutput = resolve(process.cwd(), cssOutput);
-		const absoluteJsonOutput = resolve(process.cwd(), jsonOutput);
-		const absoluteTsOutput = resolve(process.cwd(), tsOutput);
-
-		const { config: userConfig, dependencies } = await loadConfig(config);
-		const generateOptions: GenerateOptions = { colorFormats };
-
-		// Diagnostics are reported before any output is written and never fail the build.
-		for (const diagnostic of getDiagnostics(userConfig, generateOptions)) {
-			console.warn(`cssforge: warning: ${diagnostic.message}`);
-		}
-
-		if (mode === "css" || mode === "all") {
-			await writeFileRecursive(
-				absoluteCssOutput,
-				generateCSS(userConfig, generateOptions),
-			);
-			console.log(`✔ Generated CSS written to ${cssOutput}`);
-		}
-
-		if (mode === "json" || mode === "all") {
-			await writeFileRecursive(
-				absoluteJsonOutput,
-				generateJSON(userConfig, generateOptions),
-			);
-			console.log(`✔ Generated JSON written to ${jsonOutput}`);
-		}
-
-		if (mode === "style-dictionary" || mode === "all") {
-			const outputPath = styleDictionaryOutput ?? "./.cssforge/tokens.sd.json";
-			const absoluteStyleDictionaryOutput = resolve(process.cwd(), outputPath);
-			await writeFileRecursive(
-				absoluteStyleDictionaryOutput,
-				generateStyleDictionaryJSON(userConfig, {
-					valueMode: styleDictionaryValueMode,
-					...generateOptions,
-				}),
-			);
-			console.log(`✔ Generated Style Dictionary JSON written to ${outputPath}`);
-		}
-
-		if (mode === "ts" || mode === "all") {
-			await writeFileRecursive(absoluteTsOutput, generateTS(userConfig, generateOptions));
-			console.log(`✔ Generated TypeScript written to ${tsOutput}`);
-		}
-
-		return { success: true, dependencies };
+		const settings = settingsOf(options);
+		const report = await buildOutputs(settings);
+		logReport(report, settings);
+		return { success: true, dependencies: report.dependencies };
 	} catch (error) {
-		console.error(`Error during build:`, error);
-		return { success: false, error };
+		console.error(`Error during build:`, errorOf(error));
+		return { success: false, error: errorOf(error) };
 	}
 }
 
@@ -216,217 +312,45 @@ export interface WatchOptions extends BuildOptions {
 
 /**
  * Watches the configuration file and every local module it loads, and rebuilds
- * on modification. The watched set follows the config's dependency graph, so a
- * token module the config starts or stops importing is picked up on the next
- * rebuild.
+ * on modification.
  * @param options The watch options.
- * @returns A promise that resolves to a function to stop watching.
+ * @returns A promise that resolves, once changes are seen, to a function to stop watching.
  */
 export async function watch({
 	onRebuild,
-	...buildOptions
+	...options
 }: WatchOptions): Promise<() => void> {
-	if (!isOutputMode(buildOptions.mode)) {
-		throw new Error(invalidOutputModeMessage(buildOptions.mode));
-	}
+	const settings = settingsOf(options);
+	console.log(`👀 Watching ${options.config} for changes...`);
 
-	console.log(`👀 Watching ${buildOptions.config} for changes...`);
-
-	// Initial build
-	const initial = await build(buildOptions);
-	const watched = new Set(
-		initial.dependencies ?? [resolve(process.cwd(), buildOptions.config)],
-	);
-
-	// Watch the config and the local modules it loaded. A tool that rewrites a
-	// file in place truncates it first, so a rebuild that starts on the first
-	// event would read an empty module; wait for the write to settle instead.
-	const watcher = chokidar.watch(Array.from(watched), {
-		persistent: true,
-		ignoreInitial: true,
-		awaitWriteFinish: { stabilityThreshold: 100, pollInterval: 25 },
+	const stop = new AbortController();
+	let ready: () => void = () => {};
+	const watching = new Promise<void>((resolveReady) => {
+		ready = resolveReady;
 	});
+	const builds = watchOutputs(settings, stop.signal, { onReady: () => ready() });
 
-	// Resolve only once the watcher finished its first scan. A caller that edits
-	// a token module as soon as `watch()` resolves would otherwise race the scan
-	// and lose the change event.
-	await new Promise<void>((ready) => watcher.once("ready", () => ready()));
-
-	let rebuilding = false;
-	let rebuildQueued = false;
-
-	const runBuild = async () => {
-		console.log(`🔄 Config changed, regenerating...`);
-		const result = await build(buildOptions);
-		// A failed build reports no dependencies, and unwatching on failure would
-		// stop watching the config that has to be repaired.
-		const next = new Set(result.dependencies ?? watched);
-
-		for (const path of next) {
-			if (watched.has(path)) continue;
-			watched.add(path);
-			watcher.add(path);
+	const loop = (async () => {
+		let first = true;
+		for await (const result of builds) {
+			if (!first) console.log(`🔄 Config changed, regenerating...`);
+			if (result.ok) logReport(result.report, settings);
+			else console.error(`Error during build:`, errorOf(result.error));
+			if (!first) onRebuild?.();
+			first = false;
 		}
+	})();
+	// The loop ends only when the watch stops, or when a build throws a defect.
+	loop.catch((error: unknown) => console.error(`Error during watch:`, error));
 
-		for (const path of watched) {
-			if (next.has(path)) continue;
-			watched.delete(path);
-			watcher.unwatch(path);
-		}
-
-		onRebuild?.();
-	};
-
-	/**
-	 * Rebuilds one build at a time. Two editors writing in quick succession would
-	 * otherwise run two builds at once, and the older one could finish last and
-	 * write stale output. A change that lands during a build queues exactly one
-	 * more build, so the last output always reflects the last change.
-	 */
-	const rebuild = async () => {
-		if (rebuilding) {
-			rebuildQueued = true;
-			return;
-		}
-
-		rebuilding = true;
-
-		try {
-			do {
-				rebuildQueued = false;
-				await runBuild();
-			} while (rebuildQueued);
-		} finally {
-			rebuilding = false;
-		}
-	};
-
-	watcher.on("change", rebuild);
-	// A module the config newly imports arrives as an add, and a deleted one as
-	// an unlink; both change what the next build generates.
-	watcher.on("add", rebuild);
-	watcher.on("unlink", rebuild);
-
-	// Return cleanup function
-	return () => watcher.close();
+	await Promise.race([watching, loop]);
+	return () => stop.abort();
 }
 
-const mainCommand = defineCommand({
-	meta: {
-		name: "cssforge",
-		version,
-		description: "Generate CSS variables from a configuration file",
-	},
-	args: {
-		watch: {
-			type: "boolean",
-			description: "Watch for changes in the config file",
-			alias: "w",
-		},
-		config: {
-			type: "string",
-			description: "Path to the config file",
-			default: "./cssforge.config.ts",
-		},
-		mode: {
-			type: "string",
-			description: `Output mode (${outputModeList})`,
-			alias: "m",
-			default: "all",
-		},
-		prefix: {
-			type: "string",
-			description: "A prefix applied before all path",
-			default: "",
-		},
-		json: {
-			type: "string",
-			description: "Optional path for an output JSON file",
-			default: "./.cssforge/output.json",
-		},
-		"style-dictionary": {
-			type: "string",
-			description: "Path for the Style Dictionary token JSON file",
-			default: "./.cssforge/tokens.sd.json",
-		},
-		"style-dictionary-value-mode": {
-			type: "string",
-			description:
-				"Token value mode: css-reference for usage matching, or resolved for previews and builds",
-			default: "resolved",
-		},
-		css: {
-			type: "string",
-			description: "Path for the output CSS file",
-			default: "./.cssforge/output.css",
-		},
-		ts: {
-			type: "string",
-			description: "Path for the output TypeScript file",
-			default: "./.cssforge/output.ts",
-		},
-		"color-formats": {
-			type: "string",
-			description: `Extra color formats generated alongside oklch, comma separated (${colorFormatList})`,
-		},
-	},
-	async run({ args }) {
-		const { watch: shouldWatch, config, css, json, ts, mode, prefix } = args;
-		const styleDictionary = args["style-dictionary"];
-		const styleDictionaryValueMode = args["style-dictionary-value-mode"];
-		const rawColorFormats = args["color-formats"];
-		if (!isOutputMode(mode)) {
-			console.error(`Error during build: Error: ${invalidOutputModeMessage(mode)}`);
-			process.exit(1);
-			return;
-		}
-		if (!isStyleDictionaryValueMode(styleDictionaryValueMode)) {
-			console.error(
-				`Error during build: Error: Invalid Style Dictionary value mode: ${styleDictionaryValueMode}`,
-			);
-			process.exit(1);
-			return;
-		}
-		let colorFormats: ColorFormat[] | undefined;
-		try {
-			colorFormats = parseColorFormats(rawColorFormats);
-		} catch (error) {
-			const message = error instanceof Error ? error.message : String(error);
-			console.error(`Error during build: Error: ${message}`);
-			process.exit(1);
-			return;
-		}
-		const realPath = (p: string) => resolve(prefix, p);
-		const settings: BuildOptions = {
-			mode,
-			config: realPath(config),
-			cssOutput: realPath(css),
-			tsOutput: realPath(ts),
-			jsonOutput: realPath(json),
-			styleDictionaryOutput: realPath(styleDictionary),
-			styleDictionaryValueMode,
-			colorFormats,
-		};
-		if (shouldWatch) {
-			const cleanup = await watch(settings);
-
-			// Handle process termination
-			process.on("SIGINT", () => {
-				cleanup();
-				console.log("\n🛑 Stopped watching");
-				process.exit(0);
-			});
-		} else {
-			const { success } = await build(settings);
-			process.exit(success ? 0 : 1);
-		}
-	},
-});
+// --- Entry point ------------------------------------------------------------------------------
 
 const isDirectRun = (): boolean => {
-	// Node 24.2 and newer report whether this module is the entry point. This
-	// also covers a JSR import whose module URL is remote and cannot be mapped
-	// to a file path.
+	// Node 24.2 and newer report whether this module is the entry point.
 	const isMain = (import.meta as ImportMeta & { main?: boolean }).main;
 	if (typeof isMain === "boolean") {
 		return isMain;
@@ -440,27 +364,29 @@ const isDirectRun = (): boolean => {
 	}
 
 	try {
-		return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(entryFile);
+		return (
+			realpathSync(fileURLToPath(import.meta.url)) === realpathSync(resolve(entryFile))
+		);
 	} catch {
 		return false;
 	}
 };
 
-// Run if called directly
 if (isDirectRun()) {
-	// citty prints the version through consola, whose reporter decorates log
-	// output in a CI environment. Scripts parse this output, so it has to be
-	// bare. Answer the single flag the CLI supports, under citty's own
-	// condition: only when it is the sole argument.
-	const rawArgs = process.argv.slice(2);
-	if (rawArgs.length === 1 && rawArgs[0] === versionFlag) {
-		console.log(version);
-	} else {
-		runMain(mainCommand);
-	}
+	const interrupt = new AbortController();
+	process.once("SIGINT", () => {
+		// The watch and the MCP server stop on the signal. A command that cannot
+		// stop, such as a config load that hangs, ends after a grace period.
+		interrupt.abort();
+		setTimeout(() => process.exit(130), 1000).unref();
+	});
+	main(process.argv.slice(2), interrupt.signal).then(
+		(code) => {
+			process.exitCode = code;
+		},
+		(error: unknown) => {
+			console.error(error);
+			process.exitCode = 1;
+		},
+	);
 }
-
-/**
- * The main command definition for the CSSForge CLI.
- */
-export default mainCommand as CommandDef;

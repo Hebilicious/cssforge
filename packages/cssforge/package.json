@@ -20,6 +20,11 @@
 			"import": "./dist/cli.js",
 			"default": "./dist/cli.js"
 		},
+		"./app": {
+			"types": "./dist/app.d.ts",
+			"import": "./dist/app.js",
+			"default": "./dist/app.js"
+		},
 		"./package.json": "./package.json"
 	},
 	"repository": {
@@ -42,11 +47,12 @@
 		"src",
 		"README.md",
 		"CHANGELOG.md",
-		"jsr.json"
+		"jsr.json",
+		"cssforge.acidcat.json"
 	],
 	"dependencies": {
+		"@acid-cat/core-ts": "0.11.1",
 		"chokidar": "4.0.3",
-		"citty": "0.1.6",
 		"colorjs.io": "0.5.2",
 		"utopia-core": "1.6.0"
 	},

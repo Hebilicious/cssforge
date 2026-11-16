@@ -5,10 +5,11 @@
 	"license": "MIT",
 	"exports": {
 		".": "./src/mod.ts",
-		"./cli": "./src/cli.ts"
+		"./cli": "./src/cli.ts",
+		"./app": "./src/app.ts"
 	},
 	"imports": {
-		"citty": "npm:citty@0.1.6",
+		"@acid-cat/core-ts": "npm:@acid-cat/core-ts@0.11.1",
 		"chokidar": "npm:chokidar@4.0.3",
 		"colorjs.io": "npm:colorjs.io@0.5.2",
 		"utopia-core": "npm:utopia-core@1.6.0"

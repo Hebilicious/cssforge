@@ -119,8 +119,7 @@ const parsePackResult = (output: string, description: string): PackResult => {
 
 /**
  * npm needs `--` to separate its flags from the script's; pnpm forwards that
- * `--` to the binary, where citty treats it as end-of-options and drops every
- * flag after it.
+ * `--` to the binary, so it is left out for pnpm.
  */
 const scriptInvocation = (manager: "npm" | "pnpm", cliArgs: string[]): string[] =>
 	manager === "npm"
@@ -151,8 +150,8 @@ const run = (
 };
 
 /**
- * `--version` is citty's version flag (it only answers a bare `--version`), so
- * the reported string is the CLI metadata of the installed artifact. A package
+ * The CLI answers `--version` only when it is the only argument, so the
+ * reported string is the CLI metadata of the installed artifact. A package
  * manager prints its own banner around a script run and a pnpm shim can
  * interleave the CLI's own log output, so the version is located in the output
  * rather than assumed to be the whole of it.
@@ -181,10 +180,10 @@ const assertReportsVersion = (
 };
 
 /**
- * `pnpm run <script> -- --version` cannot be asserted: pnpm 10 forwards the
- * separator, so the CLI receives `-- --version`, and citty then runs a normal
- * build instead of printing its version. That is pnpm's behaviour, not the
- * metadata's, so this only records which output was observed.
+ * `pnpm run <script> -- --version` forwards the separator, so the CLI receives
+ * `-- --version`. The CLI drops a leading `--`, but how a package manager
+ * forwards arguments is its own behaviour, so this only records which output
+ * was observed.
  */
 const observeScriptVersion = (consumer: Consumer): string => {
 	const output = run(consumer.manager, ["run", "cssforge", "--", "--version"], {
@@ -608,7 +607,7 @@ const verifyConsumer = async (consumer: Consumer): Promise<void> => {
 		env,
 	});
 	check(
-		help.includes("USAGE") && help.includes("cssforge"),
+		help.includes("Usage: cssforge"),
 		`${manager} ${helpArgs.join(" ")} did not print the CLI usage`,
 	);
 
@@ -680,8 +679,7 @@ const main = async (): Promise<void> => {
 	const node = nodeArgument ?? process.execPath;
 	const manifest = readManifest(join(packageRoot, "package.json"));
 	const env: NodeJS.ProcessEnv = { ...process.env };
-	// citty prints usage through consola, which silences log output in test
-	// environments. Consumers do not run the CLI with these variables set.
+	// Consumers do not run the CLI with the variables that test runners set.
 	delete env.TEST;
 	delete env.NODE_ENV;
 	// Consumer commands run with the same Node (and its npm) as this process, or

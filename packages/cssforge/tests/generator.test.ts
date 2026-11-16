@@ -627,9 +627,9 @@ test("cli - style-dictionary and all modes write their declared outputs", async 
 
 		expect(result.status).toEqual(0);
 		expect(result.stderr).toEqual("");
-		expect(result.stdout.includes("Generated Style Dictionary JSON written")).toEqual(
-			true,
-		);
+		expect(JSON.parse(result.stdout).files).toEqual([
+			{ format: "style-dictionary", path: styleDictionaryOutput },
+		]);
 		expect(output.spacing.custom.size["2"].value).toEqual("0.5rem");
 		expect(existsSync(cssOutput)).toEqual(false);
 		expect(existsSync(jsonOutput)).toEqual(false);

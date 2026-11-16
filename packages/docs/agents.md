@@ -25,7 +25,7 @@ The root `README.md` is canonical. Its generated package copy at `packages/cssfo
 
 - [Public exports](https://github.com/Hebilicious/cssforge/blob/main/packages/cssforge/src/mod.ts)
 - [Configuration types](https://github.com/Hebilicious/cssforge/blob/main/packages/cssforge/src/config.ts)
-- [CLI implementation](https://github.com/Hebilicious/cssforge/blob/main/packages/cssforge/src/cli.ts)
+- [CLI and MCP capabilities](https://github.com/Hebilicious/cssforge/blob/main/packages/cssforge/src/app.ts), and their [catalog](https://github.com/Hebilicious/cssforge/blob/main/packages/cssforge/cssforge.acidcat.json)
 - [Generated reference source](https://github.com/Hebilicious/cssforge/blob/main/README.md)
 - [Example projects](https://github.com/Hebilicious/cssforge/tree/main/example)
 
@@ -35,8 +35,9 @@ Each release publishes the same version to npm and to JSR.
 
 - Install: `npm install --save-dev @hebilicious/cssforge` or `pnpm add -D @hebilicious/cssforge`
 - Import: `import { defineConfig } from "@hebilicious/cssforge";`
-- Run: the package exposes a `cssforge` executable, so run it directly (`cssforge --mode all`,
-  or `npx cssforge --mode all` with npm)
+- Run: the package exposes a `cssforge` executable, so run it directly (`cssforge tokens build`,
+  or `npx cssforge tokens build` with npm). `cssforge mcp` serves the same commands to an agent
+  as MCP tools.
 - JSR: `npx jsr add @hebilicious/cssforge` or `pnpm i jsr:@hebilicious/cssforge`
 - Runtime: Node 24 or newer, which loads `cssforge.config.ts` without a loader or `tsx`
 

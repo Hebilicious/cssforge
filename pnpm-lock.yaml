@@ -287,12 +287,12 @@ importers:
 
   packages/cssforge:
     dependencies:
+      '@acid-cat/core-ts':
+        specifier: 0.11.1
+        version: 0.11.1
       chokidar:
         specifier: 4.0.3
         version: 4.0.3
-      citty:
-        specifier: 0.1.6
-        version: 0.1.6
       colorjs.io:
         specifier: 0.5.2
         version: 0.5.2
@@ -370,6 +370,22 @@ packages:
   '@11ty/gray-matter@2.1.0':
     resolution: {integrity: sha512-fNdBOb3MgDz/1UCIoeY4wDuGbp+/3s5y6UrsyfMabECbh/CVycj7Er33JXqSxRwxrRKXcGE1Jipuq/1mODInsQ==}
     engines: {node: '>=11'}
+
+  '@acid-cat/catalog@0.11.1':
+    resolution: {integrity: sha512-YqhLKQKW6MkfjTV3NGuAaR4YTUPi/gPU6EYTMm+vszJ0HCFkA0znJKWv60+Hdv3LCZes29YwUxl66XhAzC5QGw==}
+    engines: {node: '>=24'}
+
+  '@acid-cat/core-ts@0.11.1':
+    resolution: {integrity: sha512-7UnhGDPB//qIUMgPhmqTdwuOSD72SZvjSmvqR2UpCug4pcgLoRyLrd+VWTR0vdsensiTSbBp1AbCxx/z4oxqIQ==}
+    engines: {node: '>=24'}
+
+  '@acid-cat/mcp-handshake@0.11.1':
+    resolution: {integrity: sha512-JncWtpkPIQQ4DCo6xlQoJVMG+c2cefumWUHyeuuh+Lwx57EMf6hi1wEb3RgAxMlov4IE7xbZL+yPUigyEsl1jA==}
+    engines: {node: '>=24'}
+
+  '@acid-cat/spec-ts@0.11.1':
+    resolution: {integrity: sha512-Uzu6RqEiDA7iUMwW2iYhy7axlD6NhD/QhgFcOYX35+d6WS9bBYH4Oq8MnIOtp/UYOm2U1jAPmNDpLP+4t25AnA==}
+    engines: {node: '>=24'}
 
   '@algolia/abtesting@1.15.0':
     resolution: {integrity: sha512-D1QZ8dQx5zC9yrxNao9ER9bojmmzUdL1i2P9waIRiwnZ5fI26YswcCd6VHR/Q4W3PASfVf2My4YQ2FhGGDewTQ==}
@@ -7547,6 +7563,20 @@ snapshots:
     dependencies:
       js-yaml: 4.3.1
       section-matter: 1.0.0
+
+  '@acid-cat/catalog@0.11.1': {}
+
+  '@acid-cat/core-ts@0.11.1':
+    dependencies:
+      '@acid-cat/catalog': 0.11.1
+      '@acid-cat/mcp-handshake': 0.11.1
+      '@acid-cat/spec-ts': 0.11.1
+
+  '@acid-cat/mcp-handshake@0.11.1':
+    dependencies:
+      '@acid-cat/spec-ts': 0.11.1
+
+  '@acid-cat/spec-ts@0.11.1': {}
 
   '@algolia/abtesting@1.15.0':
     dependencies:

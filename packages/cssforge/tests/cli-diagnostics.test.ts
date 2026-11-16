@@ -27,7 +27,7 @@ const configSource = `export default {
 	},
 };`;
 
-test("cli - prints a build warning to stderr and still writes the output", async () => {
+test("cli - reports a build warning in its result and still writes the output", async () => {
 	const tempDir = await mkdtemp(join(tmpdir(), "cssforge-diagnostics-cli-"));
 
 	try {
@@ -42,11 +42,15 @@ test("cli - prints a build warning to stderr and still writes the output", async
 		);
 
 		expect(result.status, result.stderr).toEqual(0);
-		const warnings = result.stderr
-			.split("\n")
-			.filter((line) => line.startsWith("cssforge: warning: "));
-		expect(warnings.length, result.stderr).toEqual(1);
-		expect(warnings[0]?.includes("typography_fluid.body@m"), warnings[0]).toBeTruthy();
+		const { diagnostics } = JSON.parse(result.stdout) as {
+			diagnostics: { severity: string; message: string }[];
+		};
+		expect(diagnostics.length, result.stdout).toEqual(1);
+		expect(diagnostics[0]?.severity).toEqual("warning");
+		expect(
+			diagnostics[0]?.message.includes("typography_fluid.body@m"),
+			diagnostics[0]?.message,
+		).toBeTruthy();
 		expect(
 			(await readFile(cssPath, "utf8")).includes("--typography_fluid-body-m:"),
 			"Expected the CSS output to be written",

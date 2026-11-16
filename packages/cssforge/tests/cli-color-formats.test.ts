@@ -166,10 +166,12 @@ test("cli - --color-formats reports an unknown format", async () => {
 			tempDir,
 		);
 
-		expect(result.status).toEqual(1);
-		expect(result.stderr.includes("Invalid color format: hsl"), result.stderr).toEqual(
-			true,
-		);
+		// 3 is the exit code of invalid input in the AcidCat CLI binding.
+		expect(result.status).toEqual(3);
+		expect(JSON.parse(result.stderr)).toEqual({
+			kind: "invalid-input",
+			message: 'color-formats.1: Received "hsl". Expected one of: hex, rgb.',
+		});
 	} finally {
 		await rm(tempDir, { recursive: true, force: true });
 	}

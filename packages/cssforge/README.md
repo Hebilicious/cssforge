@@ -153,8 +153,8 @@ export default defineConfig({
 
 ```bash
 cssforge # Basic usage
-cssforge --help # To see all options
-cssforge --watch # To watch for changes
+cssforge --help # To see all commands
+cssforge watch tokens.built # To watch for changes
 ```
 
 3. Use the generated variables in your CSS:
@@ -1984,29 +1984,61 @@ The pow representation of a step adds a `pow` segment, as in
 
 ## CLI Usage
 
-```bash
-# Basic usage
-cssforge
+The `cssforge` command line, its MCP server and its typed API all come from one
+[AcidCat](https://github.com/Hebilicious/acidcat) catalog,
+[`cssforge.acidcat.json`](packages/cssforge/cssforge.acidcat.json). Each command answers with
+JSON on stdout.
 
-# Watch mode
-cssforge --watch
+```bash
+# Write every output of ./cssforge.config.ts. `cssforge` with flags and no command is the same.
+cssforge tokens build
+
+# Watch mode: build now, then after each change of the config or a module it imports.
+# Each build is one JSON line. `cssforge -w` is the same.
+cssforge watch tokens.built
 
 # Custom paths and output
-cssforge --config ./foo/bar/custom-path.ts --css ./dist/design-tokens.css --ts ./dist/design-tokens.ts --json ./dist/design-tokens.json --style-dictionary ./dist/design-tokens.sd.json --mode all
+cssforge tokens build --config ./foo/bar/custom-path.ts --css ./dist/design-tokens.css --ts ./dist/design-tokens.ts --json ./dist/design-tokens.json --style-dictionary ./dist/design-tokens.sd.json --mode all
+
+# Resolve the relative paths against another directory
+cssforge tokens build --root ./site
 
 # Style Dictionary JSON with final values (default)
-cssforge --mode style-dictionary --style-dictionary ./dist/design-tokens.sd.json
+cssforge tokens build --mode style-dictionary --style-dictionary ./dist/design-tokens.sd.json
 
 # Keep CSS variables as values for usage matching
-cssforge --mode style-dictionary --style-dictionary ./dist/design-tokens.sd.json --style-dictionary-value-mode css-reference
+cssforge tokens build --mode style-dictionary --style-dictionary ./dist/design-tokens.sd.json --style-dictionary-value-mode css-reference
 
-# Generate sRGB formats next to oklch for every palette color, added to the config's formats
-cssforge --color-formats hex,rgb
+# Generate sRGB formats next to oklch for every palette color, added to the config's formats.
+# Repeat the flag, or give a JSON array.
+cssforge tokens build --color-formats hex --color-formats rgb
+
+# Print one output without writing a file
+cssforge tokens generate --format css
+
+# Validate a config and list its warnings
+cssforge config check
+
+# Every command, with its flags
+cssforge list
 ```
 
-Build warnings, such as a fluid type step below the legibility floor, are printed to stderr
-before the outputs are written, one line each as `cssforge: warning: <message>`. They do not
-fail the build: the outputs are still written and the exit code stays `0`.
+| Command | Result on stdout |
+| --- | --- |
+| `tokens build` | `{ files, diagnostics, dependencies }`: the files written, the warnings and the files the config loaded |
+| `tokens generate` | `{ format, content, diagnostics, dependencies }` |
+| `config check` | `{ diagnostics, dependencies }` |
+| `watch tokens.built` | One line per build: `{ data: { ok: true, files, … } }`, or `{ data: { ok: false, failure } }` |
+
+Build warnings, such as a fluid type step below the legibility floor, are the `diagnostics` of
+the result. They do not fail the build: the outputs are still written and the exit code stays
+`0`. A failure is a JSON object with a `_tag` and exit code `1`: `ConfigLoadFailed` (the
+config is missing or cannot be evaluated), `InvalidConfig` (CSS Forge rejects a value) or
+`WriteFailed`. An invalid flag exits with `3` and a message on stderr. An interrupted watch
+exits with `130`.
+
+The flags of the earlier versions still work without a command: `cssforge --mode css`,
+`-m css`, `-w`, `--prefix <dir>` (now `--root`) and `--color-formats hex,rgb`.
 
 ## Programmatic Usage
 
@@ -2167,9 +2199,31 @@ lets Musea attribute a `var(--token)` written in an art file back to its token.
 
 ## Agentic usage
 
-CSSForge is intentionally designed to be extremely simple and integrate well with various
-agents, such as Github Copilot, Gemini, Claude Code ... While there's no documentation
-yet, you can add the README file to the agent context directly.
+`cssforge mcp` serves the CLI capabilities to an agent as MCP tools, through standard input
+and output: `tokens.build`, `tokens.generate` and `config.check`, and the event
+`tokens.built`. Paths resolve against the directory where the agent starts the server, or
+against the `root` of a call. To add it to Claude Code:
+
+```bash
+claude mcp add cssforge -- npx cssforge mcp
+```
+
+A user interface can call the same capabilities through typed handles:
+
+```typescript
+import { createSession } from "@acid-cat/core-ts";
+import { cssforge, tokensGenerate, toJsonSchema } from "@hebilicious/cssforge/app";
+
+await using session = createSession(cssforge, {
+  target: "app",
+  context: { cwd: process.cwd() },
+  toJsonSchema,
+});
+const result = await session.call(tokensGenerate, { format: "css" });
+if (result.ok) console.log(result.value.content);
+```
+
+You can also add the README file to the agent context directly.
 
 For most agents, this syntax works
 `@https://raw.githubusercontent.com/Hebilicious/cssforge/refs/heads/main/README.md`.

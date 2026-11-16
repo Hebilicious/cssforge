@@ -10,8 +10,8 @@ import { expect, test } from "vitest";
 const packageRoot = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const workspaceRoot = resolve(packageRoot, "../..");
 
-// citty prints usage through consola, which silences log output when `TEST` or
-// `NODE_ENV=test` is set, as vitest does. Real consumers run from a shell.
+// Real consumers run from a shell, without the `TEST` and `NODE_ENV=test` that
+// vitest sets.
 const childEnv: NodeJS.ProcessEnv = { ...process.env };
 delete childEnv.TEST;
 delete childEnv.NODE_ENV;
@@ -144,9 +144,8 @@ test("cli - reports the manifest version verbatim, with and without CI", async (
 	try {
 		for (const [description, env] of [
 			["a plain environment", childEnv],
-			// citty prints its version through consola, which decorates log
-			// output once `CI` is set. Scripts and CI parse `--version`, so the
-			// output must not depend on the environment.
+			// Scripts and CI parse `--version`, so the output must not depend on
+			// the environment.
 			["CI", { ...childEnv, CI: "1" }],
 			// The same reporter change is triggered by other CI markers.
 			["CI and GITHUB_ACTIONS", { ...childEnv, CI: "1", GITHUB_ACTIONS: "true" }],
@@ -159,9 +158,8 @@ test("cli - reports the manifest version verbatim, with and without CI", async (
 			).toEqual(manifestVersion);
 		}
 
-		// citty prints `meta.version` through its own usage output, where a
-		// hard-coded metadata version would surface even though `--version` is
-		// answered by the CLI itself.
+		// The help names the version too, so a hard-coded version would surface
+		// there even though `--version` is answered separately.
 		const help = run(process.execPath, [cli, "--help"], packageRoot, childEnv);
 		assertSucceeded(help, "cssforge --help");
 		expect(
@@ -169,8 +167,8 @@ test("cli - reports the manifest version verbatim, with and without CI", async (
 			`cssforge --help must print the manifest version, got:\n${help.stdout}`,
 		).toBeTruthy();
 
-		// A version flag next to other arguments stays a normal command, which
-		// is how citty resolves its own version flag.
+		// A version flag next to other arguments stays a normal command, as it
+		// was in the earlier versions.
 		const projectDir = join(workDir, "project");
 		await mkdir(projectDir, { recursive: true });
 		const configPath = join(projectDir, "cssforge.config.ts");
