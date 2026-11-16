@@ -47,8 +47,8 @@ standard library or writing code from first principles.
 - The session that merges a branch makes CI pass on it. Rebase on `main`, fix what fails, and
   merge only when every required check is green. Never skip or weaken a check to make it pass.
 - After the merge, or when the pull request closes without merging, remove the worktree with
-  `git worktree remove .worktrees/<branch>`. Remove every other worktree you made (a baseline, a
-  comparison) before you hand off.
+  `git worktree remove .worktrees/<branch>`, and every other worktree you made for the task (a
+  baseline, a comparison).
 
 ## Engineering workflow
 
