@@ -1,24 +1,7 @@
 /**
- * The CSS Forge application, described for AcidCat.
- *
- * One declaration gives every surface of the tools: the command line
- * (`cssforge tokens build`), the MCP server (`cssforge mcp`), and typed handles
- * for a user interface (`createSession(cssforge, { target: "app", … })`). The
- * catalog that this module describes is committed as `cssforge.acidcat.json`.
- *
- * @example
- * ```ts
- * import { createSession } from "@acid-cat/core-ts";
- * import { cssforge, tokensGenerate, toJsonSchema } from "@hebilicious/cssforge/app";
- *
- * await using session = createSession(cssforge, {
- *   target: "app",
- *   context: { cwd: process.cwd() },
- *   toJsonSchema,
- * });
- * const result = await session.call(tokensGenerate, { format: "css" });
- * if (result.ok) console.log(result.value.content);
- * ```
+ * The capabilities of the CSS Forge tools. The command line (`cssforge`) and
+ * the MCP server (`cssforge mcp`) both serve them, and the catalog
+ * `cssforge.acidcat.json` describes them.
  *
  * @module
  */
@@ -341,7 +324,7 @@ const capability = capabilitiesFor<ForgeContext>();
 const event = eventsFor<ForgeContext>();
 
 /** The targets that use every capability. */
-const everyone = ["cli", "mcp", "app"];
+const everyone = ["cli", "mcp"];
 
 /** `cssforge tokens build`: generate the outputs of a configuration and write them. */
 export const tokensBuild: Capability<
@@ -441,7 +424,7 @@ export const tokensBuilt: EventDefinition<
 	id: "tokens.built",
 	description:
 		"Build the outputs of a CSS Forge configuration now, then again each time the configuration or a local module that it imports changes. Each occurrence is the result of one build: the files written, or the failure. A failed build does not end the subscription. Ending the subscription stops the watch; files already written stay.",
-	audience: ["cli", "mcp", "app"],
+	audience: everyone,
 	input: BuildInputSchema,
 	payload: BuiltPayloadSchema,
 	async *subscribe(input, { context, signal }): AsyncGenerator<Emitted<BuiltPayload>> {
@@ -468,7 +451,6 @@ export const cssforge: App<ForgeContext> = defineApp<ForgeContext>({
 			bindings: ["mcp"],
 			description: "The MCP server of `cssforge mcp`, for agents.",
 		},
-		app: { bindings: ["typescript"], description: "Typed handles for a user interface." },
 	},
 	capabilities: [tokensBuild, tokensGenerate, configCheck],
 	events: [tokensBuilt],

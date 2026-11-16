@@ -273,8 +273,8 @@ tasks:
   catalog-check:
     # The committed catalog conforms to the AcidCat specification and is in
     # canonical form. tests/acidcat.test.ts checks that it matches src/app.ts.
-    command: "npx"
-    args: ["-y", "@acid-cat/cli@0.11.1", "check", "--strict", "cssforge.acidcat.json"]
+    command: "acid-cat"
+    args: ["check", "--strict", "cssforge.acidcat.json"]
     inputs:
       - "cssforge.acidcat.json"
     options:

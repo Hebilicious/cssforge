@@ -3,12 +3,6 @@
   "title": "CSS Forge",
   "description": "Generate CSS custom properties, JSON, TypeScript and Style Dictionary tokens from a CSS Forge configuration.",
   "targets": {
-    "app": {
-      "bindings": [
-        "typescript"
-      ],
-      "description": "Typed handles for a user interface."
-    },
     "cli": {
       "bindings": [
         "cli"
@@ -27,8 +21,7 @@
       "description": "Load and validate a CSS Forge configuration, and give its warnings: values that generate, but likely not as intended. Writes no file.",
       "audience": [
         "cli",
-        "mcp",
-        "app"
+        "mcp"
       ],
       "input": {
         "additionalProperties": false,
@@ -162,8 +155,7 @@
       "description": "Generate the outputs of a CSS Forge configuration and write them to files: CSS custom properties, JSON, TypeScript and Style Dictionary tokens. Every output is generated before the first file is written, so an invalid configuration leaves the previous files in place. The result lists the files written and the warnings of the configuration.",
       "audience": [
         "cli",
-        "mcp",
-        "app"
+        "mcp"
       ],
       "input": {
         "additionalProperties": false,
@@ -390,8 +382,7 @@
       "description": "Generate one output of a CSS Forge configuration and give it as text, with the warnings of the configuration. Writes no file.",
       "audience": [
         "cli",
-        "mcp",
-        "app"
+        "mcp"
       ],
       "input": {
         "additionalProperties": false,
@@ -562,8 +553,7 @@
       "description": "Build the outputs of a CSS Forge configuration now, then again each time the configuration or a local module that it imports changes. Each occurrence is the result of one build: the files written, or the failure. A failed build does not end the subscription. Ending the subscription stops the watch; files already written stay.",
       "audience": [
         "cli",
-        "mcp",
-        "app"
+        "mcp"
       ],
       "input": {
         "additionalProperties": false,

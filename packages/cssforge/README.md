@@ -1984,10 +1984,7 @@ The pow representation of a step adds a `pow` segment, as in
 
 ## CLI Usage
 
-The `cssforge` command line, its MCP server and its typed API all come from one
-[AcidCat](https://github.com/Hebilicious/acidcat) catalog,
-[`cssforge.acidcat.json`](packages/cssforge/cssforge.acidcat.json). Each command answers with
-JSON on stdout.
+Each command answers with JSON on stdout.
 
 ```bash
 # Write every output of ./cssforge.config.ts. `cssforge` with flags and no command is the same.
@@ -2199,28 +2196,16 @@ lets Musea attribute a `var(--token)` written in an art file back to its token.
 
 ## Agentic usage
 
-`cssforge mcp` serves the CLI capabilities to an agent as MCP tools, through standard input
-and output: `tokens.build`, `tokens.generate` and `config.check`, and the event
-`tokens.built`. Paths resolve against the directory where the agent starts the server, or
-against the `root` of a call. To add it to Claude Code:
+Agents can run the `cssforge` CLI like any other command: each command answers with JSON, and
+`cssforge list` describes every command and its flags.
+
+`cssforge mcp` serves the same commands as MCP tools, through standard input and output:
+`tokens.build`, `tokens.generate` and `config.check`, and the event `tokens.built`. Paths
+resolve against the directory where the agent starts the server, or against the `root` of a
+call. To add it to Claude Code:
 
 ```bash
 claude mcp add cssforge -- npx cssforge mcp
-```
-
-A user interface can call the same capabilities through typed handles:
-
-```typescript
-import { createSession } from "@acid-cat/core-ts";
-import { cssforge, tokensGenerate, toJsonSchema } from "@hebilicious/cssforge/app";
-
-await using session = createSession(cssforge, {
-  target: "app",
-  context: { cwd: process.cwd() },
-  toJsonSchema,
-});
-const result = await session.call(tokensGenerate, { format: "css" });
-if (result.ok) console.log(result.value.content);
 ```
 
 You can also add the README file to the agent context directly.

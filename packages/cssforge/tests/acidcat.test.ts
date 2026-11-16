@@ -32,7 +32,7 @@ afterEach(async () => {
 });
 
 const openSession = () =>
-	createSession(cssforge, { target: "app", context: { cwd: projectDir }, toJsonSchema });
+	createSession(cssforge, { target: "cli", context: { cwd: projectDir }, toJsonSchema });
 
 test("catalog - the committed catalog is the one the application writes", async () => {
 	const committed = await readFile(

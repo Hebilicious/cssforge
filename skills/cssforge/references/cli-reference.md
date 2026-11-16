@@ -70,5 +70,3 @@ From `README.md`:
   the ones the config declares
 - `getDiagnostics(config)` returns the build warnings as `{ code, severity, path, message }`,
   the same ones the CLI reports
-- `import { cssforge, tokensGenerate, toJsonSchema } from "@hebilicious/cssforge/app"` with
-  `createSession` from `@acid-cat/core-ts` calls the CLI capabilities with types
