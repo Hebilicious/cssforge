@@ -20,7 +20,7 @@ jobs:
       - name: Setup toolchain
         uses: moonrepo/setup-toolchain@v0
         with:
-          moon-version: "2.0.0"
+          moon-version: "2.6.5"
           auto-install: true
 
       # Runs before `moon ci` so the gate reads the committed metadata and not a
@@ -61,7 +61,7 @@ jobs:
       - name: Setup toolchain
         uses: moonrepo/setup-toolchain@v0
         with:
-          moon-version: "2.0.0"
+          moon-version: "2.6.5"
           auto-install: true
 
       # `--force` suppresses moon's InstallDependencies action.
@@ -96,7 +96,7 @@ jobs:
       - name: Setup toolchain
         uses: moonrepo/setup-toolchain@v0
         with:
-          moon-version: "2.0.0"
+          moon-version: "2.6.5"
           auto-install: true
 
       # 24.0.0 is the floor declared by the package `engines` field.
