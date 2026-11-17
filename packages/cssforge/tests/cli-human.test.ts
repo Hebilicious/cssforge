@@ -110,3 +110,11 @@ test("cli - an unknown --output value is invalid input", () => {
 	expect(result.stdout).toEqual("");
 	expect(existsSync(join(projectDir, ".cssforge"))).toEqual(false);
 });
+
+test("cli - a first argument -- from a package runner is ignored", () => {
+	// `pnpm cssforge -- check` passes `--` on to the program.
+	const result = runCli(["--", "check", "--agent"]);
+
+	expect(result.status, result.stderr).toEqual(0);
+	expect(JSON.parse(result.stdout).diagnostics).toEqual([]);
+});

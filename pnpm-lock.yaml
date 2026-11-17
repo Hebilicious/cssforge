@@ -288,8 +288,8 @@ importers:
   packages/cssforge:
     dependencies:
       '@acid-cat/core-ts':
-        specifier: 0.12.0
-        version: 0.12.0
+        specifier: 0.13.0
+        version: 0.13.0
       chokidar:
         specifier: 4.0.3
         version: 4.0.3
@@ -301,8 +301,8 @@ importers:
         version: 1.6.0
     devDependencies:
       '@acid-cat/cli':
-        specifier: 0.12.0
-        version: 0.12.0(redis@6.3.1)
+        specifier: 0.13.0
+        version: 0.13.0(redis@6.3.1)
       '@biomejs/biome':
         specifier: 2.4.2
         version: 2.4.2
@@ -374,12 +374,12 @@ packages:
     resolution: {integrity: sha512-fNdBOb3MgDz/1UCIoeY4wDuGbp+/3s5y6UrsyfMabECbh/CVycj7Er33JXqSxRwxrRKXcGE1Jipuq/1mODInsQ==}
     engines: {node: '>=11'}
 
-  '@acid-cat/catalog@0.12.0':
-    resolution: {integrity: sha512-Pyl4sy9ww4Hy/DA8nO7eueNWMb0wROJu9kUS5nUMShTabJwfSNmiaIb7UNxEgkuyy25rzHMs4h7AyTmZis0jLA==}
+  '@acid-cat/catalog@0.13.0':
+    resolution: {integrity: sha512-KD67iK20urO4DMES5GaMDdd+KPzFQASiiEijfKyKWCM7JxmWm54Q9b5en2j57TgrnxXZ5cQAACRT5BTDM8WZjw==}
     engines: {node: '>=24'}
 
-  '@acid-cat/cli@0.12.0':
-    resolution: {integrity: sha512-AVdIi5onDajsAHOTVQe4faaBPpGgAbfImiicRFIOH3LjGjWDDeKY70P3ffCbrIzx4XWBOioKc/t+ti1uqcoqOQ==}
+  '@acid-cat/cli@0.13.0':
+    resolution: {integrity: sha512-2jAo9UazEbb4vHGX3A0PIFIsLX3NxXuqVtfokOThrvGCAM7toKhXrDz5myfjJp2oHSkN3FPqLiipy/dM3xEu7w==}
     engines: {node: '>=24'}
     hasBin: true
     peerDependencies:
@@ -388,16 +388,16 @@ packages:
       playwright:
         optional: true
 
-  '@acid-cat/core-ts@0.12.0':
-    resolution: {integrity: sha512-2abNCftBO++zmb275QBAytzGc/NxUAlyNvi2e++ON2mUGNznHlweIGTXD9kvAolSM4VLXI6N9sfPx0MNgAUiVQ==}
+  '@acid-cat/core-ts@0.13.0':
+    resolution: {integrity: sha512-Vg7yHQQc9I+0oKSSAvScdgQLXCzYBDeiWZB77xrzN+AeD3w+cwvNFYtC7eON1umgmMCbV0pwCEa9g8QbQvvs+w==}
     engines: {node: '>=24'}
 
-  '@acid-cat/mcp-handshake@0.12.0':
-    resolution: {integrity: sha512-pSFmXAn3ElqnlAfTkpD82JMBuQGVLDKrJiypKNnSqvxptbuQFSHGC2fEdQLt6aCCcVfWHw3r1LfOM5muvSNqsg==}
+  '@acid-cat/mcp-handshake@0.13.0':
+    resolution: {integrity: sha512-F9ddrvktaJPNFK5MmLfilcn0RZYeronzrgw9FEzj99QBGJlT/zGr7T+oDAk1uPvbJso7nklAF07lRalh3xpuQQ==}
     engines: {node: '>=24'}
 
-  '@acid-cat/spec-ts@0.12.0':
-    resolution: {integrity: sha512-elKoiwLOoVEsv6P21hVmDC/oBf5xC+7sTMyE9M/eSWI6IUMrfr6KBeJxc3PlBeSx2MV847NcKqchUHrKzs0sSw==}
+  '@acid-cat/spec-ts@0.13.0':
+    resolution: {integrity: sha512-4N2eDx+3YIR4L3gpjHLeNsmrcvO3uwgLNBTSNteuualoAq+Z/TBFKnbpweUgZZAqqDHEYYrrblIdut+mzQSBJw==}
     engines: {node: '>=24'}
 
   '@algolia/abtesting@1.15.0':
@@ -7682,12 +7682,12 @@ snapshots:
       js-yaml: 4.3.1
       section-matter: 1.0.0
 
-  '@acid-cat/catalog@0.12.0': {}
+  '@acid-cat/catalog@0.13.0': {}
 
-  '@acid-cat/cli@0.12.0(redis@6.3.1)':
+  '@acid-cat/cli@0.13.0(redis@6.3.1)':
     dependencies:
-      '@acid-cat/catalog': 0.12.0
-      '@acid-cat/spec-ts': 0.12.0
+      '@acid-cat/catalog': 0.13.0
+      '@acid-cat/spec-ts': 0.13.0
       '@effect/platform-node': 4.1.4(effect@4.1.4)(redis@6.3.1)
       '@effect/platform-node-shared': 4.1.4(effect@4.1.4)
       '@modelcontextprotocol/client': 2.4.0
@@ -7698,17 +7698,17 @@ snapshots:
       - redis
       - utf-8-validate
 
-  '@acid-cat/core-ts@0.12.0':
+  '@acid-cat/core-ts@0.13.0':
     dependencies:
-      '@acid-cat/catalog': 0.12.0
-      '@acid-cat/mcp-handshake': 0.12.0
-      '@acid-cat/spec-ts': 0.12.0
+      '@acid-cat/catalog': 0.13.0
+      '@acid-cat/mcp-handshake': 0.13.0
+      '@acid-cat/spec-ts': 0.13.0
 
-  '@acid-cat/mcp-handshake@0.12.0':
+  '@acid-cat/mcp-handshake@0.13.0':
     dependencies:
-      '@acid-cat/spec-ts': 0.12.0
+      '@acid-cat/spec-ts': 0.13.0
 
-  '@acid-cat/spec-ts@0.12.0': {}
+  '@acid-cat/spec-ts@0.13.0': {}
 
   '@algolia/abtesting@1.15.0':
     dependencies:

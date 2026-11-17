@@ -125,32 +125,21 @@ const formats = [
 
 // --- Program ---------------------------------------------------------------------------------
 
-const args = process.argv.slice(2);
-
-// `cliMain` stops the watch and the MCP server on an interrupt. A command that
-// cannot stop, such as a config load that hangs, ends after a grace period.
-process.once("SIGINT", () => setTimeout(() => process.exit(130), 1000).unref());
-
-cliMain(
-	cssforge,
-	{
-		name: "cssforge",
-		version,
-		context,
-		toJsonSchema,
-		// The version is in the help so that a published build shows which one it is.
-		description: `cssforge ${version}\n\n${cssforge.description}`,
-		commands: [mcpCommand],
-		output: {
-			default: "auto",
-			flags: [
-				{ names: ["--output", "-o"], values: { human: "human", agent: "json" } },
-				{ names: ["--human"], form: "human" },
-				{ names: ["--agent"], form: "json" },
-			],
-			formats,
-		},
+cliMain(cssforge, {
+	name: "cssforge",
+	version,
+	context,
+	toJsonSchema,
+	// The version is in the help so that a published build shows which one it is.
+	description: `cssforge ${version}\n\n${cssforge.description}`,
+	commands: [mcpCommand],
+	output: {
+		default: "auto",
+		flags: [
+			{ names: ["--output", "-o"], values: { human: "human", agent: "json" } },
+			{ names: ["--human"], form: "human" },
+			{ names: ["--agent"], form: "json" },
+		],
+		formats,
 	},
-	// `pnpm run cssforge -- <args>` passes the separator on to the program.
-	args[0] === "--" ? args.slice(1) : args,
-);
+});
