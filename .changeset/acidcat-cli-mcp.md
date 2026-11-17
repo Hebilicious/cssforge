@@ -4,7 +4,7 @@
 
 Rewrite the CLI, and add an MCP server and typed calls from code.
 
-- Commands: `cssforge build` (also `cssforge` alone), `cssforge generate`, `cssforge check`, `cssforge --watch` and `cssforge list`. On a terminal, the output is text for a person; for a script, in CI or for a coding agent, it is JSON. `--output human|agent` chooses.
+- Commands: `cssforge build` (also `cssforge` alone), `cssforge generate`, `cssforge check`, `cssforge --watch` and `cssforge list`. On a terminal, the output is text for a person; for a script, in CI or for a coding agent, it is JSON. `--human` and `--agent` (or `--output human|agent`) choose.
 - `cssforge mcp` serves the same commands to an agent as MCP tools, through stdio.
 - `@hebilicious/cssforge/capabilities` gives the same commands to code, with types: `createSession(cssforge, { target: "library", … })`.
 - The catalog of the commands ships as `cssforge.acidcat.json`.

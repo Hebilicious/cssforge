@@ -60,11 +60,13 @@ test("cli - the full command path runs the same capability as its alias", () => 
 	expect(full.stdout).toEqual(alias.stdout);
 });
 
-test("cli - --output human writes the files written as a table", () => {
-	const result = runCli(["build", "--mode", "css", "--output", "human"]);
+test("cli - --human and --output human write the files written as a table", () => {
+	for (const flags of [["--human"], ["--output", "human"]]) {
+		const result = runCli(["build", "--mode", "css", ...flags]);
 
-	expect(result.status, result.stderr).toEqual(0);
-	expect(result.stdout).toEqual("format  file\ncss     .cssforge/output.css\n");
+		expect(result.status, result.stderr).toEqual(0);
+		expect(result.stdout).toEqual("format  file\ncss     .cssforge/output.css\n");
+	}
 });
 
 test("cli - --output human writes the generated content as it is", () => {
@@ -87,18 +89,20 @@ test("cli - --output human writes a failure with its tag and the same exit code"
 	);
 });
 
-test("cli - --output agent writes JSON", () => {
-	const result = runCli(["check", "--output", "agent"]);
+test("cli - --agent and --output agent write JSON, and the last output flag wins", () => {
+	for (const flags of [["--agent"], ["--output", "agent"], ["--human", "--agent"]]) {
+		const result = runCli(["check", ...flags]);
 
-	expect(result.status, result.stderr).toEqual(0);
-	expect(JSON.parse(result.stdout)).toEqual({
-		diagnostics: [],
-		dependencies: [join(projectDir, "cssforge.config.ts")],
-	});
+		expect(result.status, result.stderr).toEqual(0);
+		expect(JSON.parse(result.stdout)).toEqual({
+			diagnostics: [],
+			dependencies: [join(projectDir, "cssforge.config.ts")],
+		});
+	}
 });
 
 test("cli - an unknown --output value is invalid input", () => {
-	const result = runCli(["build", "--output", "json"]);
+	const result = runCli(["build", "--output", "yaml"]);
 
 	// 3 is the exit code of invalid input in the AcidCat CLI binding.
 	expect(result.status).toEqual(3);

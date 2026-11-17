@@ -1985,7 +1985,7 @@ The pow representation of a step adds a `pow` segment, as in
 ## CLI Usage
 
 On a terminal, each command writes text for a person. For a script, in CI or for a coding
-agent, it writes JSON on stdout. `--output agent` (`-o agent`) writes JSON and `--output human` writes text, wherever it runs.
+agent, it writes JSON on stdout. `--agent` writes JSON and `--human` writes text, wherever it runs (also `--output agent|human`, or `-o`).
 
 ```bash
 # Write every output of ./cssforge.config.ts. `cssforge` alone does the same.
@@ -2021,7 +2021,7 @@ cssforge check
 cssforge list
 
 # Force JSON on a terminal
-cssforge build --output agent
+cssforge build --agent
 ```
 
 `build`, `generate`, `check` and `--watch` are short names for the commands `tokens build`,
