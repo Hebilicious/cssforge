@@ -50,8 +50,8 @@ pnpm add -D @hebilicious/cssforge
 The package installs a `cssforge` executable:
 
 ```bash
-pnpm cssforge build # pnpm
-npx cssforge build # npm
+pnpm cssforge --mode all # pnpm
+npx cssforge --mode all # npm
 ```
 
 The rest of this document writes commands as `cssforge <args>`.
@@ -152,8 +152,8 @@ export default defineConfig({
 2. Run CSS Forge with the CLI :
 
 ```bash
-cssforge build # Basic usage
-cssforge --help # To see all commands
+cssforge # Basic usage
+cssforge --help # To see all options
 cssforge --watch # To watch for changes
 ```
 
@@ -258,7 +258,7 @@ cssforge({
 real file, or when a bundler has no CSS handling for virtual modules.
 
 The plugin calls the same `generateCSS` implementation as the CLI, so `virtual:cssforge.css` matches
-`cssforge build --mode css` output byte for byte. The served stylesheet is unlayered, and
+`cssforge --mode css` output byte for byte. The served stylesheet is unlayered, and
 `@import "virtual:cssforge.css" layer(cssforge)` does not work because a CSS import resolves to a
 file; set `write` and import the written file with `layer(cssforge)` to keep the tokens in a layer.
 The CLI stays the integration path for everything else: JSR, Style Dictionary, CI steps, and tools
@@ -316,7 +316,7 @@ A level with one child is collapsed, so `palette: { value: { coral: ... } }` bec
 The TypeScript output is a typed module. Put it in your source tree:
 
 ```bash
-cssforge build --mode ts --ts ./src/design-tokens.ts
+cssforge --mode ts --ts ./src/design-tokens.ts
 ```
 
 ```typescript
@@ -348,7 +348,7 @@ the compiler options the Quick Start documents.
 The JSON output is the same tree without the `as const` wrapper:
 
 ```bash
-cssforge build --mode json --json ./src/design-tokens.json
+cssforge --mode json --json ./src/design-tokens.json
 ```
 
 ```javascript
@@ -1988,28 +1988,28 @@ On a terminal, each command writes text for a person. For a script, in CI or for
 agent, it writes JSON on stdout. `--agent` writes JSON and `--human` writes text, wherever it runs (also `--output agent|human`, or `-o`).
 
 ```bash
-# Write every output of ./cssforge.config.ts. `cssforge` alone does the same.
-cssforge build
+# Basic usage: write every output of ./cssforge.config.ts
+cssforge
 
 # Watch mode: build now, then after each change of the config or a module it imports.
 # In JSON, each build is one line.
 cssforge --watch
 
 # Custom paths and output
-cssforge build --config ./foo/bar/custom-path.ts --css ./dist/design-tokens.css --ts ./dist/design-tokens.ts --json ./dist/design-tokens.json --style-dictionary ./dist/design-tokens.sd.json --mode all
+cssforge --config ./foo/bar/custom-path.ts --css ./dist/design-tokens.css --ts ./dist/design-tokens.ts --json ./dist/design-tokens.json --style-dictionary ./dist/design-tokens.sd.json --mode all
 
 # Resolve the relative paths against another directory
-cssforge build --root ./site
+cssforge --root ./site
 
 # Style Dictionary JSON with final values (default)
-cssforge build --mode style-dictionary --style-dictionary ./dist/design-tokens.sd.json
+cssforge --mode style-dictionary --style-dictionary ./dist/design-tokens.sd.json
 
 # Keep CSS variables as values for usage matching
-cssforge build --mode style-dictionary --style-dictionary ./dist/design-tokens.sd.json --style-dictionary-value-mode css-reference
+cssforge --mode style-dictionary --style-dictionary ./dist/design-tokens.sd.json --style-dictionary-value-mode css-reference
 
 # Generate sRGB formats next to oklch for every palette color, added to the config's formats.
 # Repeat the flag, or give a JSON array.
-cssforge build --color-formats hex --color-formats rgb
+cssforge --color-formats hex --color-formats rgb
 
 # Print one output without writing a file
 cssforge generate --format css
@@ -2113,7 +2113,7 @@ you already generate.
 Use `style-dictionary` mode to generate only the token file:
 
 ```bash
-cssforge build --mode style-dictionary --style-dictionary ./.cssforge/tokens.json
+cssforge --mode style-dictionary --style-dictionary ./.cssforge/tokens.json
 ```
 
 Use `--mode all` to generate it together with the CSS, TypeScript, and regular JSON outputs.
@@ -2188,7 +2188,7 @@ Dictionary will transform the file.
 
 ```bash
 # Keep CSS variables as values for usage matching
-cssforge build --mode style-dictionary --style-dictionary ./.cssforge/tokens.json --style-dictionary-value-mode css-reference
+cssforge --mode style-dictionary --style-dictionary ./.cssforge/tokens.json --style-dictionary-value-mode css-reference
 ```
 
 ### Programmatic API
@@ -2220,7 +2220,7 @@ lets Musea attribute a `var(--token)` written in an art file back to its token.
 
 ## Agentic usage
 
-Agents can run the `cssforge` CLI like any other command: each command answers with JSON, and
+Agents can run the `cssforge` CLI like any other command: an agent gets JSON (`--agent` forces it), and
 `cssforge list` describes every command and its flags.
 
 `cssforge mcp` serves the same commands as MCP tools, through standard input and output:

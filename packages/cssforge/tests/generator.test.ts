@@ -606,7 +606,6 @@ test("cli - style-dictionary and all modes write their declared outputs", async 
 			process.execPath,
 			[
 				cliPath,
-				"build",
 				"--config",
 				configPath,
 				"--mode",
@@ -639,7 +638,6 @@ test("cli - style-dictionary and all modes write their declared outputs", async 
 			process.execPath,
 			[
 				cliPath,
-				"build",
 				"--config",
 				configPath,
 				"--mode",
@@ -696,7 +694,6 @@ test("cli - style-dictionary mode can emit CSS variables for usage matching", as
 			process.execPath,
 			[
 				cliPath,
-				"build",
 				"--config",
 				configPath,
 				"--mode",

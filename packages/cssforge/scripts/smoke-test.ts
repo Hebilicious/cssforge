@@ -392,7 +392,7 @@ const verifyQuickStart = async (consumer: Consumer): Promise<void> => {
 	);
 
 	// The documented command.
-	run(manager, scriptInvocation(manager, ["build"]), {
+	run(manager, scriptInvocation(manager, []), {
 		cwd: quickStartDir,
 		env,
 	});
@@ -515,7 +515,7 @@ const verifyOutputPaths = async (consumer: Consumer): Promise<void> => {
 		);
 		await writeFile(join(shapeDir, "cssforge.config.ts"), fixtureConfig, "utf8");
 
-		const args = ["build", "--mode", "all", "--config", "./cssforge.config.ts"];
+		const args = ["--mode", "all", "--config", "./cssforge.config.ts"];
 		const expected = new Map<string, string>();
 
 		for (const kind of outputKinds) {
@@ -641,13 +641,7 @@ const verifyConsumer = async (consumer: Consumer): Promise<void> => {
 
 	run(
 		manager,
-		scriptInvocation(manager, [
-			"build",
-			"--mode",
-			"all",
-			"--config",
-			"./cssforge.config.ts",
-		]),
+		scriptInvocation(manager, ["--mode", "all", "--config", "./cssforge.config.ts"]),
 		{
 			cwd: projectDir,
 			env,

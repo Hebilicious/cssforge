@@ -37,13 +37,13 @@ Do not invent schema fields that are not present in docs or source types.
 3. Configure generation commands
 - Install the package from npm: `npm install --save-dev @hebilicious/cssforge` (the same
   version is on the secondary JSR channel: `npx jsr add @hebilicious/cssforge`).
-- Run the installed executable directly: `cssforge build` (`npx cssforge` with npm,
+- Run the installed executable directly: `cssforge --mode all` (`npx cssforge` with npm,
   `pnpm cssforge` with pnpm).
 - For an agent, `cssforge mcp` serves the same commands as MCP tools through stdio.
 - For local repo examples, call the built CLI of the sibling package directly: pnpm only
   links the workspace `cssforge` binary once `dist` exists, so a fresh checkout has no
   `node_modules/.bin/cssforge` before the first build:
-  - `cssforge-generate`: `node ../../packages/cssforge/dist/cli.js build --config ./cssforge.config.ts --mode css --css ./.cssforge/output.css`
+  - `cssforge-generate`: `node ../../packages/cssforge/dist/cli.js --config ./cssforge.config.ts --mode css --css ./.cssforge/output.css`
   - `cssforge-build-local`: `moon run cssforge:pack`
 
 4. Validate outputs

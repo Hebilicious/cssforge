@@ -78,10 +78,10 @@ test("quick start - documented usage matches generated tokens and output paths",
 			"utf8",
 		);
 
-		// The documented flow: `cssforge build` in the project root.
+		// The documented flow: `cssforge` in the project root.
 		const generate = spawnSync(
 			process.execPath,
-			[fileURLToPath(new URL("../src/cli.ts", import.meta.url)), "build"],
+			[fileURLToPath(new URL("../src/cli.ts", import.meta.url))],
 			{ cwd: projectDir, encoding: "utf8", env: childEnv },
 		);
 		expect(generate.status, generate.stderr).toEqual(0);

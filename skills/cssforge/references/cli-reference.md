@@ -54,12 +54,12 @@ On a terminal, each command writes text for a person. For a script, in CI or for
 The npm package exposes a `cssforge` executable, so consumers run it directly (`npx cssforge`
 with npm, `pnpm cssforge` with pnpm):
 
-- Basic: `npx cssforge build`
+- Basic: `npx cssforge`
 - Watch: `npx cssforge --watch`
 - Custom paths:
-  - `npx cssforge build --config ./path/cssforge.config.ts --css ./dist/tokens.css --ts ./dist/tokens.ts --json ./dist/tokens.json --mode all`
+  - `npx cssforge --config ./path/cssforge.config.ts --css ./dist/tokens.css --ts ./dist/tokens.ts --json ./dist/tokens.json --mode all`
 - Extra color formats:
-  - `npx cssforge build --color-formats hex --color-formats rgb`
+  - `npx cssforge --color-formats hex --color-formats rgb`
 - MCP server for an agent: `claude mcp add cssforge -- npx cssforge mcp`
 
 ## Programmatic API
