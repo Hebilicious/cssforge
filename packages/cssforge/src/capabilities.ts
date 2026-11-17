@@ -32,7 +32,15 @@ import type {
 	EventDefinition,
 	Result,
 } from "@acid-cat/core-ts";
-import { capabilitiesFor, defineApp, eventsFor, fail, ok } from "@acid-cat/core-ts";
+import {
+	capabilitiesFor,
+	cliAlias,
+	cliAliasDefault,
+	defineApp,
+	eventsFor,
+	fail,
+	ok,
+} from "@acid-cat/core-ts";
 import {
 	type BuildReport,
 	type BuildSettings,
@@ -199,15 +207,15 @@ export interface FailureDetails {
 }
 
 /** The failures of a capability that reads a configuration. */
-export interface ReadFailures {
+export type ReadFailures = {
 	ConfigLoadFailed: FailureDetails;
 	InvalidConfig: FailureDetails;
-}
+};
 
 /** The failures of a capability that writes outputs. */
-export interface BuildFailures extends ReadFailures {
+export type BuildFailures = ReadFailures & {
 	WriteFailed: FailureDetails;
-}
+};
 
 type ReadFailure = {
 	_tag: "ConfigLoadFailed" | "InvalidConfig";
@@ -351,7 +359,7 @@ const event = eventsFor<ForgeContext>();
 /** The targets that use every capability. */
 const everyone = ["cli", "mcp", "library"];
 
-/** `cssforge tokens build`: generate the outputs of a configuration and write them. */
+/** `cssforge build`: generate the outputs of a configuration and write them. */
 export const tokensBuild: Capability<
 	ForgeContext,
 	BuildInput,
@@ -375,7 +383,7 @@ export const tokensBuild: Capability<
 		attempt(() => buildOutputs(buildSettingsOf(context, input)), failureOf),
 });
 
-/** `cssforge tokens generate`: give one output as text. */
+/** `cssforge generate`: give one output as text. */
 export const tokensGenerate: Capability<
 	ForgeContext,
 	GenerateInput,
@@ -410,7 +418,7 @@ export const tokensGenerate: Capability<
 		),
 });
 
-/** `cssforge config check`: validate a configuration and give its warnings. */
+/** `cssforge check`: validate a configuration and give its warnings. */
 export const configCheck: Capability<
 	ForgeContext,
 	CheckInput,
@@ -439,7 +447,7 @@ export const configCheck: Capability<
 
 // --- Events --------------------------------------------------------------------------------
 
-/** `cssforge watch tokens.built`: build now and after each change of the configuration. */
+/** `cssforge --watch`: build now and after each change of the configuration. */
 export const tokensBuilt: EventDefinition<
 	ForgeContext,
 	BuildInput,
@@ -471,7 +479,19 @@ export const cssforge: App<ForgeContext> = defineApp<ForgeContext>({
 	description:
 		"Generate CSS custom properties, JSON, TypeScript and Style Dictionary tokens from a CSS Forge configuration.",
 	targets: {
-		cli: { bindings: ["cli"], description: "The cssforge command line." },
+		cli: {
+			bindings: ["cli"],
+			description: "The cssforge command line.",
+			cli: {
+				aliases: {
+					// `cssforge` alone, or with only flags, builds.
+					build: cliAliasDefault(tokensBuild),
+					generate: cliAlias(tokensGenerate),
+					check: cliAlias(configCheck),
+					"--watch": cliAlias(tokensBuilt),
+				},
+			},
+		},
 		mcp: {
 			bindings: ["mcp"],
 			description: "The MCP server of `cssforge mcp`, for agents.",

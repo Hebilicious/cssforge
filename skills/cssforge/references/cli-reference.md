@@ -7,13 +7,18 @@ entry point is `packages/cssforge/src/cli.ts`, and the operations are in
 
 ## Commands
 
-Each command answers with JSON on stdout.
+On a terminal, each command writes text for a person. For a script, in CI or for a coding agent
+(detected from variables such as `CLAUDECODE` or `CODEX_THREAD_ID`), it writes JSON on stdout.
+`--output json` (`-o json`) or `--output human` chooses. The results below are the JSON form.
 
-- `cssforge tokens build [flags]`: write the outputs. Result: `{ files, diagnostics, dependencies }`.
-- `cssforge tokens generate [flags]`: print one output, write nothing. Result:
+`build`, `generate`, `check` and `--watch` are aliases of `tokens build`, `tokens generate`,
+`config check` and `watch tokens.built`. `cssforge` alone, or with only flags, runs `build`.
+
+- `cssforge build [flags]`: write the outputs. Result: `{ files, diagnostics, dependencies }`.
+- `cssforge generate [flags]`: print one output, write nothing. Result:
   `{ format, content, diagnostics, dependencies }`.
-- `cssforge config check [flags]`: validate the config. Result: `{ diagnostics, dependencies }`.
-- `cssforge watch tokens.built [flags]`: build now and after each change of the config or a
+- `cssforge check [flags]`: validate the config. Result: `{ diagnostics, dependencies }`.
+- `cssforge --watch [flags]` (`--watch` first): build now and after each change of the config or a
   local module it imports. One JSON line per build: `{ data: { ok: true, files, … } }` or
   `{ data: { ok: false, failure } }`. Exits with `130` when interrupted.
 - `cssforge mcp`: serve the same capabilities as MCP tools through stdio.
@@ -24,13 +29,14 @@ Each command answers with JSON on stdout.
 - `--config`: config path (default `./cssforge.config.ts`)
 - `--root`: directory that relative paths resolve against (default: the working directory)
 - `--mode`: `css | json | ts | style-dictionary | all` (default `all`;
-  `tokens build` and `watch tokens.built`)
-- `--format`: `css | json | ts | style-dictionary` (default `css`; `tokens generate`)
+  `build` and `--watch`)
+- `--format`: `css | json | ts | style-dictionary` (default `css`; `generate`)
 - `--css`: css output path (default `./.cssforge/output.css`)
 - `--json`: json output path (default `./.cssforge/output.json`)
 - `--ts`: ts output path (default `./.cssforge/output.ts`)
 - `--style-dictionary`: Style Dictionary token JSON path (default `./.cssforge/tokens.sd.json`)
 - `--style-dictionary-value-mode`: `resolved | css-reference` (default `resolved`)
+- `--output`, `-o`: `human | json`, the form of the output (any command)
 - `--color-formats`: sRGB formats generated alongside oklch (`hex`, `rgb`), appended to the
   formats `settings.color.formats` declares. Repeat the flag (`--color-formats hex
   --color-formats rgb`) or give a JSON array.
@@ -48,12 +54,12 @@ Each command answers with JSON on stdout.
 The npm package exposes a `cssforge` executable, so consumers run it directly (`npx cssforge`
 with npm, `pnpm cssforge` with pnpm):
 
-- Basic: `npx cssforge tokens build`
-- Watch: `npx cssforge watch tokens.built`
+- Basic: `npx cssforge build`
+- Watch: `npx cssforge --watch`
 - Custom paths:
-  - `npx cssforge tokens build --config ./path/cssforge.config.ts --css ./dist/tokens.css --ts ./dist/tokens.ts --json ./dist/tokens.json --mode all`
+  - `npx cssforge build --config ./path/cssforge.config.ts --css ./dist/tokens.css --ts ./dist/tokens.ts --json ./dist/tokens.json --mode all`
 - Extra color formats:
-  - `npx cssforge tokens build --color-formats hex --color-formats rgb`
+  - `npx cssforge build --color-formats hex --color-formats rgb`
 - MCP server for an agent: `claude mcp add cssforge -- npx cssforge mcp`
 
 ## Programmatic API

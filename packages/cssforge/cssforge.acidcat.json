@@ -7,7 +7,26 @@
       "bindings": [
         "cli"
       ],
-      "description": "The cssforge command line."
+      "description": "The cssforge command line.",
+      "options": {
+        "cli": {
+          "aliases": {
+            "--watch": {
+              "event": "tokens.built"
+            },
+            "build": {
+              "capability": "tokens.build"
+            },
+            "check": {
+              "capability": "config.check"
+            },
+            "generate": {
+              "capability": "tokens.generate"
+            }
+          },
+          "default": "build"
+        }
+      }
     },
     "library": {
       "bindings": [

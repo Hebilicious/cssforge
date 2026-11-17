@@ -1,31 +1,41 @@
 #!/usr/bin/env node
 /**
- * The `cssforge` command line. Its commands are the capabilities of
+ * The `cssforge` program: run it, do not import it. Its commands are the capabilities of
  * `capabilities.ts`, and `cssforge mcp` serves the same capabilities to an
  * agent as an MCP server through standard input and output.
+ *
+ * On a terminal, the output is for a person. For a script, in CI or for a
+ * coding agent, it is JSON. `--output json` or `--output human` chooses.
  *
  * @module
  */
 
-import { realpathSync } from "node:fs";
-import { resolve } from "node:path";
+import { relative } from "node:path";
 import process from "node:process";
-import { fileURLToPath } from "node:url";
-import type { CliCommand } from "@acid-cat/core-ts";
-import { runCli, runMcpStdio } from "@acid-cat/core-ts";
-import { cssforge, type ForgeContext } from "./capabilities.ts";
+import type { CliCommand, CliUi } from "@acid-cat/core-ts";
+import { cliFormat, cliMain, runMcpStdio } from "@acid-cat/core-ts";
+import {
+	type BuiltPayload,
+	configCheck,
+	cssforge,
+	type FailureDetails,
+	type ForgeContext,
+	tokensBuild,
+	tokensBuilt,
+	tokensGenerate,
+} from "./capabilities.ts";
+import type { BuildReport, CheckReport } from "./forge.ts";
 import { toJsonSchema } from "./schema.ts";
 import { version } from "./version.ts";
 
-const description =
-	"Generate CSS custom properties, JSON, TypeScript and Style Dictionary tokens from a CSS Forge configuration.";
+const context: ForgeContext = { cwd: process.cwd() };
 
 /** `cssforge mcp`: the MCP server, through standard input and output. */
 const mcpCommand: CliCommand<ForgeContext> = {
 	name: "mcp",
 	description:
 		"Serve the cssforge commands to an agent over MCP, through standard input and output.",
-	run: async (args, { context, stdout, stderr, signal }) => {
+	run: async (args, { stdout, stderr, signal }) => {
 		const [first] = args;
 		if (first === "--help" || first === "-h") {
 			stdout(`Usage: cssforge mcp\n\n${mcpCommand.description}`);
@@ -53,63 +63,90 @@ const mcpCommand: CliCommand<ForgeContext> = {
 	},
 };
 
-/** Runs the command line with `args`, and gives the exit code. */
-export function main(args: readonly string[], signal?: AbortSignal): Promise<number> {
-	return runCli(
-		cssforge,
-		{
-			name: "cssforge",
-			version,
-			context: { cwd: process.cwd() },
-			toJsonSchema,
-			// The version is in the help so that a published build shows which one it is.
-			description: `cssforge ${version}\n\n${description}`,
-			commands: [mcpCommand],
-		},
-		// `pnpm run cssforge -- <args>` passes the separator on to the program.
-		args[0] === "--" ? args.slice(1) : args,
-		{
-			stdout: (text) => process.stdout.write(`${text}\n`),
-			stderr: (text) => process.stderr.write(`${text}\n`),
-			signal,
-		},
+// --- Human output ----------------------------------------------------------------------------
+
+/** A path as a person types it: relative to the working directory. */
+const shown = (path: string) => relative(context.cwd, path) || ".";
+
+const warnings = ({ diagnostics }: CheckReport, ui: CliUi): string[] =>
+	diagnostics.map(
+		(diagnostic) => `${ui.warn("warning")} ${diagnostic.path}: ${diagnostic.message}`,
 	);
-}
 
-/** Whether this module is the program that Node started, and not an import. */
-const isDirectRun = (): boolean => {
-	// Node 24.2 and newer answer directly.
-	const isMain = (import.meta as ImportMeta & { main?: boolean }).main;
-	if (typeof isMain === "boolean") return isMain;
+const filesWritten = (report: BuildReport, ui: CliUi): string[] => [
+	ui.table(
+		["format", "file"],
+		report.files.map((file) => [file.format, shown(file.path)]),
+	),
+	...warnings(report, ui),
+];
 
-	// Package managers expose binaries as symlinks in `node_modules/.bin`, so
-	// both sides are resolved before they are compared.
-	const entryFile = process.argv[1];
-	if (!entryFile) return false;
-	try {
-		return (
-			realpathSync(fileURLToPath(import.meta.url)) === realpathSync(resolve(entryFile))
-		);
-	} catch {
-		return false;
-	}
+const failure =
+	(tag: string) =>
+	({ message, path }: FailureDetails, ui: CliUi): string =>
+		path === undefined || message.includes(path)
+			? `${ui.error(tag)} ${message}`
+			: `${ui.error(tag)} ${message}\n${ui.dim(shown(path))}`;
+
+const readFailures = {
+	ConfigLoadFailed: failure("ConfigLoadFailed"),
+	InvalidConfig: failure("InvalidConfig"),
 };
 
-if (isDirectRun()) {
-	const interrupt = new AbortController();
-	process.once("SIGINT", () => {
-		// The watch and the MCP server stop on the signal. A command that cannot
-		// stop, such as a config load that hangs, ends after a grace period.
-		interrupt.abort();
-		setTimeout(() => process.exit(130), 1000).unref();
-	});
-	main(process.argv.slice(2), interrupt.signal).then(
-		(code) => {
-			process.exitCode = code;
+const built = (payload: BuiltPayload, ui: CliUi): string => {
+	const time = ui.dim(new Date().toLocaleTimeString());
+	if (!payload.ok) return `${time} ${failure(payload.failure._tag)(payload.failure, ui)}`;
+	return [`${time} ${ui.ok("built")}`, ...filesWritten(payload, ui)].join("\n");
+};
+
+const formats = [
+	cliFormat(tokensBuild, {
+		value: (report, ui) => filesWritten(report, ui).join("\n"),
+		failures: { ...readFailures, WriteFailed: failure("WriteFailed") },
+	}),
+	cliFormat(tokensGenerate, {
+		// The content alone goes to standard output, so that it can go to a file.
+		value: (report, ui) => {
+			for (const line of warnings(report, ui)) process.stderr.write(`${line}\n`);
+			return report.content;
 		},
-		(error: unknown) => {
-			console.error(error);
-			process.exitCode = 1;
+		failures: readFailures,
+	}),
+	cliFormat(configCheck, {
+		value: (report, ui) =>
+			[
+				`${ui.ok("valid")} ${report.dependencies.map(shown).join(", ")}`,
+				...warnings(report, ui),
+			].join("\n"),
+		failures: readFailures,
+	}),
+	cliFormat(tokensBuilt, built),
+];
+
+// --- Program ---------------------------------------------------------------------------------
+
+const args = process.argv.slice(2);
+
+// `cliMain` stops the watch and the MCP server on an interrupt. A command that
+// cannot stop, such as a config load that hangs, ends after a grace period.
+process.once("SIGINT", () => setTimeout(() => process.exit(130), 1000).unref());
+
+cliMain(
+	cssforge,
+	{
+		name: "cssforge",
+		version,
+		context,
+		toJsonSchema,
+		// The version is in the help so that a published build shows which one it is.
+		description: `cssforge ${version}\n\n${cssforge.description}`,
+		commands: [mcpCommand],
+		output: {
+			default: "auto",
+			flags: [{ names: ["--output", "-o"], values: { human: "human", json: "json" } }],
+			formats,
 		},
-	);
-}
+	},
+	// `pnpm run cssforge -- <args>` passes the separator on to the program.
+	args[0] === "--" ? args.slice(1) : args,
+);

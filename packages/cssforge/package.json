@@ -15,11 +15,6 @@
 			"import": "./dist/mod.js",
 			"default": "./dist/mod.js"
 		},
-		"./cli": {
-			"types": "./dist/cli.d.ts",
-			"import": "./dist/cli.js",
-			"default": "./dist/cli.js"
-		},
 		"./capabilities": {
 			"types": "./dist/capabilities.d.ts",
 			"import": "./dist/capabilities.js",
@@ -51,13 +46,13 @@
 		"cssforge.acidcat.json"
 	],
 	"dependencies": {
-		"@acid-cat/core-ts": "0.11.1",
+		"@acid-cat/core-ts": "0.12.0",
 		"chokidar": "4.0.3",
 		"colorjs.io": "0.5.2",
 		"utopia-core": "1.6.0"
 	},
 	"devDependencies": {
-		"@acid-cat/cli": "0.11.1",
+		"@acid-cat/cli": "0.12.0",
 		"@biomejs/biome": "2.4.2",
 		"@types/node": "24.3.0",
 		"mdbox": "0.1.1",

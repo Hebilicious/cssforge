@@ -128,7 +128,6 @@ for (const { label, entry } of cliEntries) {
 					process.execPath,
 					[
 						entry,
-						"tokens",
 						"build",
 						"--config",
 						"./cssforge.config.ts",

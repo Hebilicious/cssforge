@@ -63,7 +63,7 @@ test("cli - each supported mode writes only its declared outputs", async () => {
 			const paths = outputsOf(tempDir);
 
 			const result = runCli(
-				["tokens", "build", "--config", configPath, "--mode", mode, ...outputArgs(paths)],
+				["build", "--config", configPath, "--mode", mode, ...outputArgs(paths)],
 				tempDir,
 			);
 
@@ -92,7 +92,7 @@ test("cli - omitted mode defaults to all", async () => {
 		const paths = outputsOf(tempDir);
 
 		const result = runCli(
-			["tokens", "build", "--config", configPath, ...outputArgs(paths)],
+			["build", "--config", configPath, ...outputArgs(paths)],
 			tempDir,
 		);
 
@@ -117,7 +117,7 @@ test("cli - an unsupported mode fails without touching existing outputs", async 
 		await writeFile(paths.json, "/* pre-existing json */", "utf8");
 
 		const result = runCli(
-			["tokens", "build", "--config", configPath, "--mode", "typo", ...outputArgs(paths)],
+			["build", "--config", configPath, "--mode", "typo", ...outputArgs(paths)],
 			tempDir,
 		);
 

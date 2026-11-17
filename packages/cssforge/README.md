@@ -50,8 +50,8 @@ pnpm add -D @hebilicious/cssforge
 The package installs a `cssforge` executable:
 
 ```bash
-pnpm cssforge tokens build # pnpm
-npx cssforge tokens build # npm
+pnpm cssforge build # pnpm
+npx cssforge build # npm
 ```
 
 The rest of this document writes commands as `cssforge <args>`.
@@ -152,9 +152,9 @@ export default defineConfig({
 2. Run CSS Forge with the CLI :
 
 ```bash
-cssforge tokens build # Basic usage
+cssforge build # Basic usage
 cssforge --help # To see all commands
-cssforge watch tokens.built # To watch for changes
+cssforge --watch # To watch for changes
 ```
 
 3. Use the generated variables in your CSS:
@@ -258,7 +258,7 @@ cssforge({
 real file, or when a bundler has no CSS handling for virtual modules.
 
 The plugin calls the same `generateCSS` implementation as the CLI, so `virtual:cssforge.css` matches
-`cssforge tokens build --mode css` output byte for byte. The served stylesheet is unlayered, and
+`cssforge build --mode css` output byte for byte. The served stylesheet is unlayered, and
 `@import "virtual:cssforge.css" layer(cssforge)` does not work because a CSS import resolves to a
 file; set `write` and import the written file with `layer(cssforge)` to keep the tokens in a layer.
 The CLI stays the integration path for everything else: JSR, Style Dictionary, CI steps, and tools
@@ -316,7 +316,7 @@ A level with one child is collapsed, so `palette: { value: { coral: ... } }` bec
 The TypeScript output is a typed module. Put it in your source tree:
 
 ```bash
-cssforge tokens build --mode ts --ts ./src/design-tokens.ts
+cssforge build --mode ts --ts ./src/design-tokens.ts
 ```
 
 ```typescript
@@ -348,7 +348,7 @@ the compiler options the Quick Start documents.
 The JSON output is the same tree without the `as const` wrapper:
 
 ```bash
-cssforge tokens build --mode json --json ./src/design-tokens.json
+cssforge build --mode json --json ./src/design-tokens.json
 ```
 
 ```javascript
@@ -1984,52 +1984,60 @@ The pow representation of a step adds a `pow` segment, as in
 
 ## CLI Usage
 
-Each command answers with JSON on stdout.
+On a terminal, each command writes text for a person. For a script, in CI or for a coding
+agent, it writes JSON on stdout. `--output json` (`-o json`) or `--output human` chooses.
 
 ```bash
-# Write every output of ./cssforge.config.ts
-cssforge tokens build
+# Write every output of ./cssforge.config.ts. `cssforge` alone does the same.
+cssforge build
 
 # Watch mode: build now, then after each change of the config or a module it imports.
-# Each build is one JSON line.
-cssforge watch tokens.built
+# In JSON, each build is one line.
+cssforge --watch
 
 # Custom paths and output
-cssforge tokens build --config ./foo/bar/custom-path.ts --css ./dist/design-tokens.css --ts ./dist/design-tokens.ts --json ./dist/design-tokens.json --style-dictionary ./dist/design-tokens.sd.json --mode all
+cssforge build --config ./foo/bar/custom-path.ts --css ./dist/design-tokens.css --ts ./dist/design-tokens.ts --json ./dist/design-tokens.json --style-dictionary ./dist/design-tokens.sd.json --mode all
 
 # Resolve the relative paths against another directory
-cssforge tokens build --root ./site
+cssforge build --root ./site
 
 # Style Dictionary JSON with final values (default)
-cssforge tokens build --mode style-dictionary --style-dictionary ./dist/design-tokens.sd.json
+cssforge build --mode style-dictionary --style-dictionary ./dist/design-tokens.sd.json
 
 # Keep CSS variables as values for usage matching
-cssforge tokens build --mode style-dictionary --style-dictionary ./dist/design-tokens.sd.json --style-dictionary-value-mode css-reference
+cssforge build --mode style-dictionary --style-dictionary ./dist/design-tokens.sd.json --style-dictionary-value-mode css-reference
 
 # Generate sRGB formats next to oklch for every palette color, added to the config's formats.
 # Repeat the flag, or give a JSON array.
-cssforge tokens build --color-formats hex --color-formats rgb
+cssforge build --color-formats hex --color-formats rgb
 
 # Print one output without writing a file
-cssforge tokens generate --format css
+cssforge generate --format css
 
 # Validate a config and list its warnings
-cssforge config check
+cssforge check
 
 # Every command, with its flags
 cssforge list
+
+# Force JSON on a terminal
+cssforge build --output json
 ```
 
-| Command | Result on stdout |
+`build`, `generate`, `check` and `--watch` are short names for the commands `tokens build`,
+`tokens generate`, `config check` and `watch tokens.built`. `--watch` comes before the other
+flags: `cssforge --watch --mode css`.
+
+| Command | JSON result on stdout |
 | --- | --- |
-| `tokens build` | `{ files, diagnostics, dependencies }`: the files written, the warnings and the files the config loaded |
-| `tokens generate` | `{ format, content, diagnostics, dependencies }` |
-| `config check` | `{ diagnostics, dependencies }` |
-| `watch tokens.built` | One line per build: `{ data: { ok: true, files, … } }`, or `{ data: { ok: false, failure } }` |
+| `build` | `{ files, diagnostics, dependencies }`: the files written, the warnings and the files the config loaded |
+| `generate` | `{ format, content, diagnostics, dependencies }` |
+| `check` | `{ diagnostics, dependencies }` |
+| `--watch` | One line per build: `{ data: { ok: true, files, … } }`, or `{ data: { ok: false, failure } }` |
 
 Build warnings, such as a fluid type step below the legibility floor, are the `diagnostics` of
 the result. They do not fail the build: the outputs are still written and the exit code stays
-`0`. A failure is a JSON object with a `_tag` and exit code `1`: `ConfigLoadFailed` (the
+`0`. A failure has a `_tag` and exit code `1`: `ConfigLoadFailed` (the
 config is missing or cannot be evaluated), `InvalidConfig` (CSS Forge rejects a value) or
 `WriteFailed`. An invalid flag exits with `3` and a message on stderr. An interrupted watch
 exits with `130`.
@@ -2105,7 +2113,7 @@ you already generate.
 Use `style-dictionary` mode to generate only the token file:
 
 ```bash
-cssforge tokens build --mode style-dictionary --style-dictionary ./.cssforge/tokens.json
+cssforge build --mode style-dictionary --style-dictionary ./.cssforge/tokens.json
 ```
 
 Use `--mode all` to generate it together with the CSS, TypeScript, and regular JSON outputs.
@@ -2180,7 +2188,7 @@ Dictionary will transform the file.
 
 ```bash
 # Keep CSS variables as values for usage matching
-cssforge tokens build --mode style-dictionary --style-dictionary ./.cssforge/tokens.json --style-dictionary-value-mode css-reference
+cssforge build --mode style-dictionary --style-dictionary ./.cssforge/tokens.json --style-dictionary-value-mode css-reference
 ```
 
 ### Programmatic API

@@ -45,7 +45,6 @@ test("cli - runs when the entry point is invoked through a symlink", async () =>
 			process.execPath,
 			[
 				linkedCliPath,
-				"tokens",
 				"build",
 				"--config",
 				configPath,

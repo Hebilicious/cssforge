@@ -35,8 +35,8 @@ Each release publishes the same version to npm and to JSR.
 
 - Install: `npm install --save-dev @hebilicious/cssforge` or `pnpm add -D @hebilicious/cssforge`
 - Import: `import { defineConfig } from "@hebilicious/cssforge";`
-- Run: the package exposes a `cssforge` executable, so run it directly (`cssforge tokens build`,
-  or `npx cssforge tokens build` with npm). `cssforge mcp` serves the same commands to an agent
+- Run: the package exposes a `cssforge` executable, so run it directly (`cssforge build`,
+  or `npx cssforge build` with npm). `cssforge mcp` serves the same commands to an agent
   as MCP tools.
 - JSR: `npx jsr add @hebilicious/cssforge` or `pnpm i jsr:@hebilicious/cssforge`
 - Runtime: Node 24 or newer, which loads `cssforge.config.ts` without a loader or `tsx`

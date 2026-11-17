@@ -33,7 +33,6 @@ const pathsIn = (tempDir: string) => ({
 });
 
 const buildArgs = (paths: ReturnType<typeof pathsIn>, ...extra: string[]) => [
-	"tokens",
 	"build",
 	"--config",
 	paths.config,

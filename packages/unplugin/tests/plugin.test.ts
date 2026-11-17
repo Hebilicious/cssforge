@@ -190,7 +190,7 @@ test("plugin - write option emits the same stylesheet to disk", async () => {
 test("plugin - serves the stylesheet that tokens.build writes for the same config", async () => {
 	await inProject(configSource("0.5rem"), async (dir, configPath) => {
 		const cliOutput = join(dir, "cli-output.css");
-		// tokens.build is the capability that `cssforge tokens build` runs.
+		// tokens.build is the capability that `cssforge build` runs.
 		await using session = createSession(cssforge, {
 			target: "library",
 			context: { cwd: dir },

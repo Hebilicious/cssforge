@@ -192,7 +192,7 @@ export default defineConfig({
 
 		runEntry(
 			cliEntry,
-			["tokens", "build", "--config", configPath, "--mode", "css", "--css", cssOutput],
+			["build", "--config", configPath, "--mode", "css", "--css", cssOutput],
 			workDir,
 		);
 		const css = await readFile(cssOutput, "utf8");
