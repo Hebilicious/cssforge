@@ -148,7 +148,7 @@ console.log(fileURLToPath(import.meta.resolve(${JSON.stringify(`${npmName}/cli`)
 			projectDir,
 		).trim();
 		const help = capture(process.execPath, [cliPath, "--help"], projectDir);
-		if (!help.includes("USAGE")) {
+		if (!help.includes("Usage: cssforge")) {
 			throw new Error(`${specifier}/cli did not print its usage`);
 		}
 
