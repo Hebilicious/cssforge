@@ -5,7 +5,7 @@
  * agent as an MCP server through standard input and output.
  *
  * On a terminal, the output is for a person. For a script, in CI or for a
- * coding agent, it is JSON. `--output json` or `--output human` chooses.
+ * coding agent, it is JSON. `--output agent` or `--output human` chooses.
  *
  * @module
  */
@@ -143,7 +143,7 @@ cliMain(
 		commands: [mcpCommand],
 		output: {
 			default: "auto",
-			flags: [{ names: ["--output", "-o"], values: { human: "human", json: "json" } }],
+			flags: [{ names: ["--output", "-o"], values: { human: "human", agent: "json" } }],
 			formats,
 		},
 	},

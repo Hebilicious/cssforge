@@ -9,7 +9,7 @@ entry point is `packages/cssforge/src/cli.ts`, and the operations are in
 
 On a terminal, each command writes text for a person. For a script, in CI or for a coding agent
 (detected from variables such as `CLAUDECODE` or `CODEX_THREAD_ID`), it writes JSON on stdout.
-`--output json` (`-o json`) or `--output human` chooses. The results below are the JSON form.
+`--output agent` (`-o agent`) writes JSON and `--output human` writes text, wherever it runs. The results below are the JSON form.
 
 `build`, `generate`, `check` and `--watch` are aliases of `tokens build`, `tokens generate`,
 `config check` and `watch tokens.built`. `cssforge` alone, or with only flags, runs `build`.
@@ -36,7 +36,7 @@ On a terminal, each command writes text for a person. For a script, in CI or for
 - `--ts`: ts output path (default `./.cssforge/output.ts`)
 - `--style-dictionary`: Style Dictionary token JSON path (default `./.cssforge/tokens.sd.json`)
 - `--style-dictionary-value-mode`: `resolved | css-reference` (default `resolved`)
-- `--output`, `-o`: `human | json`, the form of the output (any command)
+- `--output`, `-o`: `human | agent`: text for a person, or JSON (any command)
 - `--color-formats`: sRGB formats generated alongside oklch (`hex`, `rgb`), appended to the
   formats `settings.color.formats` declares. Repeat the flag (`--color-formats hex
   --color-formats rgb`) or give a JSON array.

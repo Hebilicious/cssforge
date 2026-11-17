@@ -87,11 +87,22 @@ test("cli - --output human writes a failure with its tag and the same exit code"
 	);
 });
 
+test("cli - --output agent writes JSON", () => {
+	const result = runCli(["check", "--output", "agent"]);
+
+	expect(result.status, result.stderr).toEqual(0);
+	expect(JSON.parse(result.stdout)).toEqual({
+		diagnostics: [],
+		dependencies: [join(projectDir, "cssforge.config.ts")],
+	});
+});
+
 test("cli - an unknown --output value is invalid input", () => {
-	const result = runCli(["build", "--output", "yaml"]);
+	const result = runCli(["build", "--output", "json"]);
 
 	// 3 is the exit code of invalid input in the AcidCat CLI binding.
 	expect(result.status).toEqual(3);
+	expect(result.stderr).toContain("The option --output must be agent or human.");
 	expect(result.stdout).toEqual("");
 	expect(existsSync(join(projectDir, ".cssforge"))).toEqual(false);
 });
