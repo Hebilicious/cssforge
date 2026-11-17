@@ -20,7 +20,7 @@ jobs:
       - name: Setup toolchain
         uses: moonrepo/setup-toolchain@v0
         with:
-          moon-version: "2.0.0"
+          moon-version: "2.6.5"
           auto-install: true
 
       # Runs before `moon ci` so the gate reads the committed metadata and not a
@@ -46,7 +46,9 @@ jobs:
 
   browser-e2e:
     name: Browser e2e (theme scoping)
-    runs-on: ubuntu-latest
+    # ubuntu-latest is Ubuntu 26.04, where Playwright 1.58 cannot install
+    # Chromium. Playwright supports Ubuntu 26.04 from 1.62.
+    runs-on: ubuntu-24.04
 
     # `moon ci` does not select the example suites (`runInCI: false`), so this
     # job is what runs them. Pull requests only: the browser download is not
@@ -61,7 +63,7 @@ jobs:
       - name: Setup toolchain
         uses: moonrepo/setup-toolchain@v0
         with:
-          moon-version: "2.0.0"
+          moon-version: "2.6.5"
           auto-install: true
 
       # `--force` suppresses moon's InstallDependencies action.
@@ -96,7 +98,7 @@ jobs:
       - name: Setup toolchain
         uses: moonrepo/setup-toolchain@v0
         with:
-          moon-version: "2.0.0"
+          moon-version: "2.6.5"
           auto-install: true
 
       # 24.0.0 is the floor declared by the package `engines` field.

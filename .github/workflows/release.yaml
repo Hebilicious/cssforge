@@ -48,7 +48,7 @@ jobs:
       - name: Setup toolchain
         uses: moonrepo/setup-toolchain@v0
         with:
-          moon-version: "2.0.0"
+          moon-version: "2.6.5"
           auto-install: true
 
       - name: Create Release Pull Request
@@ -84,7 +84,7 @@ jobs:
       - name: Setup toolchain
         uses: moonrepo/setup-toolchain@v0
         with:
-          moon-version: "2.0.0"
+          moon-version: "2.6.5"
           auto-install: true
 
       # The gate runs on its own before anything can rewrite release metadata,
@@ -134,7 +134,7 @@ jobs:
       - name: Setup toolchain
         uses: moonrepo/setup-toolchain@v0
         with:
-          moon-version: "2.0.0"
+          moon-version: "2.6.5"
           auto-install: true
 
       - name: Check release metadata consistency
