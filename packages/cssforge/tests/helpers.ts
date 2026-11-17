@@ -2,8 +2,8 @@ import { expect } from "vitest";
 import type { Output } from "../src/lib.ts";
 
 /**
- * Environment for spawning the CLI in tests. citty prints usage through consola,
- * which silences output when `TEST` or `NODE_ENV=test` is set, as vitest does.
+ * Environment for spawning the CLI in tests, without the `TEST` and
+ * `NODE_ENV=test` that vitest sets, as a consumer's shell would run it.
  */
 export const childEnv = { ...process.env };
 delete childEnv.TEST;

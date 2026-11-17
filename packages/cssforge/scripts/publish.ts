@@ -25,7 +25,13 @@ type PackageManifest = {
 };
 
 const packageRoot = resolve(import.meta.dirname, "..");
-const requiredArtifacts = ["dist/mod.js", "dist/mod.d.ts", "dist/cli.js"];
+const requiredArtifacts = [
+	"dist/mod.js",
+	"dist/mod.d.ts",
+	"dist/cli.js",
+	"dist/capabilities.js",
+	"dist/capabilities.d.ts",
+];
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
 	typeof value === "object" && value !== null;

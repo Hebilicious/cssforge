@@ -1,0 +1,854 @@
+{
+  "acidcat": "0.1",
+  "title": "CSS Forge",
+  "description": "Generate CSS custom properties, JSON, TypeScript and Style Dictionary tokens from a CSS Forge configuration.",
+  "targets": {
+    "cli": {
+      "bindings": [
+        "cli"
+      ],
+      "description": "The cssforge command line.",
+      "options": {
+        "cli": {
+          "aliases": {
+            "--watch": {
+              "event": "tokens.built"
+            },
+            "build": {
+              "capability": "tokens.build"
+            },
+            "check": {
+              "capability": "config.check"
+            },
+            "generate": {
+              "capability": "tokens.generate"
+            }
+          },
+          "default": "build"
+        }
+      }
+    },
+    "library": {
+      "bindings": [
+        "typescript"
+      ],
+      "description": "Typed calls from code, through @hebilicious/cssforge/capabilities."
+    },
+    "mcp": {
+      "bindings": [
+        "mcp"
+      ],
+      "description": "The MCP server of `cssforge mcp`, for agents."
+    }
+  },
+  "capabilities": {
+    "config.check": {
+      "description": "Load and validate a CSS Forge configuration, and give its warnings: values that generate, but likely not as intended. Writes no file.",
+      "audience": [
+        "cli",
+        "mcp",
+        "library"
+      ],
+      "input": {
+        "additionalProperties": false,
+        "properties": {
+          "color-formats": {
+            "default": [],
+            "description": "Extra color formats generated beside oklch(), added to the formats that the configuration declares.",
+            "items": {
+              "enum": [
+                "hex",
+                "rgb"
+              ],
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "config": {
+            "default": "./cssforge.config.ts",
+            "description": "The path of the configuration file.",
+            "minLength": 1,
+            "type": "string"
+          },
+          "root": {
+            "description": "The directory that the relative paths of the input resolve against. The default is the working directory of the tools.",
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "output": {
+        "additionalProperties": false,
+        "properties": {
+          "dependencies": {
+            "description": "The absolute paths of the configuration and the local modules it imports.",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "diagnostics": {
+            "items": {
+              "additionalProperties": false,
+              "description": "A warning about a value that generates, but likely not as intended.",
+              "properties": {
+                "code": {
+                  "description": "A stable identifier of the warning.",
+                  "enum": [
+                    "typography-static-scale",
+                    "typography-below-legibility-floor",
+                    "motion-long-duration",
+                    "motion-ease-in"
+                  ],
+                  "type": "string"
+                },
+                "message": {
+                  "description": "What is wrong, and how to fix it.",
+                  "type": "string"
+                },
+                "path": {
+                  "description": "The configuration path of the value.",
+                  "type": "string"
+                },
+                "severity": {
+                  "const": "warning",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "code",
+                "severity",
+                "path",
+                "message"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "diagnostics",
+          "dependencies"
+        ],
+        "type": "object"
+      },
+      "failures": {
+        "ConfigLoadFailed": {
+          "additionalProperties": false,
+          "properties": {
+            "_tag": {
+              "const": "ConfigLoadFailed",
+              "description": "The configuration file could not be found or evaluated, or it has no default export object.",
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "path": {
+              "description": "The file that the failure concerns.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "_tag",
+            "message"
+          ],
+          "type": "object"
+        },
+        "InvalidConfig": {
+          "additionalProperties": false,
+          "properties": {
+            "_tag": {
+              "const": "InvalidConfig",
+              "description": "The configuration loaded, but CSS Forge rejects a value in it.",
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "path": {
+              "description": "The file that the failure concerns.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "_tag",
+            "message"
+          ],
+          "type": "object"
+        }
+      },
+      "readOnly": true
+    },
+    "tokens.build": {
+      "description": "Generate the outputs of a CSS Forge configuration and write them to files: CSS custom properties, JSON, TypeScript and Style Dictionary tokens. Every output is generated before the first file is written, so an invalid configuration leaves the previous files in place. The result lists the files written and the warnings of the configuration.",
+      "audience": [
+        "cli",
+        "mcp",
+        "library"
+      ],
+      "input": {
+        "additionalProperties": false,
+        "properties": {
+          "color-formats": {
+            "default": [],
+            "description": "Extra color formats generated beside oklch(), added to the formats that the configuration declares.",
+            "items": {
+              "enum": [
+                "hex",
+                "rgb"
+              ],
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "config": {
+            "default": "./cssforge.config.ts",
+            "description": "The path of the configuration file.",
+            "minLength": 1,
+            "type": "string"
+          },
+          "css": {
+            "default": "./.cssforge/output.css",
+            "description": "The path of the CSS file.",
+            "minLength": 1,
+            "type": "string"
+          },
+          "json": {
+            "default": "./.cssforge/output.json",
+            "description": "The path of the JSON file.",
+            "minLength": 1,
+            "type": "string"
+          },
+          "mode": {
+            "default": "all",
+            "description": "The output to write: one format, or all of them.",
+            "enum": [
+              "css",
+              "json",
+              "ts",
+              "style-dictionary",
+              "all"
+            ],
+            "type": "string"
+          },
+          "root": {
+            "description": "The directory that the relative paths of the input resolve against. The default is the working directory of the tools.",
+            "minLength": 1,
+            "type": "string"
+          },
+          "style-dictionary": {
+            "default": "./.cssforge/tokens.sd.json",
+            "description": "The path of the Style Dictionary token JSON file.",
+            "minLength": 1,
+            "type": "string"
+          },
+          "style-dictionary-value-mode": {
+            "default": "resolved",
+            "description": "How the Style Dictionary output writes values: css-reference for usage matching, resolved for previews and builds.",
+            "enum": [
+              "css-reference",
+              "resolved"
+            ],
+            "type": "string"
+          },
+          "ts": {
+            "default": "./.cssforge/output.ts",
+            "description": "The path of the TypeScript file.",
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "output": {
+        "additionalProperties": false,
+        "properties": {
+          "dependencies": {
+            "description": "The absolute paths of the configuration and the local modules it imports.",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "diagnostics": {
+            "items": {
+              "additionalProperties": false,
+              "description": "A warning about a value that generates, but likely not as intended.",
+              "properties": {
+                "code": {
+                  "description": "A stable identifier of the warning.",
+                  "enum": [
+                    "typography-static-scale",
+                    "typography-below-legibility-floor",
+                    "motion-long-duration",
+                    "motion-ease-in"
+                  ],
+                  "type": "string"
+                },
+                "message": {
+                  "description": "What is wrong, and how to fix it.",
+                  "type": "string"
+                },
+                "path": {
+                  "description": "The configuration path of the value.",
+                  "type": "string"
+                },
+                "severity": {
+                  "const": "warning",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "code",
+                "severity",
+                "path",
+                "message"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "files": {
+            "description": "The files written.",
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "format": {
+                  "enum": [
+                    "css",
+                    "json",
+                    "ts",
+                    "style-dictionary"
+                  ],
+                  "type": "string"
+                },
+                "path": {
+                  "description": "The absolute path of the file.",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "format",
+                "path"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "files",
+          "diagnostics",
+          "dependencies"
+        ],
+        "type": "object"
+      },
+      "failures": {
+        "ConfigLoadFailed": {
+          "additionalProperties": false,
+          "properties": {
+            "_tag": {
+              "const": "ConfigLoadFailed",
+              "description": "The configuration file could not be found or evaluated, or it has no default export object.",
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "path": {
+              "description": "The file that the failure concerns.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "_tag",
+            "message"
+          ],
+          "type": "object"
+        },
+        "InvalidConfig": {
+          "additionalProperties": false,
+          "properties": {
+            "_tag": {
+              "const": "InvalidConfig",
+              "description": "The configuration loaded, but CSS Forge rejects a value in it.",
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "path": {
+              "description": "The file that the failure concerns.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "_tag",
+            "message"
+          ],
+          "type": "object"
+        },
+        "WriteFailed": {
+          "additionalProperties": false,
+          "properties": {
+            "_tag": {
+              "const": "WriteFailed",
+              "description": "An output file could not be written.",
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "path": {
+              "description": "The file that the failure concerns.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "_tag",
+            "message"
+          ],
+          "type": "object"
+        }
+      }
+    },
+    "tokens.generate": {
+      "description": "Generate one output of a CSS Forge configuration and give it as text, with the warnings of the configuration. Writes no file.",
+      "audience": [
+        "cli",
+        "mcp",
+        "library"
+      ],
+      "input": {
+        "additionalProperties": false,
+        "properties": {
+          "color-formats": {
+            "default": [],
+            "description": "Extra color formats generated beside oklch(), added to the formats that the configuration declares.",
+            "items": {
+              "enum": [
+                "hex",
+                "rgb"
+              ],
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "config": {
+            "default": "./cssforge.config.ts",
+            "description": "The path of the configuration file.",
+            "minLength": 1,
+            "type": "string"
+          },
+          "format": {
+            "default": "css",
+            "description": "The output to generate.",
+            "enum": [
+              "css",
+              "json",
+              "ts",
+              "style-dictionary"
+            ],
+            "type": "string"
+          },
+          "root": {
+            "description": "The directory that the relative paths of the input resolve against. The default is the working directory of the tools.",
+            "minLength": 1,
+            "type": "string"
+          },
+          "style-dictionary-value-mode": {
+            "default": "resolved",
+            "description": "How the Style Dictionary output writes values: css-reference for usage matching, resolved for previews and builds.",
+            "enum": [
+              "css-reference",
+              "resolved"
+            ],
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "output": {
+        "additionalProperties": false,
+        "properties": {
+          "content": {
+            "description": "The generated file content.",
+            "type": "string"
+          },
+          "dependencies": {
+            "description": "The absolute paths of the configuration and the local modules it imports.",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "diagnostics": {
+            "items": {
+              "additionalProperties": false,
+              "description": "A warning about a value that generates, but likely not as intended.",
+              "properties": {
+                "code": {
+                  "description": "A stable identifier of the warning.",
+                  "enum": [
+                    "typography-static-scale",
+                    "typography-below-legibility-floor",
+                    "motion-long-duration",
+                    "motion-ease-in"
+                  ],
+                  "type": "string"
+                },
+                "message": {
+                  "description": "What is wrong, and how to fix it.",
+                  "type": "string"
+                },
+                "path": {
+                  "description": "The configuration path of the value.",
+                  "type": "string"
+                },
+                "severity": {
+                  "const": "warning",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "code",
+                "severity",
+                "path",
+                "message"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "format": {
+            "enum": [
+              "css",
+              "json",
+              "ts",
+              "style-dictionary"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "format",
+          "content",
+          "diagnostics",
+          "dependencies"
+        ],
+        "type": "object"
+      },
+      "failures": {
+        "ConfigLoadFailed": {
+          "additionalProperties": false,
+          "properties": {
+            "_tag": {
+              "const": "ConfigLoadFailed",
+              "description": "The configuration file could not be found or evaluated, or it has no default export object.",
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "path": {
+              "description": "The file that the failure concerns.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "_tag",
+            "message"
+          ],
+          "type": "object"
+        },
+        "InvalidConfig": {
+          "additionalProperties": false,
+          "properties": {
+            "_tag": {
+              "const": "InvalidConfig",
+              "description": "The configuration loaded, but CSS Forge rejects a value in it.",
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "path": {
+              "description": "The file that the failure concerns.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "_tag",
+            "message"
+          ],
+          "type": "object"
+        }
+      },
+      "readOnly": true
+    }
+  },
+  "events": {
+    "tokens.built": {
+      "description": "Build the outputs of a CSS Forge configuration now, then again each time the configuration or a local module that it imports changes. Each occurrence is the result of one build: the files written, or the failure. A failed build does not end the subscription. Ending the subscription stops the watch; files already written stay.",
+      "audience": [
+        "cli",
+        "mcp",
+        "library"
+      ],
+      "input": {
+        "additionalProperties": false,
+        "properties": {
+          "color-formats": {
+            "default": [],
+            "description": "Extra color formats generated beside oklch(), added to the formats that the configuration declares.",
+            "items": {
+              "enum": [
+                "hex",
+                "rgb"
+              ],
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "config": {
+            "default": "./cssforge.config.ts",
+            "description": "The path of the configuration file.",
+            "minLength": 1,
+            "type": "string"
+          },
+          "css": {
+            "default": "./.cssforge/output.css",
+            "description": "The path of the CSS file.",
+            "minLength": 1,
+            "type": "string"
+          },
+          "json": {
+            "default": "./.cssforge/output.json",
+            "description": "The path of the JSON file.",
+            "minLength": 1,
+            "type": "string"
+          },
+          "mode": {
+            "default": "all",
+            "description": "The output to write: one format, or all of them.",
+            "enum": [
+              "css",
+              "json",
+              "ts",
+              "style-dictionary",
+              "all"
+            ],
+            "type": "string"
+          },
+          "root": {
+            "description": "The directory that the relative paths of the input resolve against. The default is the working directory of the tools.",
+            "minLength": 1,
+            "type": "string"
+          },
+          "style-dictionary": {
+            "default": "./.cssforge/tokens.sd.json",
+            "description": "The path of the Style Dictionary token JSON file.",
+            "minLength": 1,
+            "type": "string"
+          },
+          "style-dictionary-value-mode": {
+            "default": "resolved",
+            "description": "How the Style Dictionary output writes values: css-reference for usage matching, resolved for previews and builds.",
+            "enum": [
+              "css-reference",
+              "resolved"
+            ],
+            "type": "string"
+          },
+          "ts": {
+            "default": "./.cssforge/output.ts",
+            "description": "The path of the TypeScript file.",
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "payload": {
+        "oneOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "dependencies": {
+                "description": "The absolute paths of the configuration and the local modules it imports.",
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "diagnostics": {
+                "items": {
+                  "additionalProperties": false,
+                  "description": "A warning about a value that generates, but likely not as intended.",
+                  "properties": {
+                    "code": {
+                      "description": "A stable identifier of the warning.",
+                      "enum": [
+                        "typography-static-scale",
+                        "typography-below-legibility-floor",
+                        "motion-long-duration",
+                        "motion-ease-in"
+                      ],
+                      "type": "string"
+                    },
+                    "message": {
+                      "description": "What is wrong, and how to fix it.",
+                      "type": "string"
+                    },
+                    "path": {
+                      "description": "The configuration path of the value.",
+                      "type": "string"
+                    },
+                    "severity": {
+                      "const": "warning",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "severity",
+                    "path",
+                    "message"
+                  ],
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "files": {
+                "description": "The files written.",
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "format": {
+                      "enum": [
+                        "css",
+                        "json",
+                        "ts",
+                        "style-dictionary"
+                      ],
+                      "type": "string"
+                    },
+                    "path": {
+                      "description": "The absolute path of the file.",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "format",
+                    "path"
+                  ],
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "ok": {
+                "const": true,
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "ok",
+              "files",
+              "diagnostics",
+              "dependencies"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "failure": {
+                "description": "Why the build failed.",
+                "oneOf": [
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "_tag": {
+                        "const": "ConfigLoadFailed",
+                        "description": "The configuration file could not be found or evaluated, or it has no default export object.",
+                        "type": "string"
+                      },
+                      "message": {
+                        "type": "string"
+                      },
+                      "path": {
+                        "description": "The file that the failure concerns.",
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "_tag",
+                      "message"
+                    ],
+                    "type": "object"
+                  },
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "_tag": {
+                        "const": "InvalidConfig",
+                        "description": "The configuration loaded, but CSS Forge rejects a value in it.",
+                        "type": "string"
+                      },
+                      "message": {
+                        "type": "string"
+                      },
+                      "path": {
+                        "description": "The file that the failure concerns.",
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "_tag",
+                      "message"
+                    ],
+                    "type": "object"
+                  },
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "_tag": {
+                        "const": "WriteFailed",
+                        "description": "An output file could not be written.",
+                        "type": "string"
+                      },
+                      "message": {
+                        "type": "string"
+                      },
+                      "path": {
+                        "description": "The file that the failure concerns.",
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "_tag",
+                      "message"
+                    ],
+                    "type": "object"
+                  }
+                ]
+              },
+              "ok": {
+                "const": false,
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "ok",
+              "failure"
+            ],
+            "type": "object"
+          }
+        ],
+        "type": "object"
+      }
+    }
+  }
+}

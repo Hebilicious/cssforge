@@ -1,4 +1,4 @@
-import { spawn, spawnSync } from "node:child_process";
+import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -8,9 +8,8 @@ import { expect, test } from "vitest";
 
 const cliPath = fileURLToPath(new URL("../src/cli.ts", import.meta.url));
 
-// citty prints usage through consola, which silences log output in test
-// environments (`TEST` and `NODE_ENV=test`, both set by vitest). Consumers run
-// the CLI from a shell, so the child process gets a non-test environment.
+// Consumers run the CLI from a shell, so the child process gets a non-test
+// environment (vitest sets `TEST` and `NODE_ENV=test`).
 const childEnv = { ...process.env };
 delete childEnv.TEST;
 delete childEnv.NODE_ENV;
@@ -82,7 +81,7 @@ test("cli - each supported mode writes only its declared outputs", async () => {
 	} finally {
 		await rm(tempDir, { recursive: true, force: true });
 	}
-});
+}, 30_000);
 
 test("cli - omitted mode defaults to all", async () => {
 	const tempDir = await mkdtemp(join(tmpdir(), "cssforge-mode-default-"));
@@ -104,29 +103,6 @@ test("cli - omitted mode defaults to all", async () => {
 	}
 });
 
-test("cli - the -m alias selects the output mode", async () => {
-	const tempDir = await mkdtemp(join(tmpdir(), "cssforge-mode-alias-"));
-
-	try {
-		const configPath = join(tempDir, "cssforge.config.ts");
-		await writeFile(configPath, configSource, "utf8");
-		const paths = outputsOf(tempDir);
-
-		const result = runCli(
-			["--config", configPath, "-m", "json", ...outputArgs(paths)],
-			tempDir,
-		);
-
-		expect(result.status).toEqual(0);
-		expect(result.stderr).toEqual("");
-		expect(existsSync(paths.json)).toEqual(true);
-		expect(existsSync(paths.css)).toEqual(false);
-		expect(existsSync(paths.ts)).toEqual(false);
-	} finally {
-		await rm(tempDir, { recursive: true, force: true });
-	}
-});
-
 test("cli - an unsupported mode fails without touching existing outputs", async () => {
 	const tempDir = await mkdtemp(join(tmpdir(), "cssforge-mode-invalid-"));
 
@@ -142,9 +118,9 @@ test("cli - an unsupported mode fails without touching existing outputs", async 
 			tempDir,
 		);
 
-		expect(result.status).toEqual(1);
-		expect(result.stderr.includes("Invalid output mode")).toEqual(true);
-		expect(result.stderr.includes("typo")).toEqual(true);
+		// 3 is the exit code of invalid input in the AcidCat CLI binding.
+		expect(result.status).toEqual(3);
+		expect(result.stderr.includes("--mode must be one of")).toEqual(true);
 		for (const mode of ["css", "json", "ts", "style-dictionary", "all"]) {
 			expect(result.stderr.includes(mode), `stderr should name ${mode}`).toEqual(true);
 		}
@@ -156,49 +132,3 @@ test("cli - an unsupported mode fails without touching existing outputs", async 
 		await rm(tempDir, { recursive: true, force: true });
 	}
 });
-
-test("cli - watch mode rejects an unsupported mode without writing outputs", async () => {
-	const tempDir = await mkdtemp(join(tmpdir(), "cssforge-mode-watch-invalid-"));
-
-	try {
-		const configPath = join(tempDir, "cssforge.config.ts");
-		await writeFile(configPath, configSource, "utf8");
-		const paths = outputsOf(tempDir);
-
-		const child = spawn(process.execPath, ["--input-type=module", "-e", watchScript], {
-			cwd: tempDir,
-			env: { ...childEnv, CSSFORGE_CONFIG: configPath, CSSFORGE_CSS: paths.css },
-			stdio: ["ignore", "pipe", "pipe"],
-		});
-		let stdout = "";
-		let stderr = "";
-		child.stdout.on("data", (chunk) => (stdout += String(chunk)));
-		child.stderr.on("data", (chunk) => (stderr += String(chunk)));
-
-		const exitCode = await new Promise<number | null>((resolve) => {
-			child.on("close", resolve);
-		});
-
-		expect(exitCode, `watch() rejected: ${stderr}`).toEqual(0);
-		expect(stderr.includes("Invalid output mode")).toEqual(true);
-		expect(stdout.includes("Watching")).toEqual(false);
-		expect(existsSync(paths.css)).toEqual(false);
-	} finally {
-		await rm(tempDir, { recursive: true, force: true });
-	}
-});
-
-const watchScript = `
-const { watch } = await import(${JSON.stringify(new URL("../src/cli.ts", import.meta.url).href)});
-try {
-	await watch({
-		config: process.env.CSSFORGE_CONFIG,
-		mode: "typo",
-		cssOutput: process.env.CSSFORGE_CSS,
-		jsonOutput: "output.json",
-		tsOutput: "output.ts",
-	});
-} catch (error) {
-	console.error(String(error));
-}
-`;

@@ -1,6 +1,6 @@
 import { spawnSync } from "node:child_process";
 import { cpSync, existsSync, readFileSync, writeFileSync } from "node:fs";
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import process from "node:process";
@@ -10,8 +10,8 @@ import { expect, test } from "vitest";
 const packageRoot = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const workspaceRoot = resolve(packageRoot, "../..");
 
-// citty prints usage through consola, which silences log output when `TEST` or
-// `NODE_ENV=test` is set, as vitest does. Real consumers run from a shell.
+// Real consumers run from a shell, without the `TEST` and `NODE_ENV=test` that
+// vitest sets.
 const childEnv: NodeJS.ProcessEnv = { ...process.env };
 delete childEnv.TEST;
 delete childEnv.NODE_ENV;
@@ -138,17 +138,14 @@ const buildCli = async (): Promise<{ cli: string; cleanUp: () => Promise<void> }
 
 test("cli - reports the manifest version verbatim, with and without CI", async () => {
 	const manifestVersion = readVersion(join(packageRoot, "package.json"));
-	const workDir = await mkdtemp(join(tmpdir(), "cssforge-built-cli-"));
 	const { cli, cleanUp } = await buildCli();
 
 	try {
 		for (const [description, env] of [
 			["a plain environment", childEnv],
-			// citty prints its version through consola, which decorates log
-			// output once `CI` is set. Scripts and CI parse `--version`, so the
-			// output must not depend on the environment.
+			// Scripts and CI parse `--version`, so the output must not depend on
+			// the environment.
 			["CI", { ...childEnv, CI: "1" }],
-			// The same reporter change is triggered by other CI markers.
 			["CI and GITHUB_ACTIONS", { ...childEnv, CI: "1", GITHUB_ACTIONS: "true" }],
 		] as const) {
 			const result = run(process.execPath, [cli, "--version"], packageRoot, env);
@@ -159,48 +156,15 @@ test("cli - reports the manifest version verbatim, with and without CI", async (
 			).toEqual(manifestVersion);
 		}
 
-		// citty prints `meta.version` through its own usage output, where a
-		// hard-coded metadata version would surface even though `--version` is
-		// answered by the CLI itself.
+		// The help names the version too, so a hard-coded version would surface
+		// there even though `--version` is answered separately.
 		const help = run(process.execPath, [cli, "--help"], packageRoot, childEnv);
 		assertSucceeded(help, "cssforge --help");
 		expect(
 			help.stdout.includes(manifestVersion),
 			`cssforge --help must print the manifest version, got:\n${help.stdout}`,
 		).toBeTruthy();
-
-		// A version flag next to other arguments stays a normal command, which
-		// is how citty resolves its own version flag.
-		const projectDir = join(workDir, "project");
-		await mkdir(projectDir, { recursive: true });
-		const configPath = join(projectDir, "cssforge.config.ts");
-		const cssOutput = join(projectDir, "output.css");
-		await writeFile(
-			configPath,
-			`export default {
-	spacing: { custom: { size: { value: { 2: "0.5rem" } } } },
-};
-`,
-			"utf8",
-		);
-
-		const combined = run(
-			process.execPath,
-			[cli, "--version", "--config", configPath, "--mode", "css", "--css", cssOutput],
-			projectDir,
-			{ ...childEnv, CI: "1" },
-		);
-		assertSucceeded(combined, "cssforge --version with other arguments");
-		expect(
-			!combined.stdout.split("\n").some((line) => line.trim() === manifestVersion),
-			"a version flag combined with other arguments must not print the version",
-		).toBeTruthy();
-		expect(
-			(await readFile(cssOutput, "utf8")).includes("--spacing-size-2"),
-			"a version flag combined with other arguments must still run the command",
-		).toBeTruthy();
 	} finally {
-		await rm(workDir, { recursive: true, force: true });
 		await cleanUp();
 	}
 }, 180_000);

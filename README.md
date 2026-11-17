@@ -1984,15 +1984,22 @@ The pow representation of a step adds a `pow` segment, as in
 
 ## CLI Usage
 
+On a terminal, each command writes text for a person. For a script, in CI or for a coding
+agent, it writes JSON on stdout. `--agent` writes JSON and `--human` writes text, wherever it runs (also `--output agent|human`, or `-o`).
+
 ```bash
-# Basic usage
+# Basic usage: write every output of ./cssforge.config.ts
 cssforge
 
-# Watch mode
+# Watch mode: build now, then after each change of the config or a module it imports.
+# In JSON, each build is one line.
 cssforge --watch
 
 # Custom paths and output
 cssforge --config ./foo/bar/custom-path.ts --css ./dist/design-tokens.css --ts ./dist/design-tokens.ts --json ./dist/design-tokens.json --style-dictionary ./dist/design-tokens.sd.json --mode all
+
+# Resolve the relative paths against another directory
+cssforge --root ./site
 
 # Style Dictionary JSON with final values (default)
 cssforge --mode style-dictionary --style-dictionary ./dist/design-tokens.sd.json
@@ -2000,13 +2007,59 @@ cssforge --mode style-dictionary --style-dictionary ./dist/design-tokens.sd.json
 # Keep CSS variables as values for usage matching
 cssforge --mode style-dictionary --style-dictionary ./dist/design-tokens.sd.json --style-dictionary-value-mode css-reference
 
-# Generate sRGB formats next to oklch for every palette color, added to the config's formats
-cssforge --color-formats hex,rgb
+# Generate sRGB formats next to oklch for every palette color, added to the config's formats.
+# Repeat the flag, or give a JSON array.
+cssforge --color-formats hex --color-formats rgb
+
+# Print one output without writing a file
+cssforge generate --format css
+
+# Validate a config and list its warnings
+cssforge check
+
+# Every command, with its flags
+cssforge list
+
+# Force JSON on a terminal
+cssforge build --agent
 ```
 
-Build warnings, such as a fluid type step below the legibility floor, are printed to stderr
-before the outputs are written, one line each as `cssforge: warning: <message>`. They do not
-fail the build: the outputs are still written and the exit code stays `0`.
+`build`, `generate`, `check` and `--watch` are short names for the commands `tokens build`,
+`tokens generate`, `config check` and `watch tokens.built`. `--watch` comes before the other
+flags: `cssforge --watch --mode css`.
+
+| Command | JSON result on stdout |
+| --- | --- |
+| `build` | `{ files, diagnostics, dependencies }`: the files written, the warnings and the files the config loaded |
+| `generate` | `{ format, content, diagnostics, dependencies }` |
+| `check` | `{ diagnostics, dependencies }` |
+| `--watch` | One line per build: `{ data: { ok: true, files, … } }`, or `{ data: { ok: false, failure } }` |
+
+Build warnings, such as a fluid type step below the legibility floor, are the `diagnostics` of
+the result. They do not fail the build: the outputs are still written and the exit code stays
+`0`. A failure has a `_tag` and exit code `1`: `ConfigLoadFailed` (the
+config is missing or cannot be evaluated), `InvalidConfig` (CSS Forge rejects a value) or
+`WriteFailed`. An invalid flag exits with `3` and a message on stderr. An interrupted watch
+exits with `130`.
+
+Code can make the same calls with types, through `@hebilicious/cssforge/capabilities`:
+
+```typescript
+import {
+  createSession,
+  cssforge,
+  tokensBuild,
+  toJsonSchema,
+} from "@hebilicious/cssforge/capabilities";
+
+await using session = createSession(cssforge, {
+  target: "library",
+  context: { cwd: process.cwd() },
+  toJsonSchema,
+});
+const result = await session.call(tokensBuild, { mode: "css" });
+if (!result.ok) console.error(result.error._tag, result.error.message);
+```
 
 ## Programmatic Usage
 
@@ -2167,9 +2220,19 @@ lets Musea attribute a `var(--token)` written in an art file back to its token.
 
 ## Agentic usage
 
-CSSForge is intentionally designed to be extremely simple and integrate well with various
-agents, such as Github Copilot, Gemini, Claude Code ... While there's no documentation
-yet, you can add the README file to the agent context directly.
+Agents can run the `cssforge` CLI like any other command: an agent gets JSON (`--agent` forces it), and
+`cssforge list` describes every command and its flags.
+
+`cssforge mcp` serves the same commands as MCP tools, through standard input and output:
+`tokens.build`, `tokens.generate` and `config.check`, and the event `tokens.built`. Paths
+resolve against the directory where the agent starts the server, or against the `root` of a
+call. To add it to Claude Code:
+
+```bash
+claude mcp add cssforge -- npx cssforge mcp
+```
+
+You can also add the README file to the agent context directly.
 
 For most agents, this syntax works
 `@https://raw.githubusercontent.com/Hebilicious/cssforge/refs/heads/main/README.md`.

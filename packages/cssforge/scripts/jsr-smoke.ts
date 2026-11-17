@@ -144,19 +144,27 @@ const main = async (): Promise<void> => {
 
 	check(typeof jsr.exports["."] === "string", "jsr.json must export a module entry");
 	check(typeof jsr.exports["./cli"] === "string", "jsr.json must export a cli entry");
+	check(
+		typeof jsr.exports["./capabilities"] === "string",
+		"jsr.json must export a capabilities entry",
+	);
 
 	const moduleEntry = resolve(packageRoot, jsr.exports["."] ?? "");
 	const cliEntry = resolve(packageRoot, jsr.exports["./cli"] ?? "");
 	check(existsSync(moduleEntry), `the JSR module entry ${jsr.exports["."]} is missing`);
 	check(existsSync(cliEntry), `the JSR CLI entry ${jsr.exports["./cli"]} is missing`);
+	const capabilitiesEntry = resolve(packageRoot, jsr.exports["./capabilities"] ?? "");
+	check(
+		existsSync(capabilitiesEntry),
+		`the JSR capabilities entry ${jsr.exports["./capabilities"]} is missing`,
+	);
 	check(
 		isIncluded(jsr.exports["."] ?? ""),
 		`${jsr.exports["."]} is not covered by jsr.json publish.include`,
 	);
-	check(
-		isIncluded(jsr.exports["./cli"] ?? ""),
-		`${jsr.exports["./cli"]} is not covered by jsr.json publish.include`,
-	);
+	for (const entry of [jsr.exports["./cli"], jsr.exports["./capabilities"]]) {
+		check(isIncluded(entry ?? ""), `${entry} is not covered by jsr.json publish.include`);
+	}
 
 	for (const [name, version] of Object.entries(manifest.dependencies)) {
 		const expected = `npm:${name}@${version}`;
@@ -219,12 +227,25 @@ const css = mod.generateCSS(
 if (!css.includes("--spacing-size-2")) {
 	throw new Error("the JSR module entry did not generate the expected CSS");
 }
+
+// The library target generates from the config of the working directory.
+const capabilities = await import(${JSON.stringify(pathToFileURL(capabilitiesEntry).href)});
+await using session = capabilities.createSession(capabilities.cssforge, {
+	target: "library",
+	context: { cwd: process.cwd() },
+	toJsonSchema: capabilities.toJsonSchema,
+});
+const generated = await session.call(capabilities.tokensGenerate, { format: "css" });
+
+if (!generated.ok || !generated.value.content.includes("--spacing-size-2")) {
+	throw new Error(\`the JSR capabilities entry did not generate: \${JSON.stringify(generated)}\`);
+}
 `,
 			"utf8",
 		);
 		runEntry(moduleCheck, [], workDir);
 		console.log(
-			`jsr smoke test: ${jsr.name}@${jsr.version} entries ${jsr.exports["."]} and ${jsr.exports["./cli"]} verified with node`,
+			`jsr smoke test: ${jsr.name}@${jsr.version} entries ${jsr.exports["."]}, ${jsr.exports["./cli"]} and ${jsr.exports["./capabilities"]} verified with node`,
 		);
 	} finally {
 		await rm(workDir, { recursive: true, force: true });

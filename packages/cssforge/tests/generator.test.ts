@@ -5,7 +5,6 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { expect, test } from "vitest";
-import { build } from "../src/cli.ts";
 import { defineConfig, generateStyleDictionaryJSON } from "../src/mod.ts";
 
 test("generateStyleDictionaryJSON - preserves references and resolved values", () => {
@@ -627,9 +626,9 @@ test("cli - style-dictionary and all modes write their declared outputs", async 
 
 		expect(result.status).toEqual(0);
 		expect(result.stderr).toEqual("");
-		expect(result.stdout.includes("Generated Style Dictionary JSON written")).toEqual(
-			true,
-		);
+		expect(JSON.parse(result.stdout).files).toEqual([
+			{ format: "style-dictionary", path: styleDictionaryOutput },
+		]);
 		expect(output.spacing.custom.size["2"].value).toEqual("0.5rem");
 		expect(existsSync(cssOutput)).toEqual(false);
 		expect(existsSync(jsonOutput)).toEqual(false);
@@ -712,37 +711,6 @@ test("cli - style-dictionary mode can emit CSS variables for usage matching", as
 		expect(result.status).toEqual(0);
 		expect(result.stderr).toEqual("");
 		expect(output.spacing.custom.size["2"].value).toEqual("var(--spacing-size-2)");
-	} finally {
-		await rm(tempDir, { recursive: true, force: true });
-	}
-});
-
-test("build - legacy output modes do not require a Style Dictionary path", async () => {
-	const tempDir = await mkdtemp(join(tmpdir(), "cssforge-legacy-build-"));
-
-	try {
-		const configPath = join(tempDir, "cssforge.config.ts");
-		const cssOutput = join(tempDir, "output.css");
-		await writeFile(
-			configPath,
-			`export default {
-				spacing: {
-					custom: { size: { value: { 2: "8px" } } },
-				},
-			};`,
-			"utf8",
-		);
-
-		const result = await build({
-			config: configPath,
-			mode: "css",
-			cssOutput,
-			jsonOutput: join(tempDir, "output.json"),
-			tsOutput: join(tempDir, "output.ts"),
-		});
-
-		expect(result.success).toEqual(true);
-		expect(existsSync(cssOutput)).toEqual(true);
 	} finally {
 		await rm(tempDir, { recursive: true, force: true });
 	}

@@ -3,7 +3,12 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { generateCSS, InvalidNameError } from "@hebilicious/cssforge";
-import { build } from "@hebilicious/cssforge/cli";
+import {
+	createSession,
+	cssforge,
+	toJsonSchema,
+	tokensBuild,
+} from "@hebilicious/cssforge/capabilities";
 import type { UnpluginContextMeta } from "unplugin";
 import { expect, test } from "vitest";
 import type { CssForgeOptions } from "../src/index.ts";
@@ -182,17 +187,21 @@ test("plugin - write option emits the same stylesheet to disk", async () => {
 	});
 });
 
-test("plugin - serves the stylesheet the CLI writes for the same config", async () => {
+test("plugin - serves the stylesheet that tokens.build writes for the same config", async () => {
 	await inProject(configSource("0.5rem"), async (dir, configPath) => {
 		const cliOutput = join(dir, "cli-output.css");
-		const built = await build({
+		// tokens.build is the capability that `cssforge build` runs.
+		await using session = createSession(cssforge, {
+			target: "library",
+			context: { cwd: dir },
+			toJsonSchema,
+		});
+		const built = await session.call(tokensBuild, {
 			config: configPath,
 			mode: "css",
-			cssOutput: cliOutput,
-			jsonOutput: join(dir, "unused.json"),
-			tsOutput: join(dir, "unused.ts"),
+			css: cliOutput,
 		});
-		expect(built.success).toBe(true);
+		expect(built.ok, JSON.stringify(built)).toBe(true);
 
 		const plugin = createPlugin({ config: configPath });
 		const served = await loadStylesheet(plugin, createBuildContext());

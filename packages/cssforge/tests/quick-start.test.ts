@@ -4,9 +4,8 @@ import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import type { ArgsDef } from "citty";
 import { expect, test } from "vitest";
-import mainCommand from "../src/cli.ts";
+import { defaultOutputPaths } from "../src/forge.ts";
 
 // The fixtures are excerpts of README.md that must match it byte for byte, so
 // they keep a `.txt` suffix: the TypeScript one imports the generated
@@ -30,8 +29,7 @@ const readmeSection = (readme: string, title: string): string => {
 	return readme.slice(start, end === -1 ? readme.length : end);
 };
 
-// citty prints usage through consola, which is silenced when `TEST` or
-// `NODE_ENV=test` is set by vitest. A shell consumer has neither.
+// Consumers run the CLI from a shell, without the variables vitest sets.
 const childEnv = { ...process.env };
 delete childEnv.TEST;
 delete childEnv.NODE_ENV;
@@ -39,21 +37,11 @@ delete childEnv.NODE_ENV;
 const executableName = (name: string): string =>
 	process.platform === "win32" ? `${name}.cmd` : name;
 
-/** Reads the output paths the CLI documents as its defaults. */
-const documentedOutputPaths = (): { css: string; ts: string } => {
-	// citty types `args` as resolvable; this command declares a plain object.
-	const args = (mainCommand.args ?? {}) as ArgsDef;
-	const defaultOf = (name: string): string => {
-		const value = args[name]?.default;
-		expect(typeof value, `the CLI must declare a default for --${name}`).toEqual(
-			"string",
-		);
-
-		return value as string;
-	};
-
-	return { css: defaultOf("css"), ts: defaultOf("ts") };
-};
+/** The output paths the CLI documents as its defaults. */
+const documentedOutputPaths = (): { css: string; ts: string } => ({
+	css: defaultOutputPaths.css,
+	ts: defaultOutputPaths.ts,
+});
 
 test("quick start - documented usage matches generated tokens and output paths", async () => {
 	const readme = await readFile(
@@ -90,7 +78,7 @@ test("quick start - documented usage matches generated tokens and output paths",
 			"utf8",
 		);
 
-		// The documented flow: `cssforge` in the project root, no arguments.
+		// The documented flow: `cssforge` in the project root.
 		const generate = spawnSync(
 			process.execPath,
 			[fileURLToPath(new URL("../src/cli.ts", import.meta.url))],

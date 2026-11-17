@@ -39,7 +39,7 @@ test("cli - runs when the entry point is invoked through a symlink", async () =>
 		});
 
 		expect(help.status).toEqual(0);
-		expect(help.stdout.includes("USAGE")).toEqual(true);
+		expect(help.stdout.includes("Usage: cssforge <command>")).toEqual(true);
 
 		const generate = spawnSync(
 			process.execPath,

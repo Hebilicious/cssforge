@@ -119,8 +119,7 @@ const parsePackResult = (output: string, description: string): PackResult => {
 
 /**
  * npm needs `--` to separate its flags from the script's; pnpm forwards that
- * `--` to the binary, where citty treats it as end-of-options and drops every
- * flag after it.
+ * `--` to the binary, so it is left out for pnpm.
  */
 const scriptInvocation = (manager: "npm" | "pnpm", cliArgs: string[]): string[] =>
 	manager === "npm"
@@ -151,8 +150,8 @@ const run = (
 };
 
 /**
- * `--version` is citty's version flag (it only answers a bare `--version`), so
- * the reported string is the CLI metadata of the installed artifact. A package
+ * The CLI answers `--version` only when it is the only argument, so the
+ * reported string is the CLI metadata of the installed artifact. A package
  * manager prints its own banner around a script run and a pnpm shim can
  * interleave the CLI's own log output, so the version is located in the output
  * rather than assumed to be the whole of it.
@@ -181,10 +180,11 @@ const assertReportsVersion = (
 };
 
 /**
- * `pnpm run <script> -- --version` cannot be asserted: pnpm 10 forwards the
- * separator, so the CLI receives `-- --version`, and citty then runs a normal
- * build instead of printing its version. That is pnpm's behaviour, not the
- * metadata's, so this only records which output was observed.
+ * `pnpm run <script> -- --version` forwards the separator, so the CLI receives
+ * `-- --version` and drops the `--`. `run` fails when the command fails, so a
+ * CLI that rejects the separator fails the smoke test. Whether the version is
+ * printed depends on how the package manager forwards arguments, so this only
+ * records it.
  */
 const observeScriptVersion = (consumer: Consumer): string => {
 	const output = run(consumer.manager, ["run", "cssforge", "--", "--version"], {
@@ -275,10 +275,19 @@ if (!css.includes("--spacing-size-2")) {
 	throw new Error(\`generateCSS did not produce the expected variable: \${css}\`);
 }
 
-const cli = await import("${packageName}/cli");
+// The library target: a typed call into the same capability as the CLI.
+const { createSession, cssforge, tokensGenerate, toJsonSchema } = await import(
+	"${packageName}/capabilities"
+);
+await using session = createSession(cssforge, {
+	target: "library",
+	context: { cwd: process.cwd() },
+	toJsonSchema,
+});
+const generated = await session.call(tokensGenerate, { format: "css" });
 
-if (typeof cli.build !== "function") {
-	throw new Error("the ./cli export does not expose build()");
+if (!generated.ok || !generated.value.content.includes("--spacing-size-2")) {
+	throw new Error(\`tokens.generate did not produce the expected variable: \${JSON.stringify(generated)}\`);
 }
 
 console.log("programmatic usage ok");
@@ -290,14 +299,14 @@ const typeCheckSource = `import {
 	generateStyleDictionaryJSON,
 	type CSSForgeConfig,
 } from "${packageName}";
-import type { BuildOptions } from "${packageName}/cli";
+import type { BuildInput } from "${packageName}/capabilities";
 
 const config: Partial<CSSForgeConfig> = defineConfig({
 	spacing: { custom: { size: { value: { 2: "0.5rem" } } } },
 });
 const css: string = generateCSS(config);
 const tokens: string = generateStyleDictionaryJSON(config);
-const options: Partial<BuildOptions> = { mode: "css" };
+const options: Partial<BuildInput> = { mode: "css" };
 
 export { css, tokens, options };
 `;
@@ -330,6 +339,8 @@ const verifyTarball = (manifest: PackageManifest, packed: PackResult): void => {
 		"dist/mod.d.ts",
 		"dist/cli.js",
 		"dist/cli.d.ts",
+		"dist/capabilities.js",
+		"dist/capabilities.d.ts",
 	]) {
 		check(files.has(required), `the tarball is missing ${required}`);
 	}
@@ -380,8 +391,11 @@ const verifyQuickStart = async (consumer: Consumer): Promise<void> => {
 		"junction",
 	);
 
-	// The documented command with no arguments.
-	run(manager, scriptInvocation(manager, []), { cwd: quickStartDir, env });
+	// The documented command.
+	run(manager, scriptInvocation(manager, []), {
+		cwd: quickStartDir,
+		env,
+	});
 
 	const outputDir = join(quickStartDir, ".cssforge");
 	const css = readFileSync(join(outputDir, "output.css"), "utf8");
@@ -608,7 +622,7 @@ const verifyConsumer = async (consumer: Consumer): Promise<void> => {
 		env,
 	});
 	check(
-		help.includes("USAGE") && help.includes("cssforge"),
+		help.includes("Usage: cssforge"),
 		`${manager} ${helpArgs.join(" ")} did not print the CLI usage`,
 	);
 
@@ -680,8 +694,7 @@ const main = async (): Promise<void> => {
 	const node = nodeArgument ?? process.execPath;
 	const manifest = readManifest(join(packageRoot, "package.json"));
 	const env: NodeJS.ProcessEnv = { ...process.env };
-	// citty prints usage through consola, which silences log output in test
-	// environments. Consumers do not run the CLI with these variables set.
+	// Consumers do not run the CLI with the variables that test runners set.
 	delete env.TEST;
 	delete env.NODE_ENV;
 	// Consumer commands run with the same Node (and its npm) as this process, or

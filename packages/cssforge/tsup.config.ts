@@ -4,6 +4,7 @@ export default defineConfig({
 	entry: {
 		mod: "src/mod.ts",
 		cli: "src/cli.ts",
+		capabilities: "src/capabilities.ts",
 	},
 	format: ["esm"],
 	dts: true,

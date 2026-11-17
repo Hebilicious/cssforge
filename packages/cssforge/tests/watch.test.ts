@@ -1,175 +1,79 @@
 import { spawn } from "node:child_process";
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { createInterface } from "node:readline";
+import { fileURLToPath } from "node:url";
 import { expect, test } from "vitest";
 import { childEnv } from "./helpers.ts";
 
-const configSource = `import { size } from "./tokens.ts";
+const cliPath = fileURLToPath(new URL("../src/cli.ts", import.meta.url));
+
+const configWith = (sizes: string) => `import { size } from "./tokens.ts";
 
 export default {
-	spacing: {
-		custom: {
-			size: {
-				value: {
-					2: size,
-				},
-			},
-		},
-	},
+	spacing: { custom: { size: { value: { 2: size, ${sizes} } } } },
 };
 `;
 
-const cliEntry = new URL("../src/cli.ts", import.meta.url).href;
+interface Built {
+	ok: boolean;
+	failure?: { _tag: string };
+}
 
-/**
- * Starts `watch()`, rewrites the token module the config imports and then the
- * config itself, and prints the generated CSS after each rebuild.
- */
-const watchScript = `
-const { readFile, writeFile } = await import("node:fs/promises");
-const { watch } = await import(${JSON.stringify(cliEntry)});
+test("cli - watch rebuilds when a token module or the config changes, and after a failure", async () => {
+	const dir = await mkdtemp(join(tmpdir(), "cssforge-watch-"));
+	const config = join(dir, "cssforge.config.ts");
+	const tokens = join(dir, "tokens.ts");
+	const css = join(dir, "output.css");
+	await writeFile(config, configWith(""), "utf8");
+	await writeFile(tokens, `export const size = "0.5rem";\n`, "utf8");
 
-let rebuilds = 0;
-
-await watch({
-	config: process.env.CSSFORGE_CONFIG,
-	mode: "css",
-	cssOutput: process.env.CSSFORGE_CSS,
-	jsonOutput: process.env.CSSFORGE_JSON,
-	tsOutput: process.env.CSSFORGE_TS,
-	onRebuild: () => {
-		rebuilds += 1;
-	},
-});
-
-const waitFor = async (needle) => {
-	for (let attempt = 0; attempt < 200; attempt += 1) {
-		await new Promise((resolve) => setTimeout(resolve, 100));
-		try {
-			const css = await readFile(process.env.CSSFORGE_CSS, "utf8");
-			if (css.includes(needle)) return css;
-		} catch {
-			continue;
-		}
-	}
-	return "";
-};
-
-const waitForRebuild = async (count) => {
-	for (let attempt = 0; attempt < 200; attempt += 1) {
-		if (rebuilds >= count) return true;
-		await new Promise((resolve) => setTimeout(resolve, 100));
-	}
-	return false;
-};
-
-await writeFile(process.env.CSSFORGE_TOKENS, 'export const size = "2rem";\\n', "utf8");
-const afterTokenChange = await waitFor("--spacing-size-2: 2rem");
-
-await writeFile(process.env.CSSFORGE_CONFIG, ${JSON.stringify(`import { size } from "./tokens.ts";
-
-export default {
-	spacing: {
-		custom: {
-			size: {
-				value: {
-					2: size,
-					4: "1rem",
-				},
-			},
-		},
-	},
-};
-`)}, "utf8");
-const afterConfigChange = await waitFor("--spacing-size-4: 1rem");
-
-// A config that fails to load must not stop the watcher: wait for the failing
-// rebuild, repair the config, and expect another rebuild.
-const rebuildsBeforeFailure = rebuilds;
-await writeFile(process.env.CSSFORGE_CONFIG, 'export default { spacing: { custom: { size: { value: { 2: "9rem" } } } }', "utf8");
-const failureSeen = await waitForRebuild(rebuildsBeforeFailure + 1);
-await writeFile(process.env.CSSFORGE_CONFIG, 'export default { spacing: { custom: { size: { value: { 2: "9rem" } } } } };', "utf8");
-const afterRecovery = await waitFor("--spacing-size-2: 9rem");
-
-console.log(JSON.stringify({ afterTokenChange, afterConfigChange, failureSeen, afterRecovery }));
-process.exit(0);
-`;
-
-test("cli - watch mode regenerates the output when a token module or the config changes", async () => {
-	const dir = await mkdtemp(join(tmpdir(), "cssforge-watch-deps-"));
+	const child = spawn(
+		process.execPath,
+		[cliPath, "watch", "tokens.built", "--mode", "css", "--css", css],
+		{ cwd: dir, env: childEnv },
+	);
+	let stderr = "";
+	child.stderr.on("data", (chunk) => {
+		stderr += String(chunk);
+	});
+	const lines = createInterface({ input: child.stdout })[Symbol.asyncIterator]();
+	/** The next build: one JSON line on standard output. */
+	const nextBuild = async (): Promise<Built> => {
+		const { value, done } = await lines.next();
+		if (done) throw new Error(`The watch ended. stderr:\n${stderr}`);
+		return (JSON.parse(value) as { data: Built }).data;
+	};
+	const cssNow = () => readFile(css, "utf8");
 
 	try {
-		const config = join(dir, "cssforge.config.ts");
-		const tokens = join(dir, "tokens.ts");
-		const css = join(dir, "output.css");
-		await writeFile(config, configSource, "utf8");
-		await writeFile(tokens, `export const size = "0.5rem";\n`, "utf8");
+		expect((await nextBuild()).ok).toEqual(true);
+		expect(await cssNow()).toContain("--spacing-size-2: 0.5rem;");
 
-		const child = spawn(process.execPath, ["--input-type=module", "-e", watchScript], {
-			cwd: dir,
-			env: {
-				...childEnv,
-				CSSFORGE_CONFIG: config,
-				CSSFORGE_TOKENS: tokens,
-				CSSFORGE_CSS: css,
-				CSSFORGE_JSON: join(dir, "output.json"),
-				CSSFORGE_TS: join(dir, "output.ts"),
-			},
-			stdio: ["ignore", "pipe", "pipe"],
-		});
+		// A token module that the config imports is watched too.
+		await writeFile(tokens, `export const size = "2rem";\n`, "utf8");
+		expect((await nextBuild()).ok).toEqual(true);
+		expect(await cssNow()).toContain("--spacing-size-2: 2rem;");
 
-		let stdout = "";
-		let stderr = "";
-		child.stdout.on("data", (chunk) => (stdout += String(chunk)));
-		child.stderr.on("data", (chunk) => (stderr += String(chunk)));
+		await writeFile(config, configWith(`4: "1rem"`), "utf8");
+		expect((await nextBuild()).ok).toEqual(true);
+		expect(await cssNow()).toContain("--spacing-size-4: 1rem;");
 
-		const exitCode = await new Promise<number | null>((resolve) => {
-			child.on("close", resolve);
-		});
+		// A config that does not load is a failed build, and the watch goes on.
+		await writeFile(config, "export default { spacing: {", "utf8");
+		expect((await nextBuild()).failure?._tag).toEqual("ConfigLoadFailed");
 
-		expect(exitCode, `watch() failed: ${stderr}`).toEqual(0);
+		await writeFile(config, configWith(`4: "9rem"`), "utf8");
+		expect((await nextBuild()).ok).toEqual(true);
+		expect(await cssNow()).toContain("--spacing-size-4: 9rem;");
 
-		const output = stdout
-			.split("\n")
-			.map((line) => line.trim())
-			.filter(Boolean)
-			.pop();
-
-		if (output === undefined) {
-			throw new Error(`the watch scenario printed no result: ${stdout}`);
-		}
-
-		const { afterTokenChange, afterConfigChange, failureSeen, afterRecovery } =
-			JSON.parse(output) as {
-				afterTokenChange: string;
-				afterConfigChange: string;
-				failureSeen: boolean;
-				afterRecovery: string;
-			};
-
-		expect(
-			afterTokenChange.includes("--spacing-size-2: 2rem"),
-			`the rebuild must use the new token value: ${afterTokenChange}`,
-		).toBeTruthy();
-		expect(
-			!afterTokenChange.includes("0.5rem"),
-			`the rebuild must not keep the old token value: ${afterTokenChange}`,
-		).toBeTruthy();
-		expect(
-			afterConfigChange.includes("--spacing-size-4: 1rem"),
-			`a second config change must regenerate too: ${afterConfigChange}`,
-		).toBeTruthy();
-		expect(
-			afterConfigChange.includes("--spacing-size-2: 2rem"),
-			`the second rebuild must keep the token module value: ${afterConfigChange}`,
-		).toBeTruthy();
-		expect(failureSeen, "the invalid config must trigger a rebuild").toBeTruthy();
-		expect(
-			afterRecovery.includes("--spacing-size-2: 9rem"),
-			`a failed rebuild must not stop watching: ${afterRecovery}`,
-		).toBeTruthy();
+		const exited = new Promise<number | null>((resolve) => child.on("close", resolve));
+		child.kill("SIGINT");
+		// 130 is the exit code of an interrupted watch in the AcidCat CLI binding.
+		expect(await exited).toEqual(130);
 	} finally {
+		child.kill();
 		await rm(dir, { recursive: true, force: true });
 	}
-}, 90000);
+}, 60_000);

@@ -122,12 +122,16 @@ export const withTokenScope = <T extends ResolvedToken>(
  */
 export type ResolveMap = Map<string, ResolvedToken>;
 
+/** Every {@link DiagnosticCode}, for the schema of a report. */
+export const diagnosticCodes = [
+	"typography-static-scale",
+	"typography-below-legibility-floor",
+	"motion-long-duration",
+	"motion-ease-in",
+] as const;
+
 /** A stable identifier for each kind of build diagnostic. */
-export type DiagnosticCode =
-	| "typography-static-scale"
-	| "typography-below-legibility-floor"
-	| "motion-long-duration"
-	| "motion-ease-in";
+export type DiagnosticCode = (typeof diagnosticCodes)[number];
 
 /**
  * A build warning about a configuration that generates, but likely not as

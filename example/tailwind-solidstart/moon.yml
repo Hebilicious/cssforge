@@ -45,8 +45,6 @@ tasks:
     command: "node"
     args:
       - "../../packages/cssforge/dist/cli.js"
-      - "--prefix"
-      - "."
       - "--config"
       - "./cssforge.config.ts"
       - "--mode"
