@@ -31,6 +31,7 @@ import type {
 	Emitted,
 	EventDefinition,
 	Result,
+	ToJsonSchema,
 } from "@acid-cat/core-ts";
 import {
 	capabilitiesFor,
@@ -41,6 +42,7 @@ import {
 	fail,
 	ok,
 } from "@acid-cat/core-ts";
+import { z } from "zod";
 import {
 	type BuildReport,
 	type BuildSettings,
@@ -50,6 +52,7 @@ import {
 	defaultConfigPath,
 	defaultOutputPaths,
 	ForgeError,
+	type ForgeFailureTag,
 	type GenerateReport,
 	generateOutput,
 	type OutputFormat,
@@ -60,9 +63,8 @@ import {
 	styleDictionaryValueModes,
 	watchOutputs,
 } from "./forge.ts";
-import type { ColorFormat } from "./lib.ts";
+import { type ColorFormat, diagnosticCodes } from "./lib.ts";
 import { supportedColorFormats } from "./modules/colors.ts";
-import { type JsonSchema, schema } from "./schema.ts";
 
 /**
  * `createSession` opens a session on {@link cssforge}, for typed calls from
@@ -71,7 +73,14 @@ import { type JsonSchema, schema } from "./schema.ts";
  * cancellation or a defect.
  */
 export { CallFailureError, createSession } from "@acid-cat/core-ts";
-export { toJsonSchema } from "./schema.ts";
+
+/** The JSON Schema of a schema of {@link cssforge}, for the catalog and the bindings. */
+export const toJsonSchema: ToJsonSchema = (schema) => {
+	if (!(schema instanceof z.ZodType))
+		throw new Error("Each CSS Forge schema is a Zod schema.");
+	// The input form: a property with a default is optional for the caller.
+	return z.toJSONSchema(schema, { target: "draft-2020-12", io: "input" });
+};
 
 /** The services of the CSS Forge capabilities. */
 export interface ForgeContext {
@@ -81,150 +90,155 @@ export interface ForgeContext {
 
 // --- Schemas -------------------------------------------------------------------------------
 
-const configProperty: JsonSchema = {
-	type: "string",
-	minLength: 1,
-	description: "The path of the configuration file.",
-	default: defaultConfigPath,
+/** An enum whose error names the value received. */
+const oneOf = <const Values extends readonly [string, ...string[]]>(values: Values) =>
+	z.enum(values, {
+		error: (issue) =>
+			`Received ${JSON.stringify(issue.input)}. Expected one of: ${values.join(", ")}.`,
+	});
+
+const commonShape = {
+	config: z
+		.string()
+		.min(1)
+		.default(defaultConfigPath)
+		.describe("The path of the configuration file."),
+	root: z
+		.string()
+		.min(1)
+		.optional()
+		.describe(
+			"The directory that the relative paths of the input resolve against. The default is the working directory of the tools.",
+		),
+	"color-formats": z
+		.array(oneOf(supportedColorFormats as [ColorFormat, ...ColorFormat[]]))
+		.default([])
+		.describe(
+			"Extra color formats generated beside oklch(), added to the formats that the configuration declares.",
+		),
 };
 
-const rootProperty: JsonSchema = {
-	type: "string",
-	minLength: 1,
-	description:
-		"The directory that the relative paths of the input resolve against. The default is the working directory of the tools.",
-};
-
-const colorFormatsProperty: JsonSchema = {
-	type: "array",
-	items: { type: "string", enum: [...supportedColorFormats] },
-	uniqueItems: true,
-	description:
-		"Extra color formats generated beside oklch(), added to the formats that the configuration declares.",
-	default: [],
-};
-
-const styleDictionaryValueModeProperty: JsonSchema = {
-	type: "string",
-	enum: [...styleDictionaryValueModes],
-	description:
+const styleDictionaryValueMode = oneOf(styleDictionaryValueModes)
+	.default("resolved")
+	.describe(
 		"How the Style Dictionary output writes values: css-reference for usage matching, resolved for previews and builds.",
-	default: "resolved",
-};
+	);
 
-const outputPathProperty = (format: OutputFormat, label: string): JsonSchema => ({
-	type: "string",
-	minLength: 1,
-	description: `The path of the ${label} file.`,
-	default: defaultOutputPaths[format],
+const outputPath = (format: OutputFormat, label: string) =>
+	z
+		.string()
+		.min(1)
+		.default(defaultOutputPaths[format])
+		.describe(`The path of the ${label} file.`);
+
+const buildInput = z.strictObject({
+	...commonShape,
+	mode: oneOf(outputModes)
+		.default("all")
+		.describe("The output to write: one format, or all of them."),
+	css: outputPath("css", "CSS"),
+	json: outputPath("json", "JSON"),
+	ts: outputPath("ts", "TypeScript"),
+	"style-dictionary": outputPath("style-dictionary", "Style Dictionary token JSON"),
+	"style-dictionary-value-mode": styleDictionaryValueMode,
 });
 
-/** The members of every input. */
+const generateInput = z.strictObject({
+	...commonShape,
+	format: oneOf(outputFormats).default("css").describe("The output to generate."),
+	"style-dictionary-value-mode": styleDictionaryValueMode,
+});
+
+const checkInput = z.strictObject(commonShape);
+
+const reportShape = {
+	diagnostics: z.array(
+		z
+			.strictObject({
+				code: z.enum(diagnosticCodes).describe("A stable identifier of the warning."),
+				severity: z.literal("warning"),
+				path: z.string().describe("The configuration path of the value."),
+				message: z.string().describe("What is wrong, and how to fix it."),
+			})
+			.describe("A warning about a value that generates, but likely not as intended."),
+	),
+	dependencies: z
+		.array(z.string())
+		.describe(
+			"The absolute paths of the configuration and the local modules it imports.",
+		),
+};
+
+const buildReportShape = {
+	files: z
+		.array(
+			z.strictObject({
+				format: z.enum(outputFormats),
+				path: z.string().describe("The absolute path of the file."),
+			}),
+		)
+		.describe("The files written."),
+	...reportShape,
+};
+
+const checkReport = z.strictObject(reportShape);
+const buildReport = z.strictObject(buildReportShape);
+const generateReport = z.strictObject({
+	format: z.enum(outputFormats),
+	content: z.string().describe("The generated file content."),
+	...reportShape,
+});
+
+const failureShape = {
+	message: z.string(),
+	path: z.string().optional().describe("The file that the failure concerns."),
+};
+
+const failure = <Tag extends ForgeFailureTag>(tag: Tag, description: string) =>
+	z.strictObject({ _tag: z.literal(tag).describe(description), ...failureShape });
+
+const readFailures = {
+	ConfigLoadFailed: failure(
+		"ConfigLoadFailed",
+		"The configuration file could not be found or evaluated, or it has no default export object.",
+	),
+	InvalidConfig: failure(
+		"InvalidConfig",
+		"The configuration loaded, but CSS Forge rejects a value in it.",
+	),
+};
+const buildFailures = {
+	...readFailures,
+	WriteFailed: failure("WriteFailed", "An output file could not be written."),
+};
+
+const builtPayload = z.discriminatedUnion("ok", [
+	z.strictObject({ ok: z.literal(true), ...buildReportShape }),
+	z.strictObject({
+		ok: z.literal(false),
+		failure: z
+			.discriminatedUnion("_tag", [
+				buildFailures.ConfigLoadFailed,
+				buildFailures.InvalidConfig,
+				buildFailures.WriteFailed,
+			])
+			.describe("Why the build failed."),
+	}),
+]);
+
+// --- Types ---------------------------------------------------------------------------------
+//
+// JSR needs an explicit type for each export, so the types are written here. The annotation of
+// each capability checks its schemas against them.
+
+/** The members of every input, with the defaults filled in. */
 export interface CommonInput {
 	config: string;
 	root?: string;
 	"color-formats": ColorFormat[];
 }
 
-const commonProperties: Record<keyof CommonInput, JsonSchema> = {
-	config: configProperty,
-	root: rootProperty,
-	"color-formats": colorFormatsProperty,
-};
-
-const objectSchema = <Output>(
-	properties: Record<string, JsonSchema>,
-	required: string[] = [],
-) =>
-	schema<Output>({ type: "object", properties, required, additionalProperties: false });
-
-const diagnosticSchema: JsonSchema = {
-	type: "object",
-	description: "A warning about a value that generates, but likely not as intended.",
-	properties: {
-		code: { type: "string", description: "A stable identifier of the warning." },
-		severity: { type: "string", enum: ["warning"] },
-		path: { type: "string", description: "The configuration path of the value." },
-		message: { type: "string", description: "What is wrong, and how to fix it." },
-	},
-	required: ["code", "severity", "path", "message"],
-	additionalProperties: false,
-};
-
-const reportProperties: Record<keyof CheckReport, JsonSchema> = {
-	diagnostics: { type: "array", items: diagnosticSchema },
-	dependencies: {
-		type: "array",
-		items: { type: "string" },
-		description:
-			"The absolute paths of the configuration and the local modules it imports.",
-	},
-};
-
-const writtenFileSchema: JsonSchema = {
-	type: "object",
-	properties: {
-		format: { type: "string", enum: [...outputFormats] },
-		path: { type: "string", description: "The absolute path of the file." },
-	},
-	required: ["format", "path"],
-	additionalProperties: false,
-};
-
-const buildReportProperties: Record<keyof BuildReport, JsonSchema> = {
-	files: { type: "array", items: writtenFileSchema, description: "The files written." },
-	...reportProperties,
-};
-
-const failureSchema = <Tag extends string>(tag: Tag, description: string) =>
-	objectSchema<{ message: string; path?: string }>(
-		{
-			_tag: { const: tag, description },
-			message: { type: "string" },
-			path: { type: "string", description: "The file that the failure concerns." },
-		},
-		["_tag", "message"],
-	);
-
-const ConfigLoadFailed = failureSchema(
-	"ConfigLoadFailed",
-	"The configuration file could not be found or evaluated, or it has no default export object.",
-);
-const InvalidConfig = failureSchema(
-	"InvalidConfig",
-	"The configuration loaded, but CSS Forge rejects a value in it.",
-);
-const WriteFailed = failureSchema("WriteFailed", "An output file could not be written.");
-
-const readFailures = { ConfigLoadFailed, InvalidConfig };
-const buildFailures = { ConfigLoadFailed, InvalidConfig, WriteFailed };
-
-/** The members of each failure besides its `_tag`. */
-export interface FailureDetails {
-	message: string;
-	/** The file that the failure concerns. */
-	path?: string;
-}
-
-/** The failures of a capability that reads a configuration. */
-export type ReadFailures = {
-	ConfigLoadFailed: FailureDetails;
-	InvalidConfig: FailureDetails;
-};
-
-/** The failures of a capability that writes outputs. */
-export type BuildFailures = ReadFailures & {
-	WriteFailed: FailureDetails;
-};
-
-type ReadFailure = {
-	_tag: "ConfigLoadFailed" | "InvalidConfig";
-	message: string;
-	path?: string;
-};
-type BuildFailure = { _tag: ForgeError["tag"]; message: string; path?: string };
-
-/** The input of `tokens.build` and of the event `tokens.built`. */
+/** The input of `tokens.build` and of the event `tokens.built`, with the defaults filled in. */
 export interface BuildInput extends CommonInput {
 	mode: OutputMode;
 	css: string;
@@ -234,74 +248,41 @@ export interface BuildInput extends CommonInput {
 	"style-dictionary-value-mode": StyleDictionaryValueMode;
 }
 
-const buildInputProperties: Record<keyof BuildInput, JsonSchema> = {
-	...commonProperties,
-	mode: {
-		type: "string",
-		enum: [...outputModes],
-		description: "The output to write: one format, or all of them.",
-		default: "all",
-	},
-	css: outputPathProperty("css", "CSS"),
-	json: outputPathProperty("json", "JSON"),
-	ts: outputPathProperty("ts", "TypeScript"),
-	"style-dictionary": outputPathProperty(
-		"style-dictionary",
-		"Style Dictionary token JSON",
-	),
-	"style-dictionary-value-mode": styleDictionaryValueModeProperty,
-};
-
-const BuildInputSchema = objectSchema<BuildInput>(buildInputProperties);
-
-/** The input of `tokens.generate`. */
+/** The input of `tokens.generate`, with the defaults filled in. */
 export interface GenerateInput extends CommonInput {
 	format: OutputFormat;
 	"style-dictionary-value-mode": StyleDictionaryValueMode;
 }
 
-const GenerateInputSchema = objectSchema<GenerateInput>({
-	...commonProperties,
-	format: {
-		type: "string",
-		enum: [...outputFormats],
-		description: "The output to generate.",
-		default: "css",
-	},
-	"style-dictionary-value-mode": styleDictionaryValueModeProperty,
-});
-
-/** The input of `config.check`. */
+/** The input of `config.check`, with the defaults filled in. */
 export type CheckInput = CommonInput;
 
-const CheckInputSchema = objectSchema<CheckInput>(commonProperties);
+/** A failure of a capability: its tag, a message for people and agents, and the file. */
+export interface Failure<Tag extends ForgeFailureTag> {
+	_tag: Tag;
+	message: string;
+	/** The file that the failure concerns. */
+	path?: string;
+}
+
+/** The failures of a capability that reads a configuration. */
+export type ReadFailures = {
+	ConfigLoadFailed: Failure<"ConfigLoadFailed">;
+	InvalidConfig: Failure<"InvalidConfig">;
+};
+
+/** The failures of a capability that writes outputs. */
+export type BuildFailures = ReadFailures & {
+	WriteFailed: Failure<"WriteFailed">;
+};
+
+type ReadFailure = Failure<keyof ReadFailures>;
+type BuildFailure = Failure<ForgeFailureTag>;
 
 /** An occurrence of `tokens.built`: the report of a build, or the failure that stopped it. */
 export type BuiltPayload =
 	| ({ ok: true } & BuildReport)
 	| { ok: false; failure: BuildFailure };
-
-const BuiltPayloadSchema = objectSchema<BuiltPayload>(
-	{
-		ok: { type: "boolean", description: "Whether the build wrote every output." },
-		...buildReportProperties,
-		failure: {
-			type: "object",
-			description: "Why the build failed, when ok is false.",
-			properties: {
-				_tag: {
-					type: "string",
-					enum: ["ConfigLoadFailed", "InvalidConfig", "WriteFailed"],
-				},
-				message: { type: "string" },
-				path: { type: "string" },
-			},
-			required: ["_tag", "message"],
-			additionalProperties: false,
-		},
-	},
-	["ok"],
-);
 
 // --- Operations ------------------------------------------------------------------------------
 
@@ -366,18 +347,15 @@ export const tokensBuild: Capability<
 	BuildReport,
 	BuildFailures,
 	never,
-	"tokens.build"
+	"tokens.build",
+	Partial<BuildInput>
 > = capability({
 	id: "tokens.build",
 	description:
 		"Generate the outputs of a CSS Forge configuration and write them to files: CSS custom properties, JSON, TypeScript and Style Dictionary tokens. Every output is generated before the first file is written, so an invalid configuration leaves the previous files in place. The result lists the files written and the warnings of the configuration.",
 	audience: everyone,
-	input: BuildInputSchema,
-	output: objectSchema<BuildReport>(buildReportProperties, [
-		"files",
-		"diagnostics",
-		"dependencies",
-	]),
+	input: buildInput,
+	output: buildReport,
 	failures: buildFailures,
 	run: (input, { context }) =>
 		attempt(() => buildOutputs(buildSettingsOf(context, input)), failureOf),
@@ -390,22 +368,16 @@ export const tokensGenerate: Capability<
 	GenerateReport,
 	ReadFailures,
 	never,
-	"tokens.generate"
+	"tokens.generate",
+	Partial<GenerateInput>
 > = capability({
 	id: "tokens.generate",
 	description:
 		"Generate one output of a CSS Forge configuration and give it as text, with the warnings of the configuration. Writes no file.",
 	audience: everyone,
 	readOnly: true,
-	input: GenerateInputSchema,
-	output: objectSchema<GenerateReport>(
-		{
-			format: { type: "string", enum: [...outputFormats] },
-			content: { type: "string", description: "The generated file content." },
-			...reportProperties,
-		},
-		["format", "content", "diagnostics", "dependencies"],
-	),
+	input: generateInput,
+	output: generateReport,
 	failures: readFailures,
 	run: (input, { context }) =>
 		attempt(
@@ -425,15 +397,16 @@ export const configCheck: Capability<
 	CheckReport,
 	ReadFailures,
 	never,
-	"config.check"
+	"config.check",
+	Partial<CheckInput>
 > = capability({
 	id: "config.check",
 	description:
 		"Load and validate a CSS Forge configuration, and give its warnings: values that generate, but likely not as intended. Writes no file.",
 	audience: everyone,
 	readOnly: true,
-	input: CheckInputSchema,
-	output: objectSchema<CheckReport>(reportProperties, ["diagnostics", "dependencies"]),
+	input: checkInput,
+	output: checkReport,
 	failures: readFailures,
 	run: (input, { context }) =>
 		attempt(
@@ -458,8 +431,8 @@ export const tokensBuilt: EventDefinition<
 	description:
 		"Build the outputs of a CSS Forge configuration now, then again each time the configuration or a local module that it imports changes. Each occurrence is the result of one build: the files written, or the failure. A failed build does not end the subscription. Ending the subscription stops the watch; files already written stay.",
 	audience: everyone,
-	input: BuildInputSchema,
-	payload: BuiltPayloadSchema,
+	input: buildInput,
+	payload: builtPayload,
 	async *subscribe(input, { context, signal }): AsyncGenerator<Emitted<BuiltPayload>> {
 		for await (const build of watchOutputs(buildSettingsOf(context, input), signal)) {
 			yield {

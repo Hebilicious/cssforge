@@ -18,14 +18,14 @@ import {
 	type BuiltPayload,
 	configCheck,
 	cssforge,
-	type FailureDetails,
+	type Failure,
 	type ForgeContext,
+	toJsonSchema,
 	tokensBuild,
 	tokensBuilt,
 	tokensGenerate,
 } from "./capabilities.ts";
-import type { BuildReport, CheckReport } from "./forge.ts";
-import { toJsonSchema } from "./schema.ts";
+import type { BuildReport, CheckReport, ForgeFailureTag } from "./forge.ts";
 import { version } from "./version.ts";
 
 const context: ForgeContext = { cwd: process.cwd() };
@@ -81,28 +81,23 @@ const filesWritten = (report: BuildReport, ui: CliUi): string[] => [
 	...warnings(report, ui),
 ];
 
-const failure =
-	(tag: string) =>
-	({ message, path }: FailureDetails, ui: CliUi): string =>
-		path === undefined || message.includes(path)
-			? `${ui.error(tag)} ${message}`
-			: `${ui.error(tag)} ${message}\n${ui.dim(shown(path))}`;
+const failure = ({ _tag, message, path }: Failure<ForgeFailureTag>, ui: CliUi): string =>
+	path === undefined || message.includes(path)
+		? `${ui.error(_tag)} ${message}`
+		: `${ui.error(_tag)} ${message}\n${ui.dim(shown(path))}`;
 
-const readFailures = {
-	ConfigLoadFailed: failure("ConfigLoadFailed"),
-	InvalidConfig: failure("InvalidConfig"),
-};
+const readFailures = { ConfigLoadFailed: failure, InvalidConfig: failure };
 
 const built = (payload: BuiltPayload, ui: CliUi): string => {
 	const time = ui.dim(new Date().toLocaleTimeString());
-	if (!payload.ok) return `${time} ${failure(payload.failure._tag)(payload.failure, ui)}`;
+	if (!payload.ok) return `${time} ${failure(payload.failure, ui)}`;
 	return [`${time} ${ui.ok("built")}`, ...filesWritten(payload, ui)].join("\n");
 };
 
 const formats = [
 	cliFormat(tokensBuild, {
 		value: (report, ui) => filesWritten(report, ui).join("\n"),
-		failures: { ...readFailures, WriteFailed: failure("WriteFailed") },
+		failures: { ...readFailures, WriteFailed: failure },
 	}),
 	cliFormat(tokensGenerate, {
 		// The content alone goes to standard output, so that it can go to a file.
