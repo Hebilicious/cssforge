@@ -1,7 +1,7 @@
 {
   "acidcat": "0.1",
   "title": "CSS Forge",
-  "description": "Generate CSS custom properties, JSON, TypeScript and Style Dictionary tokens from a CSS Forge configuration.",
+  "description": "Generate CSS custom properties, JSON, TypeScript and Style Dictionary tokens from a CSS Forge configuration, and keep the tokens of a design tool in sync with it.",
   "targets": {
     "cli": {
       "bindings": [
@@ -20,8 +20,32 @@
             "check": {
               "capability": "config.check"
             },
+            "fetch": {
+              "capability": "sync.fetch"
+            },
             "generate": {
               "capability": "tokens.generate"
+            },
+            "inbox": {
+              "capability": "sync.inbox.list"
+            },
+            "inbox adopt": {
+              "capability": "sync.inbox.adopt"
+            },
+            "inbox overwrite": {
+              "capability": "sync.inbox.overwrite"
+            },
+            "inbox reject": {
+              "capability": "sync.inbox.reject"
+            },
+            "plan": {
+              "capability": "sync.plan"
+            },
+            "push": {
+              "capability": "sync.push"
+            },
+            "remote add": {
+              "capability": "sync.remote.add"
             }
           },
           "default": "build"
@@ -180,6 +204,2900 @@
         }
       },
       "readOnly": true
+    },
+    "sync.fetch": {
+      "description": "Read the tokens of the remote (one request), record them in the state file, and report the plan: the changes the next push sends, the inbox of changes the remote made, and the configuration tokens that have no place on the remote. Sends nothing to the remote.",
+      "audience": [
+        "cli",
+        "mcp",
+        "library"
+      ],
+      "input": {
+        "additionalProperties": false,
+        "properties": {
+          "config": {
+            "default": "./cssforge.config.ts",
+            "description": "The path of the configuration file.",
+            "minLength": 1,
+            "type": "string"
+          },
+          "remote": {
+            "default": "paper",
+            "description": "The name of the remote, as `remote add --name` gave it.",
+            "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$",
+            "type": "string"
+          },
+          "root": {
+            "description": "The directory that the configuration path and the state directory .cssforge/sync resolve against. The default is the working directory.",
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "output": {
+        "additionalProperties": false,
+        "properties": {
+          "callsUsed": {
+            "description": "The requests made to the remote by this call.",
+            "maximum": 9007199254740991,
+            "minimum": -9007199254740991,
+            "type": "integer"
+          },
+          "fetchedAt": {
+            "description": "When the remote tokens were read, as an ISO 8601 time.",
+            "type": "string"
+          },
+          "file": {
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "name"
+            ],
+            "type": "object"
+          },
+          "inbox": {
+            "items": {
+              "additionalProperties": false,
+              "description": "A change of the remote that waits for a decision. new: adopt or reject. edited, deleted and collision: overwrite with the value of the configuration.",
+              "properties": {
+                "actions": {
+                  "items": {
+                    "enum": [
+                      "adopt",
+                      "reject",
+                      "overwrite"
+                    ],
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "kind": {
+                  "enum": [
+                    "new",
+                    "edited",
+                    "deleted",
+                    "collision"
+                  ],
+                  "type": "string"
+                },
+                "localValue": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "note": {
+                  "type": "string"
+                },
+                "remoteValue": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "kind",
+                "name",
+                "type",
+                "actions"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "operations": {
+            "description": "The changes the next push sends, in order.",
+            "items": {
+              "description": "A change to send to the remote.",
+              "oneOf": [
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "description": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "op": {
+                      "const": "create",
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string"
+                    },
+                    "value": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "op",
+                    "name",
+                    "type",
+                    "value",
+                    "description"
+                  ],
+                  "type": "object"
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "description": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "op": {
+                      "const": "update",
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string"
+                    },
+                    "value": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "op",
+                    "name",
+                    "type",
+                    "value",
+                    "description"
+                  ],
+                  "type": "object"
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "from": {
+                      "type": "string"
+                    },
+                    "op": {
+                      "const": "rename",
+                      "type": "string"
+                    },
+                    "to": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "op",
+                    "from",
+                    "to"
+                  ],
+                  "type": "object"
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "op": {
+                      "const": "delete",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "op",
+                    "name"
+                  ],
+                  "type": "object"
+                }
+              ]
+            },
+            "type": "array"
+          },
+          "remote": {
+            "type": "string"
+          },
+          "skipped": {
+            "description": "Configuration tokens that have no place on the remote.",
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "reason": {
+                  "type": "string"
+                },
+                "sourcePath": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "name",
+                "sourcePath",
+                "reason"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "remote",
+          "file",
+          "fetchedAt",
+          "operations",
+          "inbox",
+          "skipped",
+          "callsUsed"
+        ],
+        "type": "object"
+      },
+      "failures": {
+        "ConfigLoadFailed": {
+          "additionalProperties": false,
+          "properties": {
+            "_tag": {
+              "const": "ConfigLoadFailed",
+              "description": "The configuration file could not be found or evaluated.",
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "path": {
+              "description": "The file that the failure concerns.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "_tag",
+            "message"
+          ],
+          "type": "object"
+        },
+        "InvalidConfig": {
+          "additionalProperties": false,
+          "properties": {
+            "_tag": {
+              "const": "InvalidConfig",
+              "description": "CSS Forge rejects a value of the configuration.",
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "path": {
+              "description": "The file that the failure concerns.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "_tag",
+            "message"
+          ],
+          "type": "object"
+        },
+        "InvalidState": {
+          "additionalProperties": false,
+          "properties": {
+            "_tag": {
+              "const": "InvalidState",
+              "description": "The state file of the remote is not valid.",
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "path": {
+              "description": "The file that the failure concerns.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "_tag",
+            "message"
+          ],
+          "type": "object"
+        },
+        "RemoteFailed": {
+          "additionalProperties": false,
+          "properties": {
+            "_tag": {
+              "const": "RemoteFailed",
+              "description": "The remote refused a request or answered in an unknown form.",
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "path": {
+              "description": "The file that the failure concerns.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "_tag",
+            "message"
+          ],
+          "type": "object"
+        },
+        "RemoteNotConfigured": {
+          "additionalProperties": false,
+          "properties": {
+            "_tag": {
+              "const": "RemoteNotConfigured",
+              "description": "The remote has no state file: add it with `remote add`.",
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "path": {
+              "description": "The file that the failure concerns.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "_tag",
+            "message"
+          ],
+          "type": "object"
+        },
+        "RemoteUnavailable": {
+          "additionalProperties": false,
+          "properties": {
+            "_tag": {
+              "const": "RemoteUnavailable",
+              "description": "The remote cannot be reached: its program is not installed or not running.",
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "path": {
+              "description": "The file that the failure concerns.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "_tag",
+            "message"
+          ],
+          "type": "object"
+        }
+      },
+      "destructive": false,
+      "idempotent": true
+    },
+    "sync.inbox.adopt": {
+      "description": "Adopt a token that the remote created: first add it to the configuration at a path of your choice, then record that path here. The next push renames the remote token to the name the configuration generates, and sets the value of the configuration, so designs that use the token keep it. Writes the state file only.",
+      "audience": [
+        "cli",
+        "mcp",
+        "library"
+      ],
+      "input": {
+        "additionalProperties": false,
+        "properties": {
+          "config": {
+            "default": "./cssforge.config.ts",
+            "description": "The path of the configuration file.",
+            "minLength": 1,
+            "type": "string"
+          },
+          "item": {
+            "description": "The id of the inbox item: the token name without its leading --.",
+            "minLength": 1,
+            "type": "string"
+          },
+          "path": {
+            "description": "The token path of the configuration token that the item becomes, added to the configuration before this call, e.g. palette.brand.accent. It is the path in the description of each pushed token (cssforge: <path>).",
+            "minLength": 1,
+            "type": "string"
+          },
+          "remote": {
+            "default": "paper",
+            "description": "The name of the remote, as `remote add --name` gave it.",
+            "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$",
+            "type": "string"
+          },
+          "root": {
+            "description": "The directory that the configuration path and the state directory .cssforge/sync resolve against. The default is the working directory.",
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "item",
+          "path"
+        ],
+        "type": "object"
+      },
+      "output": {
+        "additionalProperties": false,
+        "properties": {
+          "callsUsed": {
+            "description": "The requests made to the remote by this call: always 0.",
+            "maximum": 9007199254740991,
+            "minimum": -9007199254740991,
+            "type": "integer"
+          },
+          "decision": {
+            "oneOf": [
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "action": {
+                    "const": "adopt",
+                    "type": "string"
+                  },
+                  "item": {
+                    "type": "string"
+                  },
+                  "path": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "item",
+                  "action",
+                  "path"
+                ],
+                "type": "object"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "action": {
+                    "const": "reject",
+                    "type": "string"
+                  },
+                  "item": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "item",
+                  "action"
+                ],
+                "type": "object"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "action": {
+                    "const": "overwrite",
+                    "type": "string"
+                  },
+                  "item": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "item",
+                  "action"
+                ],
+                "type": "object"
+              }
+            ]
+          },
+          "inbox": {
+            "description": "The items that still wait for a decision.",
+            "items": {
+              "additionalProperties": false,
+              "description": "A change of the remote that waits for a decision. new: adopt or reject. edited, deleted and collision: overwrite with the value of the configuration.",
+              "properties": {
+                "actions": {
+                  "items": {
+                    "enum": [
+                      "adopt",
+                      "reject",
+                      "overwrite"
+                    ],
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "kind": {
+                  "enum": [
+                    "new",
+                    "edited",
+                    "deleted",
+                    "collision"
+                  ],
+                  "type": "string"
+                },
+                "localValue": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "note": {
+                  "type": "string"
+                },
+                "remoteValue": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "kind",
+                "name",
+                "type",
+                "actions"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "remote": {
+            "type": "string"
+          },
+          "skipped": {
+            "description": "Configuration tokens that have no place on the remote.",
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "reason": {
+                  "type": "string"
+                },
+                "sourcePath": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "name",
+                "sourcePath",
+                "reason"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "remote",
+          "decision",
+          "inbox",
+          "skipped",
+          "callsUsed"
+        ],
+        "type": "object"
+      },
+      "failures": {
+        "ConfigLoadFailed": {
+          "additionalProperties": false,
+          "properties": {
+            "_tag": {
+              "const": "ConfigLoadFailed",
+              "description": "The configuration file could not be found or evaluated.",
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "path": {
+              "description": "The file that the failure concerns.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "_tag",
+            "message"
+          ],
+          "type": "object"
+        },
+        "InvalidConfig": {
+          "additionalProperties": false,
+          "properties": {
+            "_tag": {
+              "const": "InvalidConfig",
+              "description": "CSS Forge rejects a value of the configuration.",
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "path": {
+              "description": "The file that the failure concerns.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "_tag",
+            "message"
+          ],
+          "type": "object"
+        },
+        "InvalidDecision": {
+          "additionalProperties": false,
+          "properties": {
+            "_tag": {
+              "const": "InvalidDecision",
+              "description": "The decision does not settle the item, or the adopted path does not fit.",
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "path": {
+              "description": "The file that the failure concerns.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "_tag",
+            "message"
+          ],
+          "type": "object"
+        },
+        "InvalidState": {
+          "additionalProperties": false,
+          "properties": {
+            "_tag": {
+              "const": "InvalidState",
+              "description": "The state file of the remote is not valid.",
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "path": {
+              "description": "The file that the failure concerns.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "_tag",
+            "message"
+          ],
+          "type": "object"
+        },
+        "NotFetched": {
+          "additionalProperties": false,
+          "properties": {
+            "_tag": {
+              "const": "NotFetched",
+              "description": "The remote has not been read yet: run `fetch` first.",
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "path": {
+              "description": "The file that the failure concerns.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "_tag",
+            "message"
+          ],
+          "type": "object"
+        },
+        "RemoteNotConfigured": {
+          "additionalProperties": false,
+          "properties": {
+            "_tag": {
+              "const": "RemoteNotConfigured",
+              "description": "The remote has no state file: add it with `remote add`.",
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "path": {
+              "description": "The file that the failure concerns.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "_tag",
+            "message"
+          ],
+          "type": "object"
+        },
+        "UnknownItem": {
+          "additionalProperties": false,
+          "properties": {
+            "_tag": {
+              "const": "UnknownItem",
+              "description": "The inbox has no item with this id.",
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "path": {
+              "description": "The file that the failure concerns.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "_tag",
+            "message"
+          ],
+          "type": "object"
+        }
+      },
+      "destructive": false,
+      "idempotent": true
+    },
+    "sync.inbox.list": {
+      "description": "List the inbox against the last fetch, with no request to the remote: the tokens the remote created, changed or deleted, each with the decisions that settle it. Settle a new token with `inbox adopt` (after adding it to the configuration) or `inbox reject`, and the others with `inbox overwrite`.",
+      "audience": [
+        "cli",
+        "mcp",
+        "library"
+      ],
+      "input": {
+        "additionalProperties": false,
+        "properties": {
+          "config": {
+            "default": "./cssforge.config.ts",
+            "description": "The path of the configuration file.",
+            "minLength": 1,
+            "type": "string"
+          },
+          "remote": {
+            "default": "paper",
+            "description": "The name of the remote, as `remote add --name` gave it.",
+            "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$",
+            "type": "string"
+          },
+          "root": {
+            "description": "The directory that the configuration path and the state directory .cssforge/sync resolve against. The default is the working directory.",
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "output": {
+        "additionalProperties": false,
+        "properties": {
+          "callsUsed": {
+            "description": "The requests made to the remote by this call.",
+            "maximum": 9007199254740991,
+            "minimum": -9007199254740991,
+            "type": "integer"
+          },
+          "fetchedAt": {
+            "description": "When the remote tokens were read, as an ISO 8601 time.",
+            "type": "string"
+          },
+          "file": {
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "name"
+            ],
+            "type": "object"
+          },
+          "inbox": {
+            "items": {
+              "additionalProperties": false,
+              "description": "A change of the remote that waits for a decision. new: adopt or reject. edited, deleted and collision: overwrite with the value of the configuration.",
+              "properties": {
+                "actions": {
+                  "items": {
+                    "enum": [
+                      "adopt",
+                      "reject",
+                      "overwrite"
+                    ],
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "kind": {
+                  "enum": [
+                    "new",
+                    "edited",
+                    "deleted",
+                    "collision"
+                  ],
+                  "type": "string"
+                },
+                "localValue": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "note": {
+                  "type": "string"
+                },
+                "remoteValue": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "kind",
+                "name",
+                "type",
+                "actions"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "operations": {
+            "description": "The changes the next push sends, in order.",
+            "items": {
+              "description": "A change to send to the remote.",
+              "oneOf": [
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "description": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "op": {
+                      "const": "create",
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string"
+                    },
+                    "value": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "op",
+                    "name",
+                    "type",
+                    "value",
+                    "description"
+                  ],
+                  "type": "object"
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "description": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "op": {
+                      "const": "update",
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string"
+                    },
+                    "value": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "op",
+                    "name",
+                    "type",
+                    "value",
+                    "description"
+                  ],
+                  "type": "object"
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "from": {
+                      "type": "string"
+                    },
+                    "op": {
+                      "const": "rename",
+                      "type": "string"
+                    },
+                    "to": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "op",
+                    "from",
+                    "to"
+                  ],
+                  "type": "object"
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "op": {
+                      "const": "delete",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "op",
+                    "name"
+                  ],
+                  "type": "object"
+                }
+              ]
+            },
+            "type": "array"
+          },
+          "remote": {
+            "type": "string"
+          },
+          "skipped": {
+            "description": "Configuration tokens that have no place on the remote.",
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "reason": {
+                  "type": "string"
+                },
+                "sourcePath": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "name",
+                "sourcePath",
+                "reason"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "remote",
+          "file",
+          "fetchedAt",
+          "operations",
+          "inbox",
+          "skipped",
+          "callsUsed"
+        ],
+        "type": "object"
+      },
+      "failures": {
+        "ConfigLoadFailed": {
+          "additionalProperties": false,
+          "properties": {
+            "_tag": {
+              "const": "ConfigLoadFailed",
+              "description": "The configuration file could not be found or evaluated.",
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "path": {
+              "description": "The file that the failure concerns.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "_tag",
+            "message"
+          ],
+          "type": "object"
+        },
+        "InvalidConfig": {
+          "additionalProperties": false,
+          "properties": {
+            "_tag": {
+              "const": "InvalidConfig",
+              "description": "CSS Forge rejects a value of the configuration.",
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "path": {
+              "description": "The file that the failure concerns.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "_tag",
+            "message"
+          ],
+          "type": "object"
+        },
+        "InvalidState": {
+          "additionalProperties": false,
+          "properties": {
+            "_tag": {
+              "const": "InvalidState",
+              "description": "The state file of the remote is not valid.",
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "path": {
+              "description": "The file that the failure concerns.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "_tag",
+            "message"
+          ],
+          "type": "object"
+        },
+        "NotFetched": {
+          "additionalProperties": false,
+          "properties": {
+            "_tag": {
+              "const": "NotFetched",
+              "description": "The remote has not been read yet: run `fetch` first.",
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "path": {
+              "description": "The file that the failure concerns.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "_tag",
+            "message"
+          ],
+          "type": "object"
+        },
+        "RemoteNotConfigured": {
+          "additionalProperties": false,
+          "properties": {
+            "_tag": {
+              "const": "RemoteNotConfigured",
+              "description": "The remote has no state file: add it with `remote add`.",
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "path": {
+              "description": "The file that the failure concerns.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "_tag",
+            "message"
+          ],
+          "type": "object"
+        }
+      },
+      "readOnly": true
+    },
+    "sync.inbox.overwrite": {
+      "description": "Settle a token that the remote changed, deleted, or created with the name of a configuration token: the next push writes the value of the configuration. To keep the value of the remote instead, change the configuration to that value; the item then goes away at the next fetch. Writes the state file only.",
+      "audience": [
+        "cli",
+        "mcp",
+        "library"
+      ],
+      "input": {
+        "additionalProperties": false,
+        "properties": {
+          "config": {
+            "default": "./cssforge.config.ts",
+            "description": "The path of the configuration file.",
+            "minLength": 1,
+            "type": "string"
+          },
+          "item": {
+            "description": "The id of the inbox item: the token name without its leading --.",
+            "minLength": 1,
+            "type": "string"
+          },
+          "remote": {
+            "default": "paper",
+            "description": "The name of the remote, as `remote add --name` gave it.",
+            "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$",
+            "type": "string"
+          },
+          "root": {
+            "description": "The directory that the configuration path and the state directory .cssforge/sync resolve against. The default is the working directory.",
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "item"
+        ],
+        "type": "object"
+      },
+      "output": {
+        "additionalProperties": false,
+        "properties": {
+          "callsUsed": {
+            "description": "The requests made to the remote by this call: always 0.",
+            "maximum": 9007199254740991,
+            "minimum": -9007199254740991,
+            "type": "integer"
+          },
+          "decision": {
+            "oneOf": [
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "action": {
+                    "const": "adopt",
+                    "type": "string"
+                  },
+                  "item": {
+                    "type": "string"
+                  },
+                  "path": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "item",
+                  "action",
+                  "path"
+                ],
+                "type": "object"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "action": {
+                    "const": "reject",
+                    "type": "string"
+                  },
+                  "item": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "item",
+                  "action"
+                ],
+                "type": "object"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "action": {
+                    "const": "overwrite",
+                    "type": "string"
+                  },
+                  "item": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "item",
+                  "action"
+                ],
+                "type": "object"
+              }
+            ]
+          },
+          "inbox": {
+            "description": "The items that still wait for a decision.",
+            "items": {
+              "additionalProperties": false,
+              "description": "A change of the remote that waits for a decision. new: adopt or reject. edited, deleted and collision: overwrite with the value of the configuration.",
+              "properties": {
+                "actions": {
+                  "items": {
+                    "enum": [
+                      "adopt",
+                      "reject",
+                      "overwrite"
+                    ],
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "kind": {
+                  "enum": [
+                    "new",
+                    "edited",
+                    "deleted",
+                    "collision"
+                  ],
+                  "type": "string"
+                },
+                "localValue": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "note": {
+                  "type": "string"
+                },
+                "remoteValue": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "kind",
+                "name",
+                "type",
+                "actions"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "remote": {
+            "type": "string"
+          },
+          "skipped": {
+            "description": "Configuration tokens that have no place on the remote.",
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "reason": {
+                  "type": "string"
+                },
+                "sourcePath": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "name",
+                "sourcePath",
+                "reason"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "remote",
+          "decision",
+          "inbox",
+          "skipped",
+          "callsUsed"
+        ],
+        "type": "object"
+      },
+      "failures": {
+        "ConfigLoadFailed": {
+          "additionalProperties": false,
+          "properties": {
+            "_tag": {
+              "const": "ConfigLoadFailed",
+              "description": "The configuration file could not be found or evaluated.",
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "path": {
+              "description": "The file that the failure concerns.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "_tag",
+            "message"
+          ],
+          "type": "object"
+        },
+        "InvalidConfig": {
+          "additionalProperties": false,
+          "properties": {
+            "_tag": {
+              "const": "InvalidConfig",
+              "description": "CSS Forge rejects a value of the configuration.",
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "path": {
+              "description": "The file that the failure concerns.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "_tag",
+            "message"
+          ],
+          "type": "object"
+        },
+        "InvalidDecision": {
+          "additionalProperties": false,
+          "properties": {
+            "_tag": {
+              "const": "InvalidDecision",
+              "description": "The decision does not settle the item, or the adopted path does not fit.",
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "path": {
+              "description": "The file that the failure concerns.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "_tag",
+            "message"
+          ],
+          "type": "object"
+        },
+        "InvalidState": {
+          "additionalProperties": false,
+          "properties": {
+            "_tag": {
+              "const": "InvalidState",
+              "description": "The state file of the remote is not valid.",
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "path": {
+              "description": "The file that the failure concerns.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "_tag",
+            "message"
+          ],
+          "type": "object"
+        },
+        "NotFetched": {
+          "additionalProperties": false,
+          "properties": {
+            "_tag": {
+              "const": "NotFetched",
+              "description": "The remote has not been read yet: run `fetch` first.",
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "path": {
+              "description": "The file that the failure concerns.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "_tag",
+            "message"
+          ],
+          "type": "object"
+        },
+        "RemoteNotConfigured": {
+          "additionalProperties": false,
+          "properties": {
+            "_tag": {
+              "const": "RemoteNotConfigured",
+              "description": "The remote has no state file: add it with `remote add`.",
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "path": {
+              "description": "The file that the failure concerns.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "_tag",
+            "message"
+          ],
+          "type": "object"
+        },
+        "UnknownItem": {
+          "additionalProperties": false,
+          "properties": {
+            "_tag": {
+              "const": "UnknownItem",
+              "description": "The inbox has no item with this id.",
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "path": {
+              "description": "The file that the failure concerns.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "_tag",
+            "message"
+          ],
+          "type": "object"
+        }
+      },
+      "destructive": false,
+      "idempotent": true
+    },
+    "sync.inbox.reject": {
+      "description": "Reject a token that the remote created: the next push deletes it from the remote. Writes the state file only.",
+      "audience": [
+        "cli",
+        "mcp",
+        "library"
+      ],
+      "input": {
+        "additionalProperties": false,
+        "properties": {
+          "config": {
+            "default": "./cssforge.config.ts",
+            "description": "The path of the configuration file.",
+            "minLength": 1,
+            "type": "string"
+          },
+          "item": {
+            "description": "The id of the inbox item: the token name without its leading --.",
+            "minLength": 1,
+            "type": "string"
+          },
+          "remote": {
+            "default": "paper",
+            "description": "The name of the remote, as `remote add --name` gave it.",
+            "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$",
+            "type": "string"
+          },
+          "root": {
+            "description": "The directory that the configuration path and the state directory .cssforge/sync resolve against. The default is the working directory.",
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "item"
+        ],
+        "type": "object"
+      },
+      "output": {
+        "additionalProperties": false,
+        "properties": {
+          "callsUsed": {
+            "description": "The requests made to the remote by this call: always 0.",
+            "maximum": 9007199254740991,
+            "minimum": -9007199254740991,
+            "type": "integer"
+          },
+          "decision": {
+            "oneOf": [
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "action": {
+                    "const": "adopt",
+                    "type": "string"
+                  },
+                  "item": {
+                    "type": "string"
+                  },
+                  "path": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "item",
+                  "action",
+                  "path"
+                ],
+                "type": "object"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "action": {
+                    "const": "reject",
+                    "type": "string"
+                  },
+                  "item": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "item",
+                  "action"
+                ],
+                "type": "object"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "action": {
+                    "const": "overwrite",
+                    "type": "string"
+                  },
+                  "item": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "item",
+                  "action"
+                ],
+                "type": "object"
+              }
+            ]
+          },
+          "inbox": {
+            "description": "The items that still wait for a decision.",
+            "items": {
+              "additionalProperties": false,
+              "description": "A change of the remote that waits for a decision. new: adopt or reject. edited, deleted and collision: overwrite with the value of the configuration.",
+              "properties": {
+                "actions": {
+                  "items": {
+                    "enum": [
+                      "adopt",
+                      "reject",
+                      "overwrite"
+                    ],
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "kind": {
+                  "enum": [
+                    "new",
+                    "edited",
+                    "deleted",
+                    "collision"
+                  ],
+                  "type": "string"
+                },
+                "localValue": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "note": {
+                  "type": "string"
+                },
+                "remoteValue": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "kind",
+                "name",
+                "type",
+                "actions"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "remote": {
+            "type": "string"
+          },
+          "skipped": {
+            "description": "Configuration tokens that have no place on the remote.",
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "reason": {
+                  "type": "string"
+                },
+                "sourcePath": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "name",
+                "sourcePath",
+                "reason"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "remote",
+          "decision",
+          "inbox",
+          "skipped",
+          "callsUsed"
+        ],
+        "type": "object"
+      },
+      "failures": {
+        "ConfigLoadFailed": {
+          "additionalProperties": false,
+          "properties": {
+            "_tag": {
+              "const": "ConfigLoadFailed",
+              "description": "The configuration file could not be found or evaluated.",
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "path": {
+              "description": "The file that the failure concerns.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "_tag",
+            "message"
+          ],
+          "type": "object"
+        },
+        "InvalidConfig": {
+          "additionalProperties": false,
+          "properties": {
+            "_tag": {
+              "const": "InvalidConfig",
+              "description": "CSS Forge rejects a value of the configuration.",
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "path": {
+              "description": "The file that the failure concerns.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "_tag",
+            "message"
+          ],
+          "type": "object"
+        },
+        "InvalidDecision": {
+          "additionalProperties": false,
+          "properties": {
+            "_tag": {
+              "const": "InvalidDecision",
+              "description": "The decision does not settle the item, or the adopted path does not fit.",
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "path": {
+              "description": "The file that the failure concerns.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "_tag",
+            "message"
+          ],
+          "type": "object"
+        },
+        "InvalidState": {
+          "additionalProperties": false,
+          "properties": {
+            "_tag": {
+              "const": "InvalidState",
+              "description": "The state file of the remote is not valid.",
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "path": {
+              "description": "The file that the failure concerns.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "_tag",
+            "message"
+          ],
+          "type": "object"
+        },
+        "NotFetched": {
+          "additionalProperties": false,
+          "properties": {
+            "_tag": {
+              "const": "NotFetched",
+              "description": "The remote has not been read yet: run `fetch` first.",
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "path": {
+              "description": "The file that the failure concerns.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "_tag",
+            "message"
+          ],
+          "type": "object"
+        },
+        "RemoteNotConfigured": {
+          "additionalProperties": false,
+          "properties": {
+            "_tag": {
+              "const": "RemoteNotConfigured",
+              "description": "The remote has no state file: add it with `remote add`.",
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "path": {
+              "description": "The file that the failure concerns.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "_tag",
+            "message"
+          ],
+          "type": "object"
+        },
+        "UnknownItem": {
+          "additionalProperties": false,
+          "properties": {
+            "_tag": {
+              "const": "UnknownItem",
+              "description": "The inbox has no item with this id.",
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "path": {
+              "description": "The file that the failure concerns.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "_tag",
+            "message"
+          ],
+          "type": "object"
+        }
+      },
+      "destructive": false,
+      "idempotent": true
+    },
+    "sync.plan": {
+      "description": "Report the plan against the tokens of the last fetch, with no request to the remote: the changes the next push sends, the inbox, and the configuration tokens that have no place on the remote. Use it after a change of the configuration or a decision.",
+      "audience": [
+        "cli",
+        "mcp",
+        "library"
+      ],
+      "input": {
+        "additionalProperties": false,
+        "properties": {
+          "config": {
+            "default": "./cssforge.config.ts",
+            "description": "The path of the configuration file.",
+            "minLength": 1,
+            "type": "string"
+          },
+          "remote": {
+            "default": "paper",
+            "description": "The name of the remote, as `remote add --name` gave it.",
+            "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$",
+            "type": "string"
+          },
+          "root": {
+            "description": "The directory that the configuration path and the state directory .cssforge/sync resolve against. The default is the working directory.",
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "output": {
+        "additionalProperties": false,
+        "properties": {
+          "callsUsed": {
+            "description": "The requests made to the remote by this call.",
+            "maximum": 9007199254740991,
+            "minimum": -9007199254740991,
+            "type": "integer"
+          },
+          "fetchedAt": {
+            "description": "When the remote tokens were read, as an ISO 8601 time.",
+            "type": "string"
+          },
+          "file": {
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "name"
+            ],
+            "type": "object"
+          },
+          "inbox": {
+            "items": {
+              "additionalProperties": false,
+              "description": "A change of the remote that waits for a decision. new: adopt or reject. edited, deleted and collision: overwrite with the value of the configuration.",
+              "properties": {
+                "actions": {
+                  "items": {
+                    "enum": [
+                      "adopt",
+                      "reject",
+                      "overwrite"
+                    ],
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "kind": {
+                  "enum": [
+                    "new",
+                    "edited",
+                    "deleted",
+                    "collision"
+                  ],
+                  "type": "string"
+                },
+                "localValue": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "note": {
+                  "type": "string"
+                },
+                "remoteValue": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "kind",
+                "name",
+                "type",
+                "actions"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "operations": {
+            "description": "The changes the next push sends, in order.",
+            "items": {
+              "description": "A change to send to the remote.",
+              "oneOf": [
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "description": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "op": {
+                      "const": "create",
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string"
+                    },
+                    "value": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "op",
+                    "name",
+                    "type",
+                    "value",
+                    "description"
+                  ],
+                  "type": "object"
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "description": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "op": {
+                      "const": "update",
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string"
+                    },
+                    "value": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "op",
+                    "name",
+                    "type",
+                    "value",
+                    "description"
+                  ],
+                  "type": "object"
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "from": {
+                      "type": "string"
+                    },
+                    "op": {
+                      "const": "rename",
+                      "type": "string"
+                    },
+                    "to": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "op",
+                    "from",
+                    "to"
+                  ],
+                  "type": "object"
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "op": {
+                      "const": "delete",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "op",
+                    "name"
+                  ],
+                  "type": "object"
+                }
+              ]
+            },
+            "type": "array"
+          },
+          "remote": {
+            "type": "string"
+          },
+          "skipped": {
+            "description": "Configuration tokens that have no place on the remote.",
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "reason": {
+                  "type": "string"
+                },
+                "sourcePath": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "name",
+                "sourcePath",
+                "reason"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "remote",
+          "file",
+          "fetchedAt",
+          "operations",
+          "inbox",
+          "skipped",
+          "callsUsed"
+        ],
+        "type": "object"
+      },
+      "failures": {
+        "ConfigLoadFailed": {
+          "additionalProperties": false,
+          "properties": {
+            "_tag": {
+              "const": "ConfigLoadFailed",
+              "description": "The configuration file could not be found or evaluated.",
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "path": {
+              "description": "The file that the failure concerns.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "_tag",
+            "message"
+          ],
+          "type": "object"
+        },
+        "InvalidConfig": {
+          "additionalProperties": false,
+          "properties": {
+            "_tag": {
+              "const": "InvalidConfig",
+              "description": "CSS Forge rejects a value of the configuration.",
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "path": {
+              "description": "The file that the failure concerns.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "_tag",
+            "message"
+          ],
+          "type": "object"
+        },
+        "InvalidState": {
+          "additionalProperties": false,
+          "properties": {
+            "_tag": {
+              "const": "InvalidState",
+              "description": "The state file of the remote is not valid.",
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "path": {
+              "description": "The file that the failure concerns.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "_tag",
+            "message"
+          ],
+          "type": "object"
+        },
+        "NotFetched": {
+          "additionalProperties": false,
+          "properties": {
+            "_tag": {
+              "const": "NotFetched",
+              "description": "The remote has not been read yet: run `fetch` first.",
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "path": {
+              "description": "The file that the failure concerns.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "_tag",
+            "message"
+          ],
+          "type": "object"
+        },
+        "RemoteNotConfigured": {
+          "additionalProperties": false,
+          "properties": {
+            "_tag": {
+              "const": "RemoteNotConfigured",
+              "description": "The remote has no state file: add it with `remote add`.",
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "path": {
+              "description": "The file that the failure concerns.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "_tag",
+            "message"
+          ],
+          "type": "object"
+        }
+      },
+      "readOnly": true
+    },
+    "sync.push": {
+      "description": "Read the remote, then send the changes of the plan: create and update the tokens of the configuration, delete the ones removed from it, and carry out the decisions on inbox items. Items without a decision stay in the inbox, and their tokens are not changed. One request to read, up to two to write and one to read the stored values back; only the first when the plan is empty.",
+      "audience": [
+        "cli",
+        "mcp",
+        "library"
+      ],
+      "input": {
+        "additionalProperties": false,
+        "properties": {
+          "config": {
+            "default": "./cssforge.config.ts",
+            "description": "The path of the configuration file.",
+            "minLength": 1,
+            "type": "string"
+          },
+          "dry-run": {
+            "default": false,
+            "description": "Read the remote and report the plan, but send nothing.",
+            "type": "boolean"
+          },
+          "remote": {
+            "default": "paper",
+            "description": "The name of the remote, as `remote add --name` gave it.",
+            "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$",
+            "type": "string"
+          },
+          "root": {
+            "description": "The directory that the configuration path and the state directory .cssforge/sync resolve against. The default is the working directory.",
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "output": {
+        "additionalProperties": false,
+        "properties": {
+          "applied": {
+            "description": "What the remote did with each operation. Empty for a dry run.",
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "message": {
+                  "type": "string"
+                },
+                "ok": {
+                  "type": "boolean"
+                },
+                "operation": {
+                  "description": "A change to send to the remote.",
+                  "oneOf": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "description": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "op": {
+                          "const": "create",
+                          "type": "string"
+                        },
+                        "type": {
+                          "type": "string"
+                        },
+                        "value": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "op",
+                        "name",
+                        "type",
+                        "value",
+                        "description"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "description": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "op": {
+                          "const": "update",
+                          "type": "string"
+                        },
+                        "type": {
+                          "type": "string"
+                        },
+                        "value": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "op",
+                        "name",
+                        "type",
+                        "value",
+                        "description"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "from": {
+                          "type": "string"
+                        },
+                        "op": {
+                          "const": "rename",
+                          "type": "string"
+                        },
+                        "to": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "op",
+                        "from",
+                        "to"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "name": {
+                          "type": "string"
+                        },
+                        "op": {
+                          "const": "delete",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "op",
+                        "name"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "operation",
+                "ok"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "callsUsed": {
+            "description": "The requests made to the remote by this call.",
+            "maximum": 9007199254740991,
+            "minimum": -9007199254740991,
+            "type": "integer"
+          },
+          "fetchedAt": {
+            "description": "When the remote tokens were read, as an ISO 8601 time.",
+            "type": "string"
+          },
+          "file": {
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "name"
+            ],
+            "type": "object"
+          },
+          "inbox": {
+            "items": {
+              "additionalProperties": false,
+              "description": "A change of the remote that waits for a decision. new: adopt or reject. edited, deleted and collision: overwrite with the value of the configuration.",
+              "properties": {
+                "actions": {
+                  "items": {
+                    "enum": [
+                      "adopt",
+                      "reject",
+                      "overwrite"
+                    ],
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "kind": {
+                  "enum": [
+                    "new",
+                    "edited",
+                    "deleted",
+                    "collision"
+                  ],
+                  "type": "string"
+                },
+                "localValue": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "note": {
+                  "type": "string"
+                },
+                "remoteValue": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "kind",
+                "name",
+                "type",
+                "actions"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "operations": {
+            "description": "The changes the next push sends, in order.",
+            "items": {
+              "description": "A change to send to the remote.",
+              "oneOf": [
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "description": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "op": {
+                      "const": "create",
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string"
+                    },
+                    "value": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "op",
+                    "name",
+                    "type",
+                    "value",
+                    "description"
+                  ],
+                  "type": "object"
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "description": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "op": {
+                      "const": "update",
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string"
+                    },
+                    "value": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "op",
+                    "name",
+                    "type",
+                    "value",
+                    "description"
+                  ],
+                  "type": "object"
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "from": {
+                      "type": "string"
+                    },
+                    "op": {
+                      "const": "rename",
+                      "type": "string"
+                    },
+                    "to": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "op",
+                    "from",
+                    "to"
+                  ],
+                  "type": "object"
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "op": {
+                      "const": "delete",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "op",
+                    "name"
+                  ],
+                  "type": "object"
+                }
+              ]
+            },
+            "type": "array"
+          },
+          "remote": {
+            "type": "string"
+          },
+          "skipped": {
+            "description": "Configuration tokens that have no place on the remote.",
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "reason": {
+                  "type": "string"
+                },
+                "sourcePath": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "name",
+                "sourcePath",
+                "reason"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "remote",
+          "file",
+          "fetchedAt",
+          "operations",
+          "inbox",
+          "skipped",
+          "callsUsed",
+          "applied"
+        ],
+        "type": "object"
+      },
+      "failures": {
+        "ConfigLoadFailed": {
+          "additionalProperties": false,
+          "properties": {
+            "_tag": {
+              "const": "ConfigLoadFailed",
+              "description": "The configuration file could not be found or evaluated.",
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "path": {
+              "description": "The file that the failure concerns.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "_tag",
+            "message"
+          ],
+          "type": "object"
+        },
+        "InvalidConfig": {
+          "additionalProperties": false,
+          "properties": {
+            "_tag": {
+              "const": "InvalidConfig",
+              "description": "CSS Forge rejects a value of the configuration.",
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "path": {
+              "description": "The file that the failure concerns.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "_tag",
+            "message"
+          ],
+          "type": "object"
+        },
+        "InvalidState": {
+          "additionalProperties": false,
+          "properties": {
+            "_tag": {
+              "const": "InvalidState",
+              "description": "The state file of the remote is not valid.",
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "path": {
+              "description": "The file that the failure concerns.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "_tag",
+            "message"
+          ],
+          "type": "object"
+        },
+        "RemoteFailed": {
+          "additionalProperties": false,
+          "properties": {
+            "_tag": {
+              "const": "RemoteFailed",
+              "description": "The remote refused a request or answered in an unknown form.",
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "path": {
+              "description": "The file that the failure concerns.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "_tag",
+            "message"
+          ],
+          "type": "object"
+        },
+        "RemoteNotConfigured": {
+          "additionalProperties": false,
+          "properties": {
+            "_tag": {
+              "const": "RemoteNotConfigured",
+              "description": "The remote has no state file: add it with `remote add`.",
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "path": {
+              "description": "The file that the failure concerns.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "_tag",
+            "message"
+          ],
+          "type": "object"
+        },
+        "RemoteUnavailable": {
+          "additionalProperties": false,
+          "properties": {
+            "_tag": {
+              "const": "RemoteUnavailable",
+              "description": "The remote cannot be reached: its program is not installed or not running.",
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "path": {
+              "description": "The file that the failure concerns.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "_tag",
+            "message"
+          ],
+          "type": "object"
+        }
+      },
+      "destructive": true,
+      "idempotent": true
+    },
+    "sync.remote.add": {
+      "description": "Bind a file of a design tool to the configuration as a remote, so that the token sync commands read and write that file only. Checks that the remote can open the file (one request), and writes .cssforge/sync/<name>.json. Binding the same file again keeps the sync state; binding another file starts the sync again.",
+      "audience": [
+        "cli",
+        "mcp",
+        "library"
+      ],
+      "input": {
+        "additionalProperties": false,
+        "properties": {
+          "file": {
+            "description": "The file of the remote that the tokens sync with: its id or its URL.",
+            "minLength": 1,
+            "type": "string"
+          },
+          "kind": {
+            "default": "paper",
+            "description": "The kind of remote, e.g. paper.",
+            "minLength": 1,
+            "type": "string"
+          },
+          "name": {
+            "default": "paper",
+            "description": "The name of the remote, as `remote add --name` gave it.",
+            "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$",
+            "type": "string"
+          },
+          "root": {
+            "description": "The directory that the configuration path and the state directory .cssforge/sync resolve against. The default is the working directory.",
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "file"
+        ],
+        "type": "object"
+      },
+      "output": {
+        "additionalProperties": false,
+        "properties": {
+          "callsUsed": {
+            "maximum": 9007199254740991,
+            "minimum": -9007199254740991,
+            "type": "integer"
+          },
+          "file": {
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "name"
+            ],
+            "type": "object"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "remote": {
+            "type": "string"
+          },
+          "state": {
+            "description": "The absolute path of the state file.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "remote",
+          "kind",
+          "file",
+          "state",
+          "callsUsed"
+        ],
+        "type": "object"
+      },
+      "failures": {
+        "RemoteFailed": {
+          "additionalProperties": false,
+          "properties": {
+            "_tag": {
+              "const": "RemoteFailed",
+              "description": "The remote refused a request or answered in an unknown form.",
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "path": {
+              "description": "The file that the failure concerns.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "_tag",
+            "message"
+          ],
+          "type": "object"
+        },
+        "RemoteUnavailable": {
+          "additionalProperties": false,
+          "properties": {
+            "_tag": {
+              "const": "RemoteUnavailable",
+              "description": "The remote cannot be reached: its program is not installed or not running.",
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "path": {
+              "description": "The file that the failure concerns.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "_tag",
+            "message"
+          ],
+          "type": "object"
+        },
+        "UnknownKind": {
+          "additionalProperties": false,
+          "properties": {
+            "_tag": {
+              "const": "UnknownKind",
+              "description": "The kind of remote is not known.",
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "path": {
+              "description": "The file that the failure concerns.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "_tag",
+            "message"
+          ],
+          "type": "object"
+        }
+      },
+      "destructive": true,
+      "idempotent": true
     },
     "tokens.build": {
       "description": "Generate the outputs of a CSS Forge configuration and write them to files: CSS custom properties, JSON, TypeScript and Style Dictionary tokens. Every output is generated before the first file is written, so an invalid configuration leaves the previous files in place. The result lists the files written and the warnings of the configuration.",
@@ -412,7 +3330,9 @@
           ],
           "type": "object"
         }
-      }
+      },
+      "destructive": true,
+      "idempotent": true
     },
     "tokens.generate": {
       "description": "Generate one output of a CSS Forge configuration and give it as text, with the warnings of the configuration. Writes no file.",
