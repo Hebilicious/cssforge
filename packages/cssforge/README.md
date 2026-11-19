@@ -2224,7 +2224,8 @@ lets Musea attribute a `var(--token)` written in an art file back to its token.
 configuration is the source of truth: the tokens it generates are pushed to the file, and
 what designers change in the file waits in an inbox until you decide what to do with it.
 [Paper](https://paper.design) is the first supported design tool; its desktop app serves the
-MCP server that `cssforge` talks to (`paper-design mcp`).
+MCP server that `cssforge` talks to (`paper-design mcp`). Each design tool is an adapter
+behind the same commands, so others (Figma) can follow.
 
 ```bash
 # Bind a Paper file to the configuration (one request). Writes .cssforge/sync/paper.json.
@@ -2256,9 +2257,31 @@ cssforge sync inbox reject --item brand-accent
 cssforge sync inbox overwrite --item spacing-size-1
 ```
 
-Commit `.cssforge/sync/<remote>.json`: it holds the file id, the tokens as they were after the
-last push, and the decisions, so everyone who syncs shares the same base. `--remote <name>`
-selects another remote (the default is `paper`), and `sync remote add --name <name>` binds one.
+Commit `.cssforge/sync/<remote>.json`: it holds the target (the file, its modes and the
+options), the tokens as they were after the last push with the key the design tool gave each
+one, and the decisions, so everyone who syncs shares the same base. `--remote <name>` selects
+another remote (the default is `paper`), and `sync remote add --name <name>` binds one.
+`sync remote add --options '{"collection":"Tokens"}'` passes options to the kind of remote;
+Paper takes none.
+
+### Modes
+
+A design tool can hold a value for each mode of a token, as a Figma collection does. Sync
+gives each token one value per mode:
+
+| Token in the config | Mode |
+| --- | --- |
+| At `:root` | `default` |
+| A `light-dark(light, dark)` value at `:root`, or a value built from one (a mix of a paired color) | `light` and `dark`, each with its own branch of every `light-dark()` |
+| Under a selector or an at-rule, e.g. a theme with `selector: ".dark"` | The selector or at-rule: `.dark` |
+
+Tokens with the same custom property in several scopes (themes with `variantNameOnly`) are one
+token with a value for each of its modes. The target says which modes it holds; a mode it does
+not hold is listed in `skipped` with the mode. Paper holds only `default`.
+
+A token is identified by its custom property in the config and by its key in the design tool:
+the name on Paper, an id on a tool that has ids. A designer who renames a token on such a tool
+keeps its link to the config.
 
 | Inbox item | What happened in the file | Decisions |
 | --- | --- | --- |
@@ -2285,8 +2308,8 @@ with the reason:
 | --- | --- |
 | Palette colors, spacing, fluid type sizes (`clamp()`), font weights | Color, spacing, font size and font weight tokens |
 | A token whose value is `var(--other)` | An alias of the other token, when both have the same type |
-| Mixed colors (`color-mix()`) and paired themes (`light-dark()`) | Left out: Paper does not take these values |
-| Tokens under a selector or an at-rule (themes with a `selector`) | Left out: Paper has no modes |
+| Mixed colors (`color-mix()`) | Left out: Paper does not take these values |
+| Paired themes (`light-dark()`) and tokens under a selector or an at-rule | Left out: Paper holds only the `default` mode |
 | The helper tokens of a `pow()` type scale | Left out: the `clamp()` scale is synced |
 | Motion, gradients and primitives without a Paper type | Left out |
 

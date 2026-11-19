@@ -46,11 +46,15 @@ State: `.cssforge/sync/<remote>.json` (commit it). Every command takes `--remote
 - `cssforge sync inbox overwrite --item <id>`: the next push writes the config value for an `edited`,
   `deleted` or `collision` item. To keep the file's value, change the config instead.
 
-Results: `{ remote, file, fetchedAt, operations, inbox, skipped, callsUsed }`, and `applied` for
-`push`. An item id is the token name without `--`. A token path is the path in each pushed token's
+Results: `{ remote, target, fetchedAt, operations, inbox, skipped, callsUsed }`, and `applied`
+for `push`. Values are per mode (`{ default: "8px" }`): `default` at `:root`, `light` and `dark`
+for `light-dark()`, the selector or at-rule for other scopes. The target lists the modes it holds
+(Paper: `default`); the others are in `skipped` with `mode`. A remote token has a `key` (Paper: its
+name; other tools: an id) and a `label`; operations address it by key.
+`sync remote add --options '<json>'` passes adapter options (Paper takes none: `InvalidOptions`). An item id is the token name without `--`. A token path is the path in each pushed token's
 description (`cssforge: palette.brand.500`). Failure tags: `RemoteNotConfigured`, `InvalidState`,
 `RemoteUnavailable`, `RemoteFailed`, `NotFetched`, `UnknownItem`, `InvalidDecision`,
-`UnknownKind`. Paper's free plan limits MCP calls: prefer `sync plan` and `sync inbox list` (no request)
+`UnknownKind`, `InvalidOptions`. Paper's free plan limits MCP calls: prefer `sync plan` and `sync inbox list` (no request)
 after one `sync fetch`.
 
 Agent loop: `sync fetch` → read `sync inbox list` → edit the config →

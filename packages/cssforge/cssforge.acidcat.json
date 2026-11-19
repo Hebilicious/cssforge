@@ -224,22 +224,6 @@
             "description": "When the remote tokens were read, as an ISO 8601 time.",
             "type": "string"
           },
-          "file": {
-            "additionalProperties": false,
-            "properties": {
-              "id": {
-                "type": "string"
-              },
-              "name": {
-                "type": "string"
-              }
-            },
-            "required": [
-              "id",
-              "name"
-            ],
-            "type": "object"
-          },
           "inbox": {
             "items": {
               "additionalProperties": false,
@@ -259,6 +243,10 @@
                 "id": {
                   "type": "string"
                 },
+                "key": {
+                  "description": "The key of the token on the remote, or the key a deleted token had.",
+                  "type": "string"
+                },
                 "kind": {
                   "enum": [
                     "new",
@@ -268,17 +256,32 @@
                   ],
                   "type": "string"
                 },
-                "localValue": {
+                "label": {
+                  "description": "The name of the token on the remote.",
                   "type": "string"
                 },
-                "name": {
-                  "type": "string"
+                "localValues": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "description": "A value for each mode: default for :root, light and dark, or a selector.",
+                  "propertyNames": {
+                    "type": "string"
+                  },
+                  "type": "object"
                 },
                 "note": {
                   "type": "string"
                 },
-                "remoteValue": {
-                  "type": "string"
+                "remoteValues": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "description": "A value for each mode: default for :root, light and dark, or a selector.",
+                  "propertyNames": {
+                    "type": "string"
+                  },
+                  "type": "object"
                 },
                 "type": {
                   "type": "string"
@@ -287,7 +290,8 @@
               "required": [
                 "id",
                 "kind",
-                "name",
+                "key",
+                "label",
                 "type",
                 "actions"
               ],
@@ -298,7 +302,7 @@
           "operations": {
             "description": "The changes the next push sends, in order.",
             "items": {
-              "description": "A change to send to the remote.",
+              "description": "A change to send to the remote, which addresses a remote token by its key.",
               "oneOf": [
                 {
                   "additionalProperties": false,
@@ -316,15 +320,22 @@
                     "type": {
                       "type": "string"
                     },
-                    "value": {
-                      "type": "string"
+                    "values": {
+                      "additionalProperties": {
+                        "type": "string"
+                      },
+                      "description": "A value for each mode: default for :root, light and dark, or a selector.",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "type": "object"
                     }
                   },
                   "required": [
                     "op",
                     "name",
                     "type",
-                    "value",
+                    "values",
                     "description"
                   ],
                   "type": "object"
@@ -333,6 +344,9 @@
                   "additionalProperties": false,
                   "properties": {
                     "description": {
+                      "type": "string"
+                    },
+                    "key": {
                       "type": "string"
                     },
                     "name": {
@@ -345,15 +359,23 @@
                     "type": {
                       "type": "string"
                     },
-                    "value": {
-                      "type": "string"
+                    "values": {
+                      "additionalProperties": {
+                        "type": "string"
+                      },
+                      "description": "A value for each mode: default for :root, light and dark, or a selector.",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "type": "object"
                     }
                   },
                   "required": [
                     "op",
+                    "key",
                     "name",
                     "type",
-                    "value",
+                    "values",
                     "description"
                   ],
                   "type": "object"
@@ -362,6 +384,9 @@
                   "additionalProperties": false,
                   "properties": {
                     "from": {
+                      "type": "string"
+                    },
+                    "key": {
                       "type": "string"
                     },
                     "op": {
@@ -374,6 +399,7 @@
                   },
                   "required": [
                     "op",
+                    "key",
                     "from",
                     "to"
                   ],
@@ -382,7 +408,10 @@
                 {
                   "additionalProperties": false,
                   "properties": {
-                    "name": {
+                    "key": {
+                      "type": "string"
+                    },
+                    "label": {
                       "type": "string"
                     },
                     "op": {
@@ -392,7 +421,8 @@
                   },
                   "required": [
                     "op",
-                    "name"
+                    "key",
+                    "label"
                   ],
                   "type": "object"
                 }
@@ -404,10 +434,13 @@
             "type": "string"
           },
           "skipped": {
-            "description": "Configuration tokens that have no place on the remote.",
+            "description": "Configuration tokens, or modes of them, that have no place on the remote. A token with a mode listed here still syncs its other modes.",
             "items": {
               "additionalProperties": false,
               "properties": {
+                "mode": {
+                  "type": "string"
+                },
                 "name": {
                   "type": "string"
                 },
@@ -426,11 +459,47 @@
               "type": "object"
             },
             "type": "array"
+          },
+          "target": {
+            "additionalProperties": false,
+            "description": "The part of the remote the tokens sync with.",
+            "properties": {
+              "file": {
+                "description": "The id of the file on the remote.",
+                "type": "string"
+              },
+              "fileName": {
+                "type": "string"
+              },
+              "modes": {
+                "description": "The modes the target holds.",
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "options": {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "propertyNames": {
+                  "type": "string"
+                },
+                "type": "object"
+              }
+            },
+            "required": [
+              "file",
+              "fileName",
+              "modes",
+              "options"
+            ],
+            "type": "object"
           }
         },
         "required": [
           "remote",
-          "file",
+          "target",
           "fetchedAt",
           "operations",
           "inbox",
@@ -593,7 +662,7 @@
             "type": "string"
           },
           "item": {
-            "description": "The id of the inbox item: the token name without its leading --.",
+            "description": "The id of the inbox item, made from the name of the token on the remote: brand-accent for --brand-accent.",
             "minLength": 1,
             "type": "string"
           },
@@ -641,12 +710,16 @@
                   "item": {
                     "type": "string"
                   },
+                  "key": {
+                    "type": "string"
+                  },
                   "path": {
                     "type": "string"
                   }
                 },
                 "required": [
                   "item",
+                  "key",
                   "action",
                   "path"
                 ],
@@ -661,10 +734,14 @@
                   },
                   "item": {
                     "type": "string"
+                  },
+                  "key": {
+                    "type": "string"
                   }
                 },
                 "required": [
                   "item",
+                  "key",
                   "action"
                 ],
                 "type": "object"
@@ -678,10 +755,14 @@
                   },
                   "item": {
                     "type": "string"
+                  },
+                  "key": {
+                    "type": "string"
                   }
                 },
                 "required": [
                   "item",
+                  "key",
                   "action"
                 ],
                 "type": "object"
@@ -708,6 +789,10 @@
                 "id": {
                   "type": "string"
                 },
+                "key": {
+                  "description": "The key of the token on the remote, or the key a deleted token had.",
+                  "type": "string"
+                },
                 "kind": {
                   "enum": [
                     "new",
@@ -717,17 +802,32 @@
                   ],
                   "type": "string"
                 },
-                "localValue": {
+                "label": {
+                  "description": "The name of the token on the remote.",
                   "type": "string"
                 },
-                "name": {
-                  "type": "string"
+                "localValues": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "description": "A value for each mode: default for :root, light and dark, or a selector.",
+                  "propertyNames": {
+                    "type": "string"
+                  },
+                  "type": "object"
                 },
                 "note": {
                   "type": "string"
                 },
-                "remoteValue": {
-                  "type": "string"
+                "remoteValues": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "description": "A value for each mode: default for :root, light and dark, or a selector.",
+                  "propertyNames": {
+                    "type": "string"
+                  },
+                  "type": "object"
                 },
                 "type": {
                   "type": "string"
@@ -736,7 +836,8 @@
               "required": [
                 "id",
                 "kind",
-                "name",
+                "key",
+                "label",
                 "type",
                 "actions"
               ],
@@ -748,10 +849,13 @@
             "type": "string"
           },
           "skipped": {
-            "description": "Configuration tokens that have no place on the remote.",
+            "description": "Configuration tokens, or modes of them, that have no place on the remote. A token with a mode listed here still syncs its other modes.",
             "items": {
               "additionalProperties": false,
               "properties": {
+                "mode": {
+                  "type": "string"
+                },
                 "name": {
                   "type": "string"
                 },
@@ -983,22 +1087,6 @@
             "description": "When the remote tokens were read, as an ISO 8601 time.",
             "type": "string"
           },
-          "file": {
-            "additionalProperties": false,
-            "properties": {
-              "id": {
-                "type": "string"
-              },
-              "name": {
-                "type": "string"
-              }
-            },
-            "required": [
-              "id",
-              "name"
-            ],
-            "type": "object"
-          },
           "inbox": {
             "items": {
               "additionalProperties": false,
@@ -1018,6 +1106,10 @@
                 "id": {
                   "type": "string"
                 },
+                "key": {
+                  "description": "The key of the token on the remote, or the key a deleted token had.",
+                  "type": "string"
+                },
                 "kind": {
                   "enum": [
                     "new",
@@ -1027,17 +1119,32 @@
                   ],
                   "type": "string"
                 },
-                "localValue": {
+                "label": {
+                  "description": "The name of the token on the remote.",
                   "type": "string"
                 },
-                "name": {
-                  "type": "string"
+                "localValues": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "description": "A value for each mode: default for :root, light and dark, or a selector.",
+                  "propertyNames": {
+                    "type": "string"
+                  },
+                  "type": "object"
                 },
                 "note": {
                   "type": "string"
                 },
-                "remoteValue": {
-                  "type": "string"
+                "remoteValues": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "description": "A value for each mode: default for :root, light and dark, or a selector.",
+                  "propertyNames": {
+                    "type": "string"
+                  },
+                  "type": "object"
                 },
                 "type": {
                   "type": "string"
@@ -1046,7 +1153,8 @@
               "required": [
                 "id",
                 "kind",
-                "name",
+                "key",
+                "label",
                 "type",
                 "actions"
               ],
@@ -1057,7 +1165,7 @@
           "operations": {
             "description": "The changes the next push sends, in order.",
             "items": {
-              "description": "A change to send to the remote.",
+              "description": "A change to send to the remote, which addresses a remote token by its key.",
               "oneOf": [
                 {
                   "additionalProperties": false,
@@ -1075,15 +1183,22 @@
                     "type": {
                       "type": "string"
                     },
-                    "value": {
-                      "type": "string"
+                    "values": {
+                      "additionalProperties": {
+                        "type": "string"
+                      },
+                      "description": "A value for each mode: default for :root, light and dark, or a selector.",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "type": "object"
                     }
                   },
                   "required": [
                     "op",
                     "name",
                     "type",
-                    "value",
+                    "values",
                     "description"
                   ],
                   "type": "object"
@@ -1092,6 +1207,9 @@
                   "additionalProperties": false,
                   "properties": {
                     "description": {
+                      "type": "string"
+                    },
+                    "key": {
                       "type": "string"
                     },
                     "name": {
@@ -1104,15 +1222,23 @@
                     "type": {
                       "type": "string"
                     },
-                    "value": {
-                      "type": "string"
+                    "values": {
+                      "additionalProperties": {
+                        "type": "string"
+                      },
+                      "description": "A value for each mode: default for :root, light and dark, or a selector.",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "type": "object"
                     }
                   },
                   "required": [
                     "op",
+                    "key",
                     "name",
                     "type",
-                    "value",
+                    "values",
                     "description"
                   ],
                   "type": "object"
@@ -1121,6 +1247,9 @@
                   "additionalProperties": false,
                   "properties": {
                     "from": {
+                      "type": "string"
+                    },
+                    "key": {
                       "type": "string"
                     },
                     "op": {
@@ -1133,6 +1262,7 @@
                   },
                   "required": [
                     "op",
+                    "key",
                     "from",
                     "to"
                   ],
@@ -1141,7 +1271,10 @@
                 {
                   "additionalProperties": false,
                   "properties": {
-                    "name": {
+                    "key": {
+                      "type": "string"
+                    },
+                    "label": {
                       "type": "string"
                     },
                     "op": {
@@ -1151,7 +1284,8 @@
                   },
                   "required": [
                     "op",
-                    "name"
+                    "key",
+                    "label"
                   ],
                   "type": "object"
                 }
@@ -1163,10 +1297,13 @@
             "type": "string"
           },
           "skipped": {
-            "description": "Configuration tokens that have no place on the remote.",
+            "description": "Configuration tokens, or modes of them, that have no place on the remote. A token with a mode listed here still syncs its other modes.",
             "items": {
               "additionalProperties": false,
               "properties": {
+                "mode": {
+                  "type": "string"
+                },
                 "name": {
                   "type": "string"
                 },
@@ -1185,11 +1322,47 @@
               "type": "object"
             },
             "type": "array"
+          },
+          "target": {
+            "additionalProperties": false,
+            "description": "The part of the remote the tokens sync with.",
+            "properties": {
+              "file": {
+                "description": "The id of the file on the remote.",
+                "type": "string"
+              },
+              "fileName": {
+                "type": "string"
+              },
+              "modes": {
+                "description": "The modes the target holds.",
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "options": {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "propertyNames": {
+                  "type": "string"
+                },
+                "type": "object"
+              }
+            },
+            "required": [
+              "file",
+              "fileName",
+              "modes",
+              "options"
+            ],
+            "type": "object"
           }
         },
         "required": [
           "remote",
-          "file",
+          "target",
           "fetchedAt",
           "operations",
           "inbox",
@@ -1329,7 +1502,7 @@
             "type": "string"
           },
           "item": {
-            "description": "The id of the inbox item: the token name without its leading --.",
+            "description": "The id of the inbox item, made from the name of the token on the remote: brand-accent for --brand-accent.",
             "minLength": 1,
             "type": "string"
           },
@@ -1371,12 +1544,16 @@
                   "item": {
                     "type": "string"
                   },
+                  "key": {
+                    "type": "string"
+                  },
                   "path": {
                     "type": "string"
                   }
                 },
                 "required": [
                   "item",
+                  "key",
                   "action",
                   "path"
                 ],
@@ -1391,10 +1568,14 @@
                   },
                   "item": {
                     "type": "string"
+                  },
+                  "key": {
+                    "type": "string"
                   }
                 },
                 "required": [
                   "item",
+                  "key",
                   "action"
                 ],
                 "type": "object"
@@ -1408,10 +1589,14 @@
                   },
                   "item": {
                     "type": "string"
+                  },
+                  "key": {
+                    "type": "string"
                   }
                 },
                 "required": [
                   "item",
+                  "key",
                   "action"
                 ],
                 "type": "object"
@@ -1438,6 +1623,10 @@
                 "id": {
                   "type": "string"
                 },
+                "key": {
+                  "description": "The key of the token on the remote, or the key a deleted token had.",
+                  "type": "string"
+                },
                 "kind": {
                   "enum": [
                     "new",
@@ -1447,17 +1636,32 @@
                   ],
                   "type": "string"
                 },
-                "localValue": {
+                "label": {
+                  "description": "The name of the token on the remote.",
                   "type": "string"
                 },
-                "name": {
-                  "type": "string"
+                "localValues": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "description": "A value for each mode: default for :root, light and dark, or a selector.",
+                  "propertyNames": {
+                    "type": "string"
+                  },
+                  "type": "object"
                 },
                 "note": {
                   "type": "string"
                 },
-                "remoteValue": {
-                  "type": "string"
+                "remoteValues": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "description": "A value for each mode: default for :root, light and dark, or a selector.",
+                  "propertyNames": {
+                    "type": "string"
+                  },
+                  "type": "object"
                 },
                 "type": {
                   "type": "string"
@@ -1466,7 +1670,8 @@
               "required": [
                 "id",
                 "kind",
-                "name",
+                "key",
+                "label",
                 "type",
                 "actions"
               ],
@@ -1478,10 +1683,13 @@
             "type": "string"
           },
           "skipped": {
-            "description": "Configuration tokens that have no place on the remote.",
+            "description": "Configuration tokens, or modes of them, that have no place on the remote. A token with a mode listed here still syncs its other modes.",
             "items": {
               "additionalProperties": false,
               "properties": {
+                "mode": {
+                  "type": "string"
+                },
                 "name": {
                   "type": "string"
                 },
@@ -1687,7 +1895,7 @@
             "type": "string"
           },
           "item": {
-            "description": "The id of the inbox item: the token name without its leading --.",
+            "description": "The id of the inbox item, made from the name of the token on the remote: brand-accent for --brand-accent.",
             "minLength": 1,
             "type": "string"
           },
@@ -1729,12 +1937,16 @@
                   "item": {
                     "type": "string"
                   },
+                  "key": {
+                    "type": "string"
+                  },
                   "path": {
                     "type": "string"
                   }
                 },
                 "required": [
                   "item",
+                  "key",
                   "action",
                   "path"
                 ],
@@ -1749,10 +1961,14 @@
                   },
                   "item": {
                     "type": "string"
+                  },
+                  "key": {
+                    "type": "string"
                   }
                 },
                 "required": [
                   "item",
+                  "key",
                   "action"
                 ],
                 "type": "object"
@@ -1766,10 +1982,14 @@
                   },
                   "item": {
                     "type": "string"
+                  },
+                  "key": {
+                    "type": "string"
                   }
                 },
                 "required": [
                   "item",
+                  "key",
                   "action"
                 ],
                 "type": "object"
@@ -1796,6 +2016,10 @@
                 "id": {
                   "type": "string"
                 },
+                "key": {
+                  "description": "The key of the token on the remote, or the key a deleted token had.",
+                  "type": "string"
+                },
                 "kind": {
                   "enum": [
                     "new",
@@ -1805,17 +2029,32 @@
                   ],
                   "type": "string"
                 },
-                "localValue": {
+                "label": {
+                  "description": "The name of the token on the remote.",
                   "type": "string"
                 },
-                "name": {
-                  "type": "string"
+                "localValues": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "description": "A value for each mode: default for :root, light and dark, or a selector.",
+                  "propertyNames": {
+                    "type": "string"
+                  },
+                  "type": "object"
                 },
                 "note": {
                   "type": "string"
                 },
-                "remoteValue": {
-                  "type": "string"
+                "remoteValues": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "description": "A value for each mode: default for :root, light and dark, or a selector.",
+                  "propertyNames": {
+                    "type": "string"
+                  },
+                  "type": "object"
                 },
                 "type": {
                   "type": "string"
@@ -1824,7 +2063,8 @@
               "required": [
                 "id",
                 "kind",
-                "name",
+                "key",
+                "label",
                 "type",
                 "actions"
               ],
@@ -1836,10 +2076,13 @@
             "type": "string"
           },
           "skipped": {
-            "description": "Configuration tokens that have no place on the remote.",
+            "description": "Configuration tokens, or modes of them, that have no place on the remote. A token with a mode listed here still syncs its other modes.",
             "items": {
               "additionalProperties": false,
               "properties": {
+                "mode": {
+                  "type": "string"
+                },
                 "name": {
                   "type": "string"
                 },
@@ -2071,22 +2314,6 @@
             "description": "When the remote tokens were read, as an ISO 8601 time.",
             "type": "string"
           },
-          "file": {
-            "additionalProperties": false,
-            "properties": {
-              "id": {
-                "type": "string"
-              },
-              "name": {
-                "type": "string"
-              }
-            },
-            "required": [
-              "id",
-              "name"
-            ],
-            "type": "object"
-          },
           "inbox": {
             "items": {
               "additionalProperties": false,
@@ -2106,6 +2333,10 @@
                 "id": {
                   "type": "string"
                 },
+                "key": {
+                  "description": "The key of the token on the remote, or the key a deleted token had.",
+                  "type": "string"
+                },
                 "kind": {
                   "enum": [
                     "new",
@@ -2115,17 +2346,32 @@
                   ],
                   "type": "string"
                 },
-                "localValue": {
+                "label": {
+                  "description": "The name of the token on the remote.",
                   "type": "string"
                 },
-                "name": {
-                  "type": "string"
+                "localValues": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "description": "A value for each mode: default for :root, light and dark, or a selector.",
+                  "propertyNames": {
+                    "type": "string"
+                  },
+                  "type": "object"
                 },
                 "note": {
                   "type": "string"
                 },
-                "remoteValue": {
-                  "type": "string"
+                "remoteValues": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "description": "A value for each mode: default for :root, light and dark, or a selector.",
+                  "propertyNames": {
+                    "type": "string"
+                  },
+                  "type": "object"
                 },
                 "type": {
                   "type": "string"
@@ -2134,7 +2380,8 @@
               "required": [
                 "id",
                 "kind",
-                "name",
+                "key",
+                "label",
                 "type",
                 "actions"
               ],
@@ -2145,7 +2392,7 @@
           "operations": {
             "description": "The changes the next push sends, in order.",
             "items": {
-              "description": "A change to send to the remote.",
+              "description": "A change to send to the remote, which addresses a remote token by its key.",
               "oneOf": [
                 {
                   "additionalProperties": false,
@@ -2163,15 +2410,22 @@
                     "type": {
                       "type": "string"
                     },
-                    "value": {
-                      "type": "string"
+                    "values": {
+                      "additionalProperties": {
+                        "type": "string"
+                      },
+                      "description": "A value for each mode: default for :root, light and dark, or a selector.",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "type": "object"
                     }
                   },
                   "required": [
                     "op",
                     "name",
                     "type",
-                    "value",
+                    "values",
                     "description"
                   ],
                   "type": "object"
@@ -2180,6 +2434,9 @@
                   "additionalProperties": false,
                   "properties": {
                     "description": {
+                      "type": "string"
+                    },
+                    "key": {
                       "type": "string"
                     },
                     "name": {
@@ -2192,15 +2449,23 @@
                     "type": {
                       "type": "string"
                     },
-                    "value": {
-                      "type": "string"
+                    "values": {
+                      "additionalProperties": {
+                        "type": "string"
+                      },
+                      "description": "A value for each mode: default for :root, light and dark, or a selector.",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "type": "object"
                     }
                   },
                   "required": [
                     "op",
+                    "key",
                     "name",
                     "type",
-                    "value",
+                    "values",
                     "description"
                   ],
                   "type": "object"
@@ -2209,6 +2474,9 @@
                   "additionalProperties": false,
                   "properties": {
                     "from": {
+                      "type": "string"
+                    },
+                    "key": {
                       "type": "string"
                     },
                     "op": {
@@ -2221,6 +2489,7 @@
                   },
                   "required": [
                     "op",
+                    "key",
                     "from",
                     "to"
                   ],
@@ -2229,7 +2498,10 @@
                 {
                   "additionalProperties": false,
                   "properties": {
-                    "name": {
+                    "key": {
+                      "type": "string"
+                    },
+                    "label": {
                       "type": "string"
                     },
                     "op": {
@@ -2239,7 +2511,8 @@
                   },
                   "required": [
                     "op",
-                    "name"
+                    "key",
+                    "label"
                   ],
                   "type": "object"
                 }
@@ -2251,10 +2524,13 @@
             "type": "string"
           },
           "skipped": {
-            "description": "Configuration tokens that have no place on the remote.",
+            "description": "Configuration tokens, or modes of them, that have no place on the remote. A token with a mode listed here still syncs its other modes.",
             "items": {
               "additionalProperties": false,
               "properties": {
+                "mode": {
+                  "type": "string"
+                },
                 "name": {
                   "type": "string"
                 },
@@ -2273,11 +2549,47 @@
               "type": "object"
             },
             "type": "array"
+          },
+          "target": {
+            "additionalProperties": false,
+            "description": "The part of the remote the tokens sync with.",
+            "properties": {
+              "file": {
+                "description": "The id of the file on the remote.",
+                "type": "string"
+              },
+              "fileName": {
+                "type": "string"
+              },
+              "modes": {
+                "description": "The modes the target holds.",
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "options": {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "propertyNames": {
+                  "type": "string"
+                },
+                "type": "object"
+              }
+            },
+            "required": [
+              "file",
+              "fileName",
+              "modes",
+              "options"
+            ],
+            "type": "object"
           }
         },
         "required": [
           "remote",
-          "file",
+          "target",
           "fetchedAt",
           "operations",
           "inbox",
@@ -2443,6 +2755,10 @@
             "items": {
               "additionalProperties": false,
               "properties": {
+                "key": {
+                  "description": "The key of the token after the operation.",
+                  "type": "string"
+                },
                 "message": {
                   "type": "string"
                 },
@@ -2450,7 +2766,7 @@
                   "type": "boolean"
                 },
                 "operation": {
-                  "description": "A change to send to the remote.",
+                  "description": "A change to send to the remote, which addresses a remote token by its key.",
                   "oneOf": [
                     {
                       "additionalProperties": false,
@@ -2468,15 +2784,22 @@
                         "type": {
                           "type": "string"
                         },
-                        "value": {
-                          "type": "string"
+                        "values": {
+                          "additionalProperties": {
+                            "type": "string"
+                          },
+                          "description": "A value for each mode: default for :root, light and dark, or a selector.",
+                          "propertyNames": {
+                            "type": "string"
+                          },
+                          "type": "object"
                         }
                       },
                       "required": [
                         "op",
                         "name",
                         "type",
-                        "value",
+                        "values",
                         "description"
                       ],
                       "type": "object"
@@ -2485,6 +2808,9 @@
                       "additionalProperties": false,
                       "properties": {
                         "description": {
+                          "type": "string"
+                        },
+                        "key": {
                           "type": "string"
                         },
                         "name": {
@@ -2497,15 +2823,23 @@
                         "type": {
                           "type": "string"
                         },
-                        "value": {
-                          "type": "string"
+                        "values": {
+                          "additionalProperties": {
+                            "type": "string"
+                          },
+                          "description": "A value for each mode: default for :root, light and dark, or a selector.",
+                          "propertyNames": {
+                            "type": "string"
+                          },
+                          "type": "object"
                         }
                       },
                       "required": [
                         "op",
+                        "key",
                         "name",
                         "type",
-                        "value",
+                        "values",
                         "description"
                       ],
                       "type": "object"
@@ -2514,6 +2848,9 @@
                       "additionalProperties": false,
                       "properties": {
                         "from": {
+                          "type": "string"
+                        },
+                        "key": {
                           "type": "string"
                         },
                         "op": {
@@ -2526,6 +2863,7 @@
                       },
                       "required": [
                         "op",
+                        "key",
                         "from",
                         "to"
                       ],
@@ -2534,7 +2872,10 @@
                     {
                       "additionalProperties": false,
                       "properties": {
-                        "name": {
+                        "key": {
+                          "type": "string"
+                        },
+                        "label": {
                           "type": "string"
                         },
                         "op": {
@@ -2544,7 +2885,8 @@
                       },
                       "required": [
                         "op",
-                        "name"
+                        "key",
+                        "label"
                       ],
                       "type": "object"
                     }
@@ -2569,22 +2911,6 @@
             "description": "When the remote tokens were read, as an ISO 8601 time.",
             "type": "string"
           },
-          "file": {
-            "additionalProperties": false,
-            "properties": {
-              "id": {
-                "type": "string"
-              },
-              "name": {
-                "type": "string"
-              }
-            },
-            "required": [
-              "id",
-              "name"
-            ],
-            "type": "object"
-          },
           "inbox": {
             "items": {
               "additionalProperties": false,
@@ -2604,6 +2930,10 @@
                 "id": {
                   "type": "string"
                 },
+                "key": {
+                  "description": "The key of the token on the remote, or the key a deleted token had.",
+                  "type": "string"
+                },
                 "kind": {
                   "enum": [
                     "new",
@@ -2613,17 +2943,32 @@
                   ],
                   "type": "string"
                 },
-                "localValue": {
+                "label": {
+                  "description": "The name of the token on the remote.",
                   "type": "string"
                 },
-                "name": {
-                  "type": "string"
+                "localValues": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "description": "A value for each mode: default for :root, light and dark, or a selector.",
+                  "propertyNames": {
+                    "type": "string"
+                  },
+                  "type": "object"
                 },
                 "note": {
                   "type": "string"
                 },
-                "remoteValue": {
-                  "type": "string"
+                "remoteValues": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "description": "A value for each mode: default for :root, light and dark, or a selector.",
+                  "propertyNames": {
+                    "type": "string"
+                  },
+                  "type": "object"
                 },
                 "type": {
                   "type": "string"
@@ -2632,7 +2977,8 @@
               "required": [
                 "id",
                 "kind",
-                "name",
+                "key",
+                "label",
                 "type",
                 "actions"
               ],
@@ -2643,7 +2989,7 @@
           "operations": {
             "description": "The changes the next push sends, in order.",
             "items": {
-              "description": "A change to send to the remote.",
+              "description": "A change to send to the remote, which addresses a remote token by its key.",
               "oneOf": [
                 {
                   "additionalProperties": false,
@@ -2661,15 +3007,22 @@
                     "type": {
                       "type": "string"
                     },
-                    "value": {
-                      "type": "string"
+                    "values": {
+                      "additionalProperties": {
+                        "type": "string"
+                      },
+                      "description": "A value for each mode: default for :root, light and dark, or a selector.",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "type": "object"
                     }
                   },
                   "required": [
                     "op",
                     "name",
                     "type",
-                    "value",
+                    "values",
                     "description"
                   ],
                   "type": "object"
@@ -2678,6 +3031,9 @@
                   "additionalProperties": false,
                   "properties": {
                     "description": {
+                      "type": "string"
+                    },
+                    "key": {
                       "type": "string"
                     },
                     "name": {
@@ -2690,15 +3046,23 @@
                     "type": {
                       "type": "string"
                     },
-                    "value": {
-                      "type": "string"
+                    "values": {
+                      "additionalProperties": {
+                        "type": "string"
+                      },
+                      "description": "A value for each mode: default for :root, light and dark, or a selector.",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "type": "object"
                     }
                   },
                   "required": [
                     "op",
+                    "key",
                     "name",
                     "type",
-                    "value",
+                    "values",
                     "description"
                   ],
                   "type": "object"
@@ -2707,6 +3071,9 @@
                   "additionalProperties": false,
                   "properties": {
                     "from": {
+                      "type": "string"
+                    },
+                    "key": {
                       "type": "string"
                     },
                     "op": {
@@ -2719,6 +3086,7 @@
                   },
                   "required": [
                     "op",
+                    "key",
                     "from",
                     "to"
                   ],
@@ -2727,7 +3095,10 @@
                 {
                   "additionalProperties": false,
                   "properties": {
-                    "name": {
+                    "key": {
+                      "type": "string"
+                    },
+                    "label": {
                       "type": "string"
                     },
                     "op": {
@@ -2737,7 +3108,8 @@
                   },
                   "required": [
                     "op",
-                    "name"
+                    "key",
+                    "label"
                   ],
                   "type": "object"
                 }
@@ -2749,10 +3121,13 @@
             "type": "string"
           },
           "skipped": {
-            "description": "Configuration tokens that have no place on the remote.",
+            "description": "Configuration tokens, or modes of them, that have no place on the remote. A token with a mode listed here still syncs its other modes.",
             "items": {
               "additionalProperties": false,
               "properties": {
+                "mode": {
+                  "type": "string"
+                },
                 "name": {
                   "type": "string"
                 },
@@ -2771,11 +3146,47 @@
               "type": "object"
             },
             "type": "array"
+          },
+          "target": {
+            "additionalProperties": false,
+            "description": "The part of the remote the tokens sync with.",
+            "properties": {
+              "file": {
+                "description": "The id of the file on the remote.",
+                "type": "string"
+              },
+              "fileName": {
+                "type": "string"
+              },
+              "modes": {
+                "description": "The modes the target holds.",
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "options": {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "propertyNames": {
+                  "type": "string"
+                },
+                "type": "object"
+              }
+            },
+            "required": [
+              "file",
+              "fileName",
+              "modes",
+              "options"
+            ],
+            "type": "object"
           }
         },
         "required": [
           "remote",
-          "file",
+          "target",
           "fetchedAt",
           "operations",
           "inbox",
@@ -2923,7 +3334,7 @@
       "idempotent": true
     },
     "sync.remote.add": {
-      "description": "Bind a file of a design tool to the configuration as a remote, so that the token sync commands read and write that file only. Checks that the remote can open the file (one request), and writes .cssforge/sync/<name>.json. Binding the same file again keeps the sync state; binding another file starts the sync again.",
+      "description": "Bind a file of a design tool to the configuration as a remote, so that the token sync commands read and write that file only. Checks that the remote can open the file with the options (one request), and writes .cssforge/sync/<name>.json. Binding the same file with the same options again keeps the sync state; binding another target starts the sync again.",
       "audience": [
         "cli",
         "mcp",
@@ -2949,6 +3360,17 @@
             "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$",
             "type": "string"
           },
+          "options": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "default": {},
+            "description": "The options of the kind of remote, as JSON, e.g. {\"collection\":\"Tokens\"}. Paper takes none.",
+            "propertyNames": {
+              "type": "string"
+            },
+            "type": "object"
+          },
           "root": {
             "description": "The directory that the configuration path and the state directory .cssforge/sync resolve against. The default is the working directory.",
             "minLength": 1,
@@ -2968,22 +3390,6 @@
             "minimum": -9007199254740991,
             "type": "integer"
           },
-          "file": {
-            "additionalProperties": false,
-            "properties": {
-              "id": {
-                "type": "string"
-              },
-              "name": {
-                "type": "string"
-              }
-            },
-            "required": [
-              "id",
-              "name"
-            ],
-            "type": "object"
-          },
           "kind": {
             "type": "string"
           },
@@ -2993,18 +3399,76 @@
           "state": {
             "description": "The absolute path of the state file.",
             "type": "string"
+          },
+          "target": {
+            "additionalProperties": false,
+            "description": "The part of the remote the tokens sync with.",
+            "properties": {
+              "file": {
+                "description": "The id of the file on the remote.",
+                "type": "string"
+              },
+              "fileName": {
+                "type": "string"
+              },
+              "modes": {
+                "description": "The modes the target holds.",
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "options": {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "propertyNames": {
+                  "type": "string"
+                },
+                "type": "object"
+              }
+            },
+            "required": [
+              "file",
+              "fileName",
+              "modes",
+              "options"
+            ],
+            "type": "object"
           }
         },
         "required": [
           "remote",
           "kind",
-          "file",
+          "target",
           "state",
           "callsUsed"
         ],
         "type": "object"
       },
       "failures": {
+        "InvalidOptions": {
+          "additionalProperties": false,
+          "properties": {
+            "_tag": {
+              "const": "InvalidOptions",
+              "description": "The kind of remote does not take the options.",
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "path": {
+              "description": "The file that the failure concerns.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "_tag",
+            "message"
+          ],
+          "type": "object"
+        },
         "RemoteFailed": {
           "additionalProperties": false,
           "properties": {

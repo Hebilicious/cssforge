@@ -8,13 +8,18 @@
 
 import { z } from "zod";
 import type { ListedToken, TokenKind } from "../generator.ts";
-import { ROOT_SCOPE } from "../lib.ts";
 import { connectMcp, McpClientError } from "./mcp-client.ts";
-import { type Operation, TOKEN_NAME } from "./plan.ts";
+import {
+	CUSTOM_PROPERTY,
+	DEFAULT_MODE,
+	type ModeValues,
+	type Operation,
+} from "./plan.ts";
 import {
 	type ApplyResult,
 	type RemoteAdapter,
 	RemoteError,
+	type RemoteOptions,
 	type RemoteSession,
 	type TokenMapping,
 } from "./remote.ts";
@@ -65,13 +70,10 @@ const SIZE_FUNCTION = /^(?:clamp|calc|min|max)\(/i;
 const POW_SCALE_PATH = /\.pow(?:[.@]|$)/;
 
 /**
- * Maps a configuration token to Paper. Paper has no modes, so a token scoped to a selector
- * or an at-rule has no place. Paper rejects `color-mix()` and references inside a value.
+ * Maps a configuration token to Paper. Paper has no modes: token sync only asks for the
+ * `default` mode. Paper rejects `color-mix()` and references inside a value.
  */
 export function mapToPaper(token: ListedToken): TokenMapping {
-	if (token.scope !== ROOT_SCOPE) {
-		return { skip: `It is scoped to ${token.scope}, and Paper has no modes.` };
-	}
 	const type =
 		token.kind === "typography"
 			? typographyType(token.sourcePath)
@@ -85,7 +87,7 @@ export function mapToPaper(token: ListedToken): TokenMapping {
 		};
 	}
 	if (type === "color" && /(?:color-mix|light-dark)\(/i.test(value)) {
-		return { skip: "Paper does not take color-mix() or light-dark() values." };
+		return { skip: "Paper does not take color-mix() values." };
 	}
 	if (type === "fontSize") {
 		if (POW_SCALE_PATH.test(token.sourcePath)) {
@@ -121,7 +123,7 @@ const tokenList = z.object({
 	tokens: z.array(
 		z.object({
 			// The rule of the state file, so that a fetch never records a name it cannot read back.
-			name: z.string().regex(TOKEN_NAME),
+			name: z.string().regex(CUSTOM_PROPERTY),
 			type: z.string(),
 			value: z.union([z.string(), z.number()]),
 			description: z.string().optional(),
@@ -140,19 +142,38 @@ type Change = Exclude<Operation, { op: "create" }>;
 
 const isChange = (operation: Operation): operation is Change => operation.op !== "create";
 
-/** The `set_tokens` entry of a change. */
-const setTokensEntry = (operation: Change) => {
+/** The value of the one mode Paper holds. */
+const defaultValue = (values: ModeValues): string => values[DEFAULT_MODE] ?? "";
+
+/**
+ * The `set_tokens` entry of a change. A Paper key is the token name, so a rename changes
+ * it: `renamed` maps the keys renamed earlier in the batch to their new names.
+ */
+const setTokensEntry = (operation: Change, renamed: Map<string, string>) => {
+	const name = renamed.get(operation.key) ?? operation.key;
 	switch (operation.op) {
 		case "update":
 			return {
-				name: operation.name,
-				value: paperValue(operation.type, operation.value),
+				name,
+				value: paperValue(operation.type, defaultValue(operation.values)),
 				description: operation.description,
 			};
 		case "rename":
-			return { name: operation.from, newName: operation.to };
+			renamed.set(operation.key, operation.to);
+			return { name, newName: operation.to };
 		case "delete":
-			return { name: operation.name, delete: true };
+			return { name, delete: true };
+	}
+};
+
+/** Paper takes no options. */
+const checkPaperOptions = (options: RemoteOptions): void => {
+	const names = Object.keys(options);
+	if (names.length > 0) {
+		throw new RemoteError(
+			"InvalidOptions",
+			`Paper takes no options. Received: ${names.join(", ")}.`,
+		);
 	}
 };
 
@@ -172,6 +193,7 @@ export function paperAdapter({
 	return {
 		kind: "paper",
 		map: mapToPaper,
+		checkOptions: checkPaperOptions,
 		async open(signal) {
 			const client = await connectMcp(command, args, signal).catch((error: unknown) => {
 				throw new RemoteError(
@@ -202,7 +224,8 @@ export function paperAdapter({
 					return calls;
 				},
 				close: () => client.close(),
-				async describe(file) {
+				async resolve(file, options) {
+					checkPaperOptions(options);
 					const text = await call("get_basic_info", { fileId: file });
 					const header = fileHeader.safeParse(JSON.parse(text[0] ?? "null"));
 					const info = resultOf(basicInfo, text, "get_basic_info");
@@ -212,24 +235,34 @@ export function paperAdapter({
 							"Paper did not say which file it read.",
 						);
 					}
-					return { id: header.data.file.id, name: info.fileName };
+					return {
+						file: header.data.file.id,
+						fileName: info.fileName,
+						modes: [DEFAULT_MODE],
+						options: {},
+					};
 				},
-				async read(file) {
-					const text = await call("get_tokens", { fileId: file, format: "json" });
+				async read(target) {
+					const text = await call("get_tokens", { fileId: target.file, format: "json" });
 					return resultOf(tokenList, text, "get_tokens").tokens.map((token) => ({
+						key: token.name,
+						label: token.name,
 						name: token.name,
 						type: token.type,
-						value: String(token.value),
+						values: { [DEFAULT_MODE]: String(token.value) },
 						...(token.description === undefined
 							? {}
 							: { description: token.description }),
 					}));
 				},
-				async apply(file, operations) {
+				async apply(target, operations) {
 					const creates = operations.filter((operation) => operation.op === "create");
 					const changes = operations.filter(isChange);
 					const results: ApplyResult[] = [];
+					const renamed = new Map<string, string>();
 
+					/** The key each operation leaves its token with, in the order sent. */
+					const keys = new Map<Operation, string>();
 					const report = (
 						batch: readonly Operation[],
 						text: readonly string[],
@@ -242,27 +275,42 @@ export function paperAdapter({
 							results.push({
 								operation,
 								ok,
-								...(ok ? {} : { message: entry?.message ?? "Paper gave no result." }),
+								...(ok
+									? { key: keys.get(operation) ?? "" }
+									: { message: entry?.message ?? "Paper gave no result." }),
 							});
 						});
 					};
 
 					if (creates.length > 0) {
+						// A Paper key is the name.
+						for (const operation of creates) keys.set(operation, operation.name);
 						const text = await call("create_tokens", {
-							fileId: file,
+							fileId: target.file,
 							tokens: creates.map((operation) => ({
 								type: operation.type,
 								name: operation.name,
-								value: paperValue(operation.type, operation.value),
+								value: paperValue(operation.type, defaultValue(operation.values)),
 								description: operation.description,
 							})),
 						});
 						report(creates, text, "create_tokens");
 					}
 					if (changes.length > 0) {
+						const entries = changes.map((operation) => {
+							const entry = setTokensEntry(operation, renamed);
+							// A Paper key is the name: the name after this entry, renamed or not.
+							keys.set(
+								operation,
+								operation.op === "rename"
+									? operation.to
+									: (renamed.get(operation.key) ?? operation.key),
+							);
+							return entry;
+						});
 						const text = await call("set_tokens", {
-							fileId: file,
-							tokens: changes.map(setTokensEntry),
+							fileId: target.file,
+							tokens: entries,
 						});
 						report(changes, text, "set_tokens");
 					}

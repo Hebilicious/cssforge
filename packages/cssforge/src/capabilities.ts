@@ -82,14 +82,17 @@ export type {
 	BaseEntry,
 	Decision,
 	InboxItem,
+	ModeValues,
 	Operation,
 	RemoteToken,
 } from "./sync/plan.ts";
+export { DEFAULT_MODE } from "./sync/plan.ts";
 export type {
 	ApplyResult,
 	RemoteAdapter,
-	RemoteFile,
+	RemoteOptions,
 	RemoteSession,
+	RemoteTarget,
 	TokenMapping,
 } from "./sync/remote.ts";
 export { RemoteError } from "./sync/remote.ts";
