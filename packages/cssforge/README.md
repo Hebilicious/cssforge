@@ -2228,37 +2228,37 @@ MCP server that `cssforge` talks to (`paper-design mcp`).
 
 ```bash
 # Bind a Paper file to the configuration (one request). Writes .cssforge/sync/paper.json.
-cssforge remote add --file https://app.paper.design/file/<id>
+cssforge sync remote add --file https://app.paper.design/file/<id>
 
 # Read the file and show the plan, without changing it (one request)
-cssforge fetch
+cssforge sync fetch
 
 # Show the plan again after a change of the config or a decision (no request)
-cssforge plan
+cssforge sync plan
 
 # Send the plan: create, update and delete tokens, and carry out the decisions
-cssforge push
-cssforge push --dry-run
+cssforge sync push
+cssforge sync push --dry-run
 
 # The changes designers made in the file
-cssforge inbox
+cssforge sync inbox list
 
 # A token a designer created: add it to the config first, then adopt it under that path.
 # The path is the token path, as each pushed token shows it in its description
 # (`cssforge: palette.brand.accent`). The next push renames the token in the file to the
 # name the config generates.
-cssforge inbox adopt --item brand-accent --path palette.brand.accent
+cssforge sync inbox adopt --item brand-accent --path palette.brand.accent
 # Or delete it from the file at the next push
-cssforge inbox reject --item brand-accent
+cssforge sync inbox reject --item brand-accent
 
 # A token of the config that a designer changed or deleted: the next push writes the
 # config's value again. To keep the designer's value, change the config instead.
-cssforge inbox overwrite --item spacing-size-1
+cssforge sync inbox overwrite --item spacing-size-1
 ```
 
 Commit `.cssforge/sync/<remote>.json`: it holds the file id, the tokens as they were after the
 last push, and the decisions, so everyone who syncs shares the same base. `--remote <name>`
-selects another remote (the default is `paper`), and `remote add --name <name>` binds one.
+selects another remote (the default is `paper`), and `sync remote add --name <name>` binds one.
 
 | Inbox item | What happened in the file | Decisions |
 | --- | --- | --- |
@@ -2267,12 +2267,12 @@ selects another remote (the default is `paper`), and `remote add --name <name>` 
 | `deleted` | A designer deleted a config token | `overwrite` |
 | `collision` | The file has a token with the name of a new config token | `overwrite` |
 
-When `push` renames a token (after `inbox adopt`), the designs that use it keep using it under
-the new name. When it deletes a token (after `inbox reject`, or because the token left the
+When `sync push` renames a token (after `sync inbox adopt`), the designs that use it keep using it under
+the new name. When it deletes a token (after `sync inbox reject`, or because the token left the
 config), Paper replaces each use with the token's last value, so designs keep their look but
 lose the link to the token.
 
-An item without a decision blocks only its own token: `push` sends every other change. A
+An item without a decision blocks only its own token: `sync push` sends every other change. A
 change that the file refuses stays in the plan, and the next push sends it again. Each result
 has `callsUsed`, the number of requests made to the design tool, because Paper's free plan
 limits MCP tool calls. A push reads the file once, writes at most twice, and reads the stored

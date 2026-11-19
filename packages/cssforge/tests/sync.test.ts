@@ -474,10 +474,10 @@ test("remote add - binding the same file keeps the sync state, binding another f
 	expect(restarted.ok ? undefined : restarted.error._tag).toEqual("NotFetched");
 });
 
-test("cli - the sync aliases run their capabilities and give failures as JSON", () => {
+test("cli - cssforge sync plan runs its capability and gives a failure as JSON", () => {
 	const cliPath = fileURLToPath(new URL("../src/cli.ts", import.meta.url));
 
-	const plan = spawnSync(process.execPath, [cliPath, "plan", "--agent"], {
+	const plan = spawnSync(process.execPath, [cliPath, "sync", "plan", "--agent"], {
 		cwd: projectDir,
 		encoding: "utf8",
 		env: childEnv,

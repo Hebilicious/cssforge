@@ -95,7 +95,7 @@ export async function readState(root: string, remote: string): Promise<SyncState
 	} catch {
 		throw new StateError(
 			"RemoteNotConfigured",
-			`There is no remote "${remote}". Add it with \`cssforge remote add --name ${remote} --kind paper --file <file id or URL>\`.`,
+			`There is no remote "${remote}". Add it with \`cssforge sync remote add --name ${remote} --kind paper --file <file id or URL>\`.`,
 			path,
 		);
 	}

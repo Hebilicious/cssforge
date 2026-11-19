@@ -20,32 +20,8 @@
             "check": {
               "capability": "config.check"
             },
-            "fetch": {
-              "capability": "sync.fetch"
-            },
             "generate": {
               "capability": "tokens.generate"
-            },
-            "inbox": {
-              "capability": "sync.inbox.list"
-            },
-            "inbox adopt": {
-              "capability": "sync.inbox.adopt"
-            },
-            "inbox overwrite": {
-              "capability": "sync.inbox.overwrite"
-            },
-            "inbox reject": {
-              "capability": "sync.inbox.reject"
-            },
-            "plan": {
-              "capability": "sync.plan"
-            },
-            "push": {
-              "capability": "sync.push"
-            },
-            "remote add": {
-              "capability": "sync.remote.add"
             }
           },
           "default": "build"
@@ -223,7 +199,7 @@
           },
           "remote": {
             "default": "paper",
-            "description": "The name of the remote, as `remote add --name` gave it.",
+            "description": "The name of the remote, as `sync remote add --name` gave it.",
             "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$",
             "type": "string"
           },
@@ -557,7 +533,7 @@
           "properties": {
             "_tag": {
               "const": "RemoteNotConfigured",
-              "description": "The remote has no state file: add it with `remote add`.",
+              "description": "The remote has no state file: add it with `cssforge sync remote add`.",
               "type": "string"
             },
             "message": {
@@ -628,7 +604,7 @@
           },
           "remote": {
             "default": "paper",
-            "description": "The name of the remote, as `remote add --name` gave it.",
+            "description": "The name of the remote, as `sync remote add --name` gave it.",
             "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$",
             "type": "string"
           },
@@ -899,7 +875,7 @@
           "properties": {
             "_tag": {
               "const": "NotFetched",
-              "description": "The remote has not been read yet: run `fetch` first.",
+              "description": "The remote has not been read yet: run `cssforge sync fetch` first.",
               "type": "string"
             },
             "message": {
@@ -921,7 +897,7 @@
           "properties": {
             "_tag": {
               "const": "RemoteNotConfigured",
-              "description": "The remote has no state file: add it with `remote add`.",
+              "description": "The remote has no state file: add it with `cssforge sync remote add`.",
               "type": "string"
             },
             "message": {
@@ -965,7 +941,7 @@
       "idempotent": true
     },
     "sync.inbox.list": {
-      "description": "List the inbox against the last fetch, with no request to the remote: the tokens the remote created, changed or deleted, each with the decisions that settle it. Settle a new token with `inbox adopt` (after adding it to the configuration) or `inbox reject`, and the others with `inbox overwrite`.",
+      "description": "List the inbox against the last fetch, with no request to the remote: the tokens the remote created, changed or deleted, each with the decisions that settle it. Settle a new token with `sync inbox adopt` (after adding it to the configuration) or `sync inbox reject`, and the others with `sync inbox overwrite`.",
       "audience": [
         "cli",
         "mcp",
@@ -982,7 +958,7 @@
           },
           "remote": {
             "default": "paper",
-            "description": "The name of the remote, as `remote add --name` gave it.",
+            "description": "The name of the remote, as `sync remote add --name` gave it.",
             "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$",
             "type": "string"
           },
@@ -1294,7 +1270,7 @@
           "properties": {
             "_tag": {
               "const": "NotFetched",
-              "description": "The remote has not been read yet: run `fetch` first.",
+              "description": "The remote has not been read yet: run `cssforge sync fetch` first.",
               "type": "string"
             },
             "message": {
@@ -1316,7 +1292,7 @@
           "properties": {
             "_tag": {
               "const": "RemoteNotConfigured",
-              "description": "The remote has no state file: add it with `remote add`.",
+              "description": "The remote has no state file: add it with `cssforge sync remote add`.",
               "type": "string"
             },
             "message": {
@@ -1359,7 +1335,7 @@
           },
           "remote": {
             "default": "paper",
-            "description": "The name of the remote, as `remote add --name` gave it.",
+            "description": "The name of the remote, as `sync remote add --name` gave it.",
             "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$",
             "type": "string"
           },
@@ -1629,7 +1605,7 @@
           "properties": {
             "_tag": {
               "const": "NotFetched",
-              "description": "The remote has not been read yet: run `fetch` first.",
+              "description": "The remote has not been read yet: run `cssforge sync fetch` first.",
               "type": "string"
             },
             "message": {
@@ -1651,7 +1627,7 @@
           "properties": {
             "_tag": {
               "const": "RemoteNotConfigured",
-              "description": "The remote has no state file: add it with `remote add`.",
+              "description": "The remote has no state file: add it with `cssforge sync remote add`.",
               "type": "string"
             },
             "message": {
@@ -1717,7 +1693,7 @@
           },
           "remote": {
             "default": "paper",
-            "description": "The name of the remote, as `remote add --name` gave it.",
+            "description": "The name of the remote, as `sync remote add --name` gave it.",
             "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$",
             "type": "string"
           },
@@ -1987,7 +1963,7 @@
           "properties": {
             "_tag": {
               "const": "NotFetched",
-              "description": "The remote has not been read yet: run `fetch` first.",
+              "description": "The remote has not been read yet: run `cssforge sync fetch` first.",
               "type": "string"
             },
             "message": {
@@ -2009,7 +1985,7 @@
           "properties": {
             "_tag": {
               "const": "RemoteNotConfigured",
-              "description": "The remote has no state file: add it with `remote add`.",
+              "description": "The remote has no state file: add it with `cssforge sync remote add`.",
               "type": "string"
             },
             "message": {
@@ -2070,7 +2046,7 @@
           },
           "remote": {
             "default": "paper",
-            "description": "The name of the remote, as `remote add --name` gave it.",
+            "description": "The name of the remote, as `sync remote add --name` gave it.",
             "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$",
             "type": "string"
           },
@@ -2382,7 +2358,7 @@
           "properties": {
             "_tag": {
               "const": "NotFetched",
-              "description": "The remote has not been read yet: run `fetch` first.",
+              "description": "The remote has not been read yet: run `cssforge sync fetch` first.",
               "type": "string"
             },
             "message": {
@@ -2404,7 +2380,7 @@
           "properties": {
             "_tag": {
               "const": "RemoteNotConfigured",
-              "description": "The remote has no state file: add it with `remote add`.",
+              "description": "The remote has no state file: add it with `cssforge sync remote add`.",
               "type": "string"
             },
             "message": {
@@ -2447,7 +2423,7 @@
           },
           "remote": {
             "default": "paper",
-            "description": "The name of the remote, as `remote add --name` gave it.",
+            "description": "The name of the remote, as `sync remote add --name` gave it.",
             "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$",
             "type": "string"
           },
@@ -2903,7 +2879,7 @@
           "properties": {
             "_tag": {
               "const": "RemoteNotConfigured",
-              "description": "The remote has no state file: add it with `remote add`.",
+              "description": "The remote has no state file: add it with `cssforge sync remote add`.",
               "type": "string"
             },
             "message": {
@@ -2969,7 +2945,7 @@
           },
           "name": {
             "default": "paper",
-            "description": "The name of the remote, as `remote add --name` gave it.",
+            "description": "The name of the remote, as `sync remote add --name` gave it.",
             "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$",
             "type": "string"
           },

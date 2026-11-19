@@ -65,17 +65,7 @@ import {
 } from "./forge.ts";
 import { type ColorFormat, diagnosticCodes } from "./lib.ts";
 import { supportedColorFormats } from "./modules/colors.ts";
-import {
-	syncCapabilities,
-	syncFetch,
-	syncInboxAdopt,
-	syncInboxList,
-	syncInboxOverwrite,
-	syncInboxReject,
-	syncPlan,
-	syncPush,
-	syncRemoteAdd,
-} from "./sync/capabilities.ts";
+import { syncCapabilities } from "./sync/capabilities.ts";
 import type { RemoteAdapter } from "./sync/remote.ts";
 
 /**
@@ -496,14 +486,6 @@ export const cssforge: App<ForgeContext> = defineApp<ForgeContext>({
 					generate: cliAlias(tokensGenerate),
 					check: cliAlias(configCheck),
 					"--watch": cliAlias(tokensBuilt),
-					"remote add": cliAlias(syncRemoteAdd),
-					fetch: cliAlias(syncFetch),
-					plan: cliAlias(syncPlan),
-					push: cliAlias(syncPush),
-					inbox: cliAlias(syncInboxList),
-					"inbox adopt": cliAlias(syncInboxAdopt),
-					"inbox reject": cliAlias(syncInboxReject),
-					"inbox overwrite": cliAlias(syncInboxOverwrite),
 				},
 			},
 		},

@@ -34,27 +34,27 @@ capabilities are in `packages/cssforge/src/sync/capabilities.ts`, the three-way 
 `packages/cssforge/src/sync/plan.ts`, and the Paper mapping in `packages/cssforge/src/sync/paper.ts`.
 State: `.cssforge/sync/<remote>.json` (commit it). Every command takes `--remote` (default `paper`).
 
-- `cssforge remote add --file <id or URL> [--name] [--kind paper]` (`sync remote add`): bind the file. 1 request.
-- `cssforge fetch` (`sync fetch`): read the file, record it, report the plan. 1 request.
-- `cssforge plan` (`sync plan`): the plan against the last fetch. No request.
-- `cssforge push [--dry-run]` (`sync push`): read, send the plan, read back. 1 to 4 requests.
-- `cssforge inbox` (`sync inbox list`): the items of the last fetch. No request.
-- `cssforge inbox adopt --item <id> --path <token path>`: a `new` item becomes the config token at
+- `cssforge sync remote add --file <id or URL> [--name] [--kind paper]`: bind the file. 1 request.
+- `cssforge sync fetch`: read the file, record it, report the plan. 1 request.
+- `cssforge sync plan`: the plan against the last fetch. No request.
+- `cssforge sync push [--dry-run]`: read, send the plan, read back. 1 to 4 requests.
+- `cssforge sync inbox list`: the items of the last fetch. No request.
+- `cssforge sync inbox adopt --item <id> --path <token path>`: a `new` item becomes the config token at
   the path (add it to the config first). The next push renames it in the file.
-- `cssforge inbox reject --item <id>`: the next push deletes a `new` item from the file. Paper
+- `cssforge sync inbox reject --item <id>`: the next push deletes a `new` item from the file. Paper
   replaces each use of a deleted token with its last value; a renamed token keeps its uses.
-- `cssforge inbox overwrite --item <id>`: the next push writes the config value for an `edited`,
+- `cssforge sync inbox overwrite --item <id>`: the next push writes the config value for an `edited`,
   `deleted` or `collision` item. To keep the file's value, change the config instead.
 
 Results: `{ remote, file, fetchedAt, operations, inbox, skipped, callsUsed }`, and `applied` for
 `push`. An item id is the token name without `--`. A token path is the path in each pushed token's
 description (`cssforge: palette.brand.500`). Failure tags: `RemoteNotConfigured`, `InvalidState`,
 `RemoteUnavailable`, `RemoteFailed`, `NotFetched`, `UnknownItem`, `InvalidDecision`,
-`UnknownKind`. Paper's free plan limits MCP calls: prefer `plan` and `inbox` (no request) after
-one `fetch`.
+`UnknownKind`. Paper's free plan limits MCP calls: prefer `sync plan` and `sync inbox list` (no request)
+after one `sync fetch`.
 
-Agent loop: `fetch` → read `inbox` → edit the config → `inbox adopt|reject|overwrite` →
-`plan` → `push`.
+Agent loop: `sync fetch` → read `sync inbox list` → edit the config →
+`sync inbox adopt|reject|overwrite` → `sync plan` → `sync push`.
 
 ## Flags
 

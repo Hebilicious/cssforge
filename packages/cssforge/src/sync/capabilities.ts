@@ -166,7 +166,7 @@ const remoteSchema = z
 	.string()
 	.regex(REMOTE_NAME, "A remote name is lowercase words joined by hyphens, e.g. paper.")
 	.default("paper")
-	.describe("The name of the remote, as `remote add --name` gave it.");
+	.describe("The name of the remote, as `sync remote add --name` gave it.");
 
 const syncShape = {
 	config: z
@@ -323,7 +323,7 @@ const readFailures = {
 	),
 	RemoteNotConfigured: failureSchema(
 		"RemoteNotConfigured",
-		"The remote has no state file: add it with `remote add`.",
+		"The remote has no state file: add it with `cssforge sync remote add`.",
 	),
 	InvalidState: failureSchema(
 		"InvalidState",
@@ -343,7 +343,7 @@ const remoteFailures = {
 const notFetched = {
 	NotFetched: failureSchema(
 		"NotFetched",
-		"The remote has not been read yet: run `fetch` first.",
+		"The remote has not been read yet: run `cssforge sync fetch` first.",
 	),
 };
 const decisionFailures = {
@@ -473,7 +473,7 @@ const fetchedOf = (state: SyncState, remote: string) => {
 	if (state.fetched === null) {
 		throw new SyncError(
 			"NotFetched",
-			`The remote "${remote}" has not been read yet. Run \`cssforge fetch --remote ${remote}\`.`,
+			`The remote "${remote}" has not been read yet. Run \`cssforge sync fetch --remote ${remote}\`.`,
 		);
 	}
 	return state.fetched;
@@ -540,7 +540,7 @@ const planFromFetch = (input: SyncInput, context: ForgeContext) =>
 const capability = capabilitiesFor<ForgeContext>();
 const everyone = ["cli", "mcp", "library"];
 
-/** `cssforge remote add`: bind a remote file to the configuration. */
+/** `cssforge sync remote add`: bind a remote file to the configuration. */
 export const syncRemoteAdd: Capability<
 	ForgeContext,
 	RemoteAddInput,
@@ -595,7 +595,7 @@ export const syncRemoteAdd: Capability<
 		}),
 });
 
-/** `cssforge fetch`: read the remote and report the plan. */
+/** `cssforge sync fetch`: read the remote and report the plan. */
 export const syncFetch: Capability<
 	ForgeContext,
 	SyncInput,
@@ -630,7 +630,7 @@ export const syncFetch: Capability<
 		}),
 });
 
-/** `cssforge plan`: the plan against the last fetch, with no request. */
+/** `cssforge sync plan`: the plan against the last fetch, with no request. */
 export const syncPlan: Capability<
 	ForgeContext,
 	SyncInput,
@@ -651,7 +651,7 @@ export const syncPlan: Capability<
 	run: (input, { context }) => planFromFetch(input, context),
 });
 
-/** `cssforge push`: read the remote, then send the plan. */
+/** `cssforge sync push`: read the remote, then send the plan. */
 export const syncPush: Capability<
 	ForgeContext,
 	PushInput,
@@ -760,7 +760,7 @@ function settle(
 	};
 }
 
-/** `cssforge inbox`: the items that wait for a decision. */
+/** `cssforge sync inbox list`: the items that wait for a decision. */
 export const syncInboxList: Capability<
 	ForgeContext,
 	SyncInput,
@@ -772,7 +772,7 @@ export const syncInboxList: Capability<
 > = capability({
 	id: "sync.inbox.list",
 	description:
-		"List the inbox against the last fetch, with no request to the remote: the tokens the remote created, changed or deleted, each with the decisions that settle it. Settle a new token with `inbox adopt` (after adding it to the configuration) or `inbox reject`, and the others with `inbox overwrite`.",
+		"List the inbox against the last fetch, with no request to the remote: the tokens the remote created, changed or deleted, each with the decisions that settle it. Settle a new token with `sync inbox adopt` (after adding it to the configuration) or `sync inbox reject`, and the others with `sync inbox overwrite`.",
 	audience: everyone,
 	readOnly: true,
 	input: syncInput,
@@ -822,7 +822,7 @@ async function decide(
 	};
 }
 
-/** `cssforge inbox adopt`: make a new remote token a token of the configuration. */
+/** `cssforge sync inbox adopt`: make a new remote token a token of the configuration. */
 export const syncInboxAdopt: Capability<
 	ForgeContext,
 	AdoptInput,
@@ -886,7 +886,7 @@ export const syncInboxAdopt: Capability<
 		),
 });
 
-/** `cssforge inbox reject`: delete a new remote token at the next push. */
+/** `cssforge sync inbox reject`: delete a new remote token at the next push. */
 export const syncInboxReject: Capability<
 	ForgeContext,
 	ItemInput,
@@ -911,7 +911,7 @@ export const syncInboxReject: Capability<
 		),
 });
 
-/** `cssforge inbox overwrite`: give the value of the configuration back to the remote. */
+/** `cssforge sync inbox overwrite`: give the value of the configuration back to the remote. */
 export const syncInboxOverwrite: Capability<
 	ForgeContext,
 	ItemInput,
