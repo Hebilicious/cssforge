@@ -2218,13 +2218,111 @@ Musea reads `value`, `type`, and `$reference` from this file. Keep the default `
 mode: previews and token swatches render from `value`, and `attributes.tailwindVariable` is what
 lets Musea attribute a `var(--token)` written in an art file back to its token.
 
+## Sync tokens with a design tool
+
+`cssforge` keeps the tokens of a design file in sync with the configuration. The
+configuration is the source of truth: the tokens it generates are pushed to the file, and
+what designers change in the file waits in an inbox until you decide what to do with it.
+[Paper](https://paper.design) is the first supported design tool; its desktop app serves the
+MCP server that `cssforge` talks to (`paper-design mcp`). Each design tool is an adapter
+behind the same commands, so others (Figma) can follow.
+
+```bash
+# Bind a Paper file to the configuration (one request). Writes .cssforge/sync/paper.json.
+cssforge sync remote add --file https://app.paper.design/file/<id>
+
+# Read the file and show the plan, without changing it (one request)
+cssforge sync fetch
+
+# Show the plan again after a change of the config or a decision (no request)
+cssforge sync plan
+
+# Send the plan: create, update and delete tokens, and carry out the decisions
+cssforge sync push
+cssforge sync push --dry-run
+
+# The changes designers made in the file
+cssforge sync inbox list
+
+# A token a designer created: add it to the config first, then adopt it under that path.
+# The path is the token path, as each pushed token shows it in its description
+# (`cssforge: palette.brand.accent`). The next push renames the token in the file to the
+# name the config generates.
+cssforge sync inbox adopt --item brand-accent --path palette.brand.accent
+# Or delete it from the file at the next push
+cssforge sync inbox reject --item brand-accent
+
+# A token of the config that a designer changed or deleted: the next push writes the
+# config's value again. To keep the designer's value, change the config instead.
+cssforge sync inbox overwrite --item spacing-size-1
+```
+
+Commit `.cssforge/sync/<remote>.json`: it holds the target (the file, its modes and the
+options), the tokens as they were after the last push with the key the design tool gave each
+one, and the decisions, so everyone who syncs shares the same base. `--remote <name>` selects
+another remote (the default is `paper`), and `sync remote add --name <name>` binds one.
+`sync remote add --options '{"collection":"Tokens"}'` passes options to the kind of remote;
+Paper takes none.
+
+### Modes
+
+A design tool can hold a value for each mode of a token, as a Figma collection does. Sync
+gives each token one value per mode:
+
+| Token in the config | Mode |
+| --- | --- |
+| At `:root` | `default` |
+| A `light-dark(light, dark)` value at `:root`, or a value built from one (a mix of a paired color) | `light` and `dark`, each with its own branch of every `light-dark()` |
+| Under a selector or an at-rule, e.g. a theme with `selector: ".dark"` | The selector or at-rule: `.dark` |
+
+Tokens with the same custom property in several scopes (themes with `variantNameOnly`) are one
+token with a value for each of its modes. The target says which modes it holds; a mode it does
+not hold is listed in `skipped` with the mode. Paper holds only `default`.
+
+A token is identified by its custom property in the config and by its key in the design tool:
+the name on Paper, an id on a tool that has ids. A designer who renames a token on such a tool
+keeps its link to the config.
+
+| Inbox item | What happened in the file | Decisions |
+| --- | --- | --- |
+| `new` | A designer created a token that the config does not have | `adopt`, `reject` |
+| `edited` | A designer changed the value of a config token | `overwrite` |
+| `deleted` | A designer deleted a config token | `overwrite` |
+| `collision` | The file has a token with the name of a new config token | `overwrite` |
+
+When `sync push` renames a token (after `sync inbox adopt`), the designs that use it keep using it under
+the new name. When it deletes a token (after `sync inbox reject`, or because the token left the
+config), Paper replaces each use with the token's last value, so designs keep their look but
+lose the link to the token.
+
+An item without a decision blocks only its own token: `sync push` sends every other change. A
+change that the file refuses stays in the plan, and the next push sends it again. Each result
+has `callsUsed`, the number of requests made to the design tool, because Paper's free plan
+limits MCP tool calls. A push reads the file once, writes at most twice, and reads the stored
+values back once; with nothing to send, it makes one request.
+
+Not every token has a place in Paper. Each result lists the tokens it leaves out in `skipped`,
+with the reason:
+
+| Token | In Paper |
+| --- | --- |
+| Palette colors, spacing, fluid type sizes (`clamp()`), font weights | Color, spacing, font size and font weight tokens |
+| A token whose value is `var(--other)` | An alias of the other token, when both have the same type |
+| Mixed colors (`color-mix()`) | Left out: Paper does not take these values |
+| Paired themes (`light-dark()`) and tokens under a selector or an at-rule | Left out: Paper holds only the `default` mode |
+| The helper tokens of a `pow()` type scale | Left out: the `clamp()` scale is synced |
+| Motion, gradients and primitives without a Paper type | Left out |
+
 ## Agentic usage
 
 Agents can run the `cssforge` CLI like any other command: an agent gets JSON (`--agent` forces it), and
 `cssforge list` describes every command and its flags.
 
 `cssforge mcp` serves the same commands as MCP tools, through standard input and output:
-`tokens.build`, `tokens.generate` and `config.check`, and the event `tokens.built`. Paths
+`tokens.build`, `tokens.generate`, `config.check`, the [sync](#sync-tokens-with-a-design-tool)
+tools (`sync.fetch`, `sync.push`, `sync.inbox.adopt`, …), and the event `tokens.built`. Each
+tool tells the agent whether it changes anything: `sync.push` is marked destructive, so a client
+can ask before it runs. Paths
 resolve against the directory where the agent starts the server, or against the `root` of a
 call. To add it to Claude Code:
 

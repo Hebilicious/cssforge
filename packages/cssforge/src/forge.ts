@@ -19,6 +19,8 @@ import {
 	generateStyleDictionaryJSON,
 	generateTS,
 	getDiagnostics,
+	type ListedToken,
+	listTokens,
 } from "./generator.ts";
 import type { ColorFormat, Diagnostic, GenerateOptions } from "./lib.ts";
 import { type LoadedConfig, loadConfig } from "./loader.ts";
@@ -180,6 +182,12 @@ export async function generateOutput(
 		diagnostics: getDiagnostics(config, { colorFormats: settings.colorFormats ?? [] }),
 		dependencies,
 	}));
+}
+
+/** Lists the tokens of the configuration at `configPath`, for token sync. Writes nothing. */
+export async function listConfigTokens(configPath: string): Promise<ListedToken[]> {
+	const { config, dependencies } = await loadForgeConfig(configPath);
+	return generating(configPath, dependencies, () => listTokens(config));
 }
 
 /**

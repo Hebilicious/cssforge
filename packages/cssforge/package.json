@@ -46,14 +46,14 @@
 		"cssforge.acidcat.json"
 	],
 	"dependencies": {
-		"@acid-cat/core-ts": "0.13.0",
+		"@acid-cat/core-ts": "0.15.0",
 		"chokidar": "4.0.3",
 		"colorjs.io": "0.5.2",
 		"utopia-core": "1.6.0",
 		"zod": "4.6.7"
 	},
 	"devDependencies": {
-		"@acid-cat/cli": "0.13.0",
+		"@acid-cat/cli": "0.15.0",
 		"@biomejs/biome": "2.4.2",
 		"@types/node": "24.3.0",
 		"mdbox": "0.1.1",
