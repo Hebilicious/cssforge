@@ -1548,9 +1548,12 @@ This will generate the following CSS :
 
 <!-- /md:generate -->
 
-Warnings never fail the build. The CLI prints each one to stderr as
-`cssforge: warning: <message>` and still writes the outputs, and `getDiagnostics(config)`
-returns them to programmatic callers (see [Programmatic Usage](#programmatic-usage)).
+Warnings never fail the build: the CLI still writes the outputs and exits with `0`. On a
+terminal, it prints each warning as `warning <path>: <message>` after the files written
+(`cssforge generate` prints them to stderr, so that stdout has only the generated content).
+In JSON output they are the `diagnostics` of the result (see [CLI Usage](#cli-usage)), and
+`getDiagnostics(config)` returns them to programmatic callers (see
+[Programmatic Usage](#programmatic-usage)).
 
 #### Fluid Typography with pow()
 
@@ -2059,6 +2062,18 @@ await using session = createSession(cssforge, {
 });
 const result = await session.call(tokensBuild, { mode: "css" });
 if (!result.ok) console.error(result.error._tag, result.error.message);
+```
+
+A call prints nothing. The warnings are in `result.value.diagnostics` when `result.ok` is
+`true`. Code that moves from the removed `build()` of `@hebilicious/cssforge/cli`, which
+printed them to stderr, must report them itself:
+
+```typescript
+if (result.ok) {
+  for (const { path, message } of result.value.diagnostics) {
+    console.warn(`warning ${path}: ${message}`);
+  }
+}
 ```
 
 ## Programmatic Usage
