@@ -2064,9 +2064,8 @@ const result = await session.call(tokensBuild, { mode: "css" });
 if (!result.ok) console.error(result.error._tag, result.error.message);
 ```
 
-A call prints nothing. The warnings are in `result.value.diagnostics` when `result.ok` is
-`true`. Code that moves from the removed `build()` of `@hebilicious/cssforge/cli`, which
-printed them to stderr, must report them itself:
+A call prints nothing: the warnings are in `result.value.diagnostics` when `result.ok` is
+`true`, and the caller reports them:
 
 ```typescript
 if (result.ok) {
