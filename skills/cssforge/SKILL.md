@@ -34,7 +34,18 @@ Do not invent schema fields that are not present in docs or source types.
   - `import { defineConfig } from "@hebilicious/cssforge";`
 - Mirror patterns from README configuration sections.
 
-3. Configure generation commands
+3. Choose how tokens are generated
+- If the project builds with a bundler that unplugin supports (Vite, webpack, Rollup and
+  others), and so any framework built on one of them, prefer the bundler plugin to CLI scripts. It is a separate package:
+  `npm install --save-dev @hebilicious/cssforge-unplugin`, next to `@hebilicious/cssforge`.
+  - Register `@hebilicious/cssforge-unplugin/<bundler>` where the framework accepts plugins
+    for that bundler, import `virtual:cssforge.css`, and add the
+    `@hebilicious/cssforge-unplugin/client` types reference.
+  - Read `README.md` -> `## Bundler Plugin` for the supported bundlers, their entry points
+    and the options.
+- Otherwise, or when another tool needs the files before the build runs, use the CLI below.
+
+4. Configure generation commands
 - Install the package from npm: `npm install --save-dev @hebilicious/cssforge` (the same
   version is on the secondary JSR channel: `npx jsr add @hebilicious/cssforge`).
 - Run the installed executable directly: `cssforge --mode all` (`npx cssforge` with npm,
@@ -46,11 +57,11 @@ Do not invent schema fields that are not present in docs or source types.
   - `cssforge-generate`: `node ../../packages/cssforge/dist/cli.js --config ./cssforge.config.ts --mode css --css ./.cssforge/output.css`
   - `cssforge-build-local`: `moon run cssforge:pack`
 
-4. Validate outputs
+5. Validate outputs
 - Run `moon run <project>:cssforge-build-local` then `moon run <project>:cssforge-generate`.
 - Verify `./.cssforge/output.css` exists and contains expected custom properties.
 
-5. Troubleshoot with docs
+6. Troubleshoot with docs
 - Use `references/troubleshooting.md` and relevant README sections.
 - For schema uncertainty, check `packages/cssforge/src/config.ts` and module types listed in
   `references/source-schema-map.md`.

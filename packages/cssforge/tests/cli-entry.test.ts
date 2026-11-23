@@ -57,3 +57,14 @@ test("cli - runs when the entry point is invoked through a symlink", async () =>
 		await rm(tempDir, { recursive: true, force: true });
 	}
 });
+
+test("cli - help points to the bundler plugin package", () => {
+	const cliPath = fileURLToPath(new URL("../src/cli.ts", import.meta.url));
+	const help = spawnSync(process.execPath, [cliPath, "--help"], {
+		encoding: "utf8",
+		env: childEnv,
+	});
+
+	expect(help.status).toEqual(0);
+	expect(help.stdout).toContain("@hebilicious/cssforge-unplugin");
+});
