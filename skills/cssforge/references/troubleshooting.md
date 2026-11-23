@@ -14,13 +14,13 @@
 
 ## Variables do not resolve
 
-- Verify reference syntax from README `## Referencing Variables`:
+- Verify reference syntax from `references/token-patterns.md` -> `Reference syntax`:
   - No `.value` in references
   - Fluid scales require `@label`
 
 ## Unexpected variable names
 
-- Check README notes on naming behavior, including theme options such as
+- Check `references/token-patterns.md` -> `Variable names`, including theme options such as
   `variantNameOnly`.
 
 ## Need authoritative schema answer

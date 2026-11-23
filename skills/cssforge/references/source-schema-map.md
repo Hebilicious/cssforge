@@ -1,10 +1,11 @@
 # Source Schema Map
 
-When README examples are not enough, use source types.
+When the patterns in `references/token-patterns.md` are not enough, use the source types. The
+installed package ships them in `node_modules/@hebilicious/cssforge/src/`.
 
 ## Core config type
 
-- `packages/cssforge/src/config.ts`
+- `node_modules/@hebilicious/cssforge/src/config.ts`
 - `CSSForgeConfig` fields:
   - `colors: ColorConfig`
   - `typography: TypographyConfig`
@@ -14,11 +15,11 @@ When README examples are not enough, use source types.
 
 ## Module type sources
 
-- Colors schema: `packages/cssforge/src/modules/colors.ts`
-- Spacing schema: `packages/cssforge/src/modules/spacing.ts`
-- Typography schema: `packages/cssforge/src/modules/typography.ts`
-- Motion schema: `packages/cssforge/src/modules/motion.ts`
-- Primitives schema: `packages/cssforge/src/modules/primitive.ts`
+- Colors schema: `node_modules/@hebilicious/cssforge/src/modules/colors.ts`
+- Spacing schema: `node_modules/@hebilicious/cssforge/src/modules/spacing.ts`
+- Typography schema: `node_modules/@hebilicious/cssforge/src/modules/typography.ts`
+- Motion schema: `node_modules/@hebilicious/cssforge/src/modules/motion.ts`
+- Primitives schema: `node_modules/@hebilicious/cssforge/src/modules/primitive.ts`
 
 ## Settings
 
@@ -26,7 +27,7 @@ A `settings` object sits beside each module's `value`, with `settings.color` gro
 color output settings.
 
 - `ColorSettings`, `ColorFormatConfig`, `HexFormatOutputs` and `RgbFormatOutputs` in
-  `packages/cssforge/src/modules/colors.ts`, re-exported from `mod.ts`.
+  `node_modules/@hebilicious/cssforge/src/modules/colors.ts`, re-exported from `mod.ts`.
 - `settings.color.formats` is keyed by format: `hex` produces `string`, `digits` and
   `number`, `rgb` produces `string` and `array`, and each format takes `alpha`.
 - `settings.color.fallback` names the format whose `string` value becomes the CSS declaration,
@@ -40,7 +41,7 @@ color output settings.
 ## Fluid typography checks
 
 - `FluidTypeScaleDefinition.settings.minLegibleSize` in
-  `packages/cssforge/src/modules/typography.ts`: px number greater than 0, or `false`; default
+  `node_modules/@hebilicious/cssforge/src/modules/typography.ts`: px number greater than 0, or `false`; default
   `12`. Read at `typography.fluid.<scale>.settings.minLegibleSize`; anything else is rejected.
 - A step growing more than 2.5x (max/min size in px) throws (WCAG 1.4.4); exactly 2.5x passes.
 - Warnings, as `Diagnostic` (`code`, `severity`, `path`, `message`) from `getDiagnostics`:
@@ -50,7 +51,7 @@ color output settings.
 ## Fluid typography output
 
 - Every step has one canonical size in px at `minWidth` and `maxWidth`
-  (`fluidTypeSteps` in `packages/cssforge/src/modules/typography.ts`). Step 0 and above are
+  (`fluidTypeSteps` in `node_modules/@hebilicious/cssforge/src/modules/typography.ts`). Step 0 and above are
   utopia-core's. Step `-n` is `step 0 / minTypeScale^n` at every width, so its wide end is
   `maxFontSize / minTypeScale^n`. The checks run once per step on it, and both representations
   are written from it. There is no option: every output holds both.
@@ -74,7 +75,7 @@ color output settings.
 
 ## Motion
 
-- `MotionConfig` and `MotionDurationSettings` in `packages/cssforge/src/modules/motion.ts`,
+- `MotionConfig` and `MotionDurationSettings` in `node_modules/@hebilicious/cssforge/src/modules/motion.ts`,
   re-exported from `mod.ts`: `motion.duration.<group>.value.<name>` and
   `motion.easing.<group>.value.<name>`, emitted as `--motion-duration-<group>-<name>` and
   `--motion-easing-<group>-<name>`, with resolve paths `motion.duration.<group>.<name>` and
@@ -90,7 +91,7 @@ color output settings.
 
 ## Derived colors
 
-- `ColorMix` in `packages/cssforge/src/modules/colors.ts`, re-exported from `mod.ts`:
+- `ColorMix` in `node_modules/@hebilicious/cssforge/src/modules/colors.ts`, re-exported from `mod.ts`:
   `{ mix: { from, with, amount, in? } }`, accepted as a palette variant or a theme value.
 - `from` / `with`: a dotted token path without spaces, parentheses or `#` (the `variables`
   path syntax, such as `"palette.brand.500"`) naming a color declared earlier, emitted as
@@ -102,7 +103,7 @@ color output settings.
 ## Light/dark themes
 
 - `ColorThemesSettings`, `LightDarkSettings` and `LightDarkColorScheme` in
-  `packages/cssforge/src/modules/colors.ts`, re-exported from `mod.ts`.
+  `node_modules/@hebilicious/cssforge/src/modules/colors.ts`, re-exported from `mod.ts`.
 - `colors.theme.settings.lightDark: { light, dark, colorScheme? }` names two themes, and needs
   the `theme: { value, settings }` form. `colorScheme: { light?, dark? }` takes selectors.
 - Each paired color is emitted once at `:root` as `light-dark(<light>, <dark>)`, keyed
@@ -114,7 +115,7 @@ color output settings.
 
 ## Exposed API entrypoint
 
-- `packages/cssforge/src/mod.ts` exports `defineConfig`, `generateCSS`, `generateStyleDictionaryJSON`, `getDiagnostics`, `InvalidNameError`, `loadConfig`, the processing helpers,
+- `node_modules/@hebilicious/cssforge/src/mod.ts` exports `defineConfig`, `generateCSS`, `generateStyleDictionaryJSON`, `getDiagnostics`, `InvalidNameError`, `loadConfig`, the processing helpers,
   and the config and token types (`CSSForgeConfig`, `MotionConfig`, `MotionDurationSettings`, `ColorFormatConfig`, `ColorMix`, `HexFormatOutputs`,
   `RgbFormatOutputs`, `ColorSettings`, `ColorThemesSettings`, `LightDarkSettings`,
   `LightDarkColorScheme`, `ColorFormat`, `HexColorValues`, `RgbColorValues`,
@@ -123,4 +124,4 @@ color output settings.
 ## Guidance
 
 If a user asks for a field not represented in docs or these types, do not fabricate it.
-Offer the nearest supported pattern from README + types.
+Offer the nearest supported pattern from `references/token-patterns.md` and the types.

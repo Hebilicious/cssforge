@@ -10,15 +10,17 @@ artifacts, resolve variable references, or debug generation issues.
 
 ## Source of truth
 
-Always prioritize official project docs and source types:
+This skill is self-contained: its references hold what you need. For exact types, read the
+TypeScript source the installed package ships in `node_modules/@hebilicious/cssforge/src/`.
 
 1. `references/docs-index.md`
-2. `README.md` (project root)
+2. `references/token-patterns.md`
 3. `references/source-schema-map.md`
 4. `references/cli-reference.md`
-5. `references/troubleshooting.md`
+5. `references/bundler-plugin.md`
+6. `references/troubleshooting.md`
 
-Do not invent schema fields that are not present in docs or source types.
+Do not invent schema fields that are not present in these references or the source types.
 
 ## Workflow
 
@@ -28,11 +30,11 @@ Do not invent schema fields that are not present in docs or source types.
 - Fix references / generation errors
 - Wire CLI scripts and output paths
 
-2. Author config from docs
+2. Author the config
 - Start from `assets/config-templates/*.ts`.
 - Use package import in config:
   - `import { defineConfig } from "@hebilicious/cssforge";`
-- Mirror patterns from README configuration sections.
+- Follow the patterns in `references/token-patterns.md`.
 
 3. Choose how tokens are generated
 - The CLI (next step) works everywhere, with or without a dev server or a build.
@@ -56,7 +58,7 @@ Do not invent schema fields that are not present in docs or source types.
 - Run `moon run <project>:cssforge-build-local` then `moon run <project>:cssforge-generate`.
 - Verify `./.cssforge/output.css` exists and contains expected custom properties.
 
-6. Troubleshoot with docs
-- Use `references/troubleshooting.md` and relevant README sections.
-- For schema uncertainty, check `packages/cssforge/src/config.ts` and module types listed in
-  `references/source-schema-map.md`.
+6. Troubleshoot
+- Use `references/troubleshooting.md`.
+- For schema uncertainty, check `node_modules/@hebilicious/cssforge/src/config.ts` and the
+  module types listed in `references/source-schema-map.md`.
