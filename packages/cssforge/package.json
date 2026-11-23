@@ -5,9 +5,7 @@
 	"keywords": [
 		"cssforge",
 		"design-tokens",
-		"css-variables",
-		"vite",
-		"unplugin"
+		"css-variables"
 	],
 	"license": "MIT",
 	"type": "module",
