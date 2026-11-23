@@ -1,11 +1,10 @@
-# Troubleshooting (Docs-Driven)
+# Troubleshooting
 
 ## Config import fails
 
 - Use package import in config:
   - `import { defineConfig } from "@hebilicious/cssforge";`
-- If using local repo examples, run local package dry-run first:
-  - `moon run <project>:cssforge-build-local`
+- Check that `@hebilicious/cssforge` is installed in the project that holds the config.
 
 ## Generated output missing
 

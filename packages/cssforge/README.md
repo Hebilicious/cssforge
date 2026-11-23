@@ -1952,7 +1952,7 @@ Motion tokens follow the same rule: `motion.duration.ui.press` and `motion.easin
 #### Referencing Fluid Spacing
 
 To reference fluid spacing, use the `@` symbol and the label of the scale; ie:
-`spacing_fluid-base@xs`. Do not include the prefix in the reference. The labels follow the
+`spacing_fluid.base@xs`. Do not include the prefix in the reference. The labels follow the
 following convention :
 
 - 3xs

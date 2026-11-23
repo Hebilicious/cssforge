@@ -47,16 +47,18 @@ Do not invent schema fields that are not present in these references or the sour
   version is on the secondary JSR channel: `npx jsr add @hebilicious/cssforge`).
 - Run the installed executable directly: `cssforge --mode all` (`npx cssforge` with npm,
   `pnpm cssforge` with pnpm).
+- Wire it into the project's existing task runner (a `package.json` script, a Makefile,
+  ...) if the project uses one, and pass `--config` and the output flags its layout needs
+  (`references/cli-reference.md`). `cssforge --watch` rebuilds on each config change.
 - For an agent, `cssforge mcp` serves the same commands as MCP tools through stdio.
-- For local repo examples, call the built CLI of the sibling package directly: pnpm only
-  links the workspace `cssforge` binary once `dist` exists, so a fresh checkout has no
-  `node_modules/.bin/cssforge` before the first build:
-  - `cssforge-generate`: `node ../../packages/cssforge/dist/cli.js --config ./cssforge.config.ts --mode css --css ./.cssforge/output.css`
-  - `cssforge-build-local`: `moon run cssforge:pack`
 
 5. Validate outputs
-- Run `moon run <project>:cssforge-build-local` then `moon run <project>:cssforge-generate`.
-- Verify `./.cssforge/output.css` exists and contains expected custom properties.
+- Run `cssforge check` to validate the config, then `cssforge build` (or the project's own
+  generation command).
+- Verify the CSS output (`./.cssforge/output.css` unless `--css` changes it) exists and
+  contains the expected custom properties.
+- With the bundler plugin, run the project's build; set the plugin's `write` option to get
+  the stylesheet on disk for inspection.
 
 6. Troubleshoot
 - Use `references/troubleshooting.md`.
