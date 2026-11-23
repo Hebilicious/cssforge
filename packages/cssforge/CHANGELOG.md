@@ -1,5 +1,11 @@
 # @hebilicious/cssforge
 
+## 0.11.1
+
+### Patch Changes
+
+- 4dc9728: `cssforge --help` names the bundler plugin, `@hebilicious/cssforge-unplugin`, so a reader of the core package finds it. The package gets npm keywords.
+
 ## 0.11.0
 
 ### Minor Changes
