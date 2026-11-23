@@ -19,6 +19,12 @@
 # from a machine with interactive npm authentication. After that, add this
 # workflow as a trusted publisher in the package settings on npmjs.com
 # (organization `Hebilicious`, repository `cssforge`, workflow `release.yaml`).
+#
+# The release pull request is opened and pushed with a token of the `heb-release`
+# GitHub App, not GITHUB_TOKEN: GitHub runs no CI for a pull request that
+# GITHUB_TOKEN opens or pushes to. The repository holds the App's client ID in
+# the `RELEASE_APP_CLIENT_ID` variable and its key in the
+# `RELEASE_APP_PRIVATE_KEY` secret.
 
 name: Release
 
@@ -29,8 +35,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read
 
 jobs:
   version:
@@ -40,10 +45,20 @@ jobs:
       hasChangesets: ${{ steps.changesets.outputs.hasChangesets }}
 
     steps:
+      - name: Create the release App token
+        id: app
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          client-id: ${{ vars.RELEASE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+
+      # The checkout keeps its token in the git config, and the action pushes the
+      # release branch with it, so the checkout takes the App token too.
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          token: ${{ steps.app.outputs.token }}
 
       - name: Setup toolchain
         uses: moonrepo/setup-toolchain@v0
@@ -64,7 +79,7 @@ jobs:
           title: "release: update packages"
           version: moon exec --ignore-ci-checks root:version
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ steps.app.outputs.token }}
 
   npm:
     name: Publish to npm
