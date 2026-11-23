@@ -22,7 +22,7 @@ This file maps user requests to official CSS Forge documentation.
   - `README.md` -> `## Referencing Variables`
 - Generating tokens inside a build (Vite, Rollup, webpack and other bundlers, and the
   frameworks built on them):
-  - `README.md` -> `## Bundler Plugin` (package `@hebilicious/cssforge-unplugin`)
+  - `references/bundler-plugin.md` (package `@hebilicious/cssforge-unplugin`)
 - CLI options and outputs:
   - `README.md` -> `## CLI Usage`
   - `references/cli-reference.md`

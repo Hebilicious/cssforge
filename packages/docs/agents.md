@@ -40,8 +40,8 @@ Each release publishes the same version to npm and to JSR.
   as MCP tools.
 - Bundler plugin: `@hebilicious/cssforge-unplugin` is a separate package that generates the tokens
   inside a Vite, webpack, Rollup or other unplugin-supported build, and so in any framework built
-  on one of them. Prefer it to CLI scripts when the project has such a build. The README's
-  `Bundler Plugin` section lists the supported bundlers and the options.
+  on one of them. It is an option next to the CLI, which also works without a dev server or a
+  build. The README's `Bundler Plugin` section lists the supported bundlers and the options.
 - JSR: `npx jsr add @hebilicious/cssforge` or `pnpm i jsr:@hebilicious/cssforge`
 - Runtime: Node 24 or newer, which loads `cssforge.config.ts` without a loader or `tsx`
 

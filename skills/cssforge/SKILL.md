@@ -35,15 +35,10 @@ Do not invent schema fields that are not present in docs or source types.
 - Mirror patterns from README configuration sections.
 
 3. Choose how tokens are generated
-- If the project builds with a bundler that unplugin supports (Vite, webpack, Rollup and
-  others), and so any framework built on one of them, prefer the bundler plugin to CLI scripts. It is a separate package:
-  `npm install --save-dev @hebilicious/cssforge-unplugin`, next to `@hebilicious/cssforge`.
-  - Register `@hebilicious/cssforge-unplugin/<bundler>` where the framework accepts plugins
-    for that bundler, import `virtual:cssforge.css`, and add the
-    `@hebilicious/cssforge-unplugin/client` types reference.
-  - Read `README.md` -> `## Bundler Plugin` for the supported bundlers, their entry points
-    and the options.
-- Otherwise, or when another tool needs the files before the build runs, use the CLI below.
+- The CLI (next step) works everywhere, with or without a dev server or a build.
+- If the project builds with Vite, webpack, Rollup or another bundler that unplugin supports,
+  the bundler plugin `@hebilicious/cssforge-unplugin` is an option: it generates the CSS
+  inside the build. Read `references/bundler-plugin.md` before you propose it.
 
 4. Configure generation commands
 - Install the package from npm: `npm install --save-dev @hebilicious/cssforge` (the same
