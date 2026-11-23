@@ -2,6 +2,11 @@
 	"name": "@hebilicious/cssforge",
 	"version": "0.11.0",
 	"description": "0 runtime design tokens generator for modern style systems.",
+	"keywords": [
+		"cssforge",
+		"design-tokens",
+		"css-variables"
+	],
 	"license": "MIT",
 	"type": "module",
 	"main": "./dist/mod.js",

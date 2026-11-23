@@ -88,6 +88,21 @@ Every module takes a `settings` object beside its `value`.
 - The README section for the module says whether a setting reaches the tokens or the CSS. A
   CLI flag is an adapter over the same resolution, not a second implementation.
 
+## Skill, agent guide and package metadata
+
+- A change that adds or changes something a user installs or runs (a package, an entry point, a
+  command, an integration) also updates `skills/cssforge` and `packages/docs/agents.md` in the
+  same pull request. An agent that only has the skill must be able to find it.
+- The skill is distributed on its own. It never refers to the README or to paths in this
+  repository (`packages/...`, `example/...`, Moon targets); it holds the facts itself in
+  `references/`, and points to source as `node_modules/@hebilicious/cssforge/src/`.
+- When the skill or the agent guide describes an integration choice, it gives the options and
+  when each fits, rather than prescribing one: the CLI works without a dev server or a build.
+  It does not document the plugin APIs of each framework.
+- Check each behavior the skill states against the code or the tests, not against the README.
+- A package's `description` and `keywords` describe that package only, not its sibling
+  packages.
+
 ## Updating the README.md
 
 To update the README, run `moon run cssforge:readme-update` from the workspace root.

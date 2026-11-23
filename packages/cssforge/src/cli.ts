@@ -125,8 +125,9 @@ cliMain(cssforge, {
 	version,
 	context,
 	toJsonSchema,
-	// The version is in the help so that a published build shows which one it is.
-	description: `cssforge ${version}\n\n${cssforge.description}`,
+	// The version is in the help so that a published build shows which one it is. The bundler
+	// plugin is a separate package, so the help names it for a reader who only has this one.
+	description: `cssforge ${version}\n\n${cssforge.description}\n\nTo generate the tokens inside a build instead (Vite, webpack, Rollup and the other bundlers\nunplugin supports), use the bundler plugin: @hebilicious/cssforge-unplugin.`,
 	commands: [mcpCommand],
 	output: {
 		default: "auto",

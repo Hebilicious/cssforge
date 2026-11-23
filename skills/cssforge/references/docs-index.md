@@ -1,32 +1,23 @@
 # CSS Forge Docs Index
 
-This file maps user requests to official CSS Forge documentation.
-
-## Primary documentation
-
-- Local docs: `README.md`
-- Remote docs: `https://raw.githubusercontent.com/Hebilicious/cssforge/refs/heads/main/README.md`
+This file maps user requests to the references of this skill.
 
 ## What to read for each task
 
-- Installation and setup:
-  - `README.md` -> `## Installation`, `## Quick Start`
-- Token schema and examples:
-  - `README.md` -> `## Configuration`
-  - `### Colors`
-  - `### Spacing`
-  - `### Typography`
-  - `### Motion`
-  - `### Primitives`
-- Variable references inside config:
-  - `README.md` -> `## Referencing Variables`
+- Installation and generation commands:
+  - `SKILL.md` -> workflow steps 3 and 4
+  - `references/cli-reference.md`
+- Token schema and examples (colors, spacing, typography, motion, primitives):
+  - `references/token-patterns.md`
+  - `references/source-schema-map.md` for the exact types and settings
+- Variable references inside config, and generated variable names:
+  - `references/token-patterns.md` -> `Reference syntax`, `Variable names`
+- Generating tokens inside a build (Vite, Rollup, webpack and other bundlers, and the
+  frameworks built on them):
+  - `references/bundler-plugin.md` (package `@hebilicious/cssforge-unplugin`)
 - CLI options and outputs:
-  - `README.md` -> `## CLI Usage`
   - `references/cli-reference.md`
 - Programmatic usage:
-  - `README.md` -> `## Programmatic Usage`
-
-## Important rule from docs
-
-README `md:generate` comment blocks are source-of-truth examples. Keep their structure
-when adapting configs.
+  - `references/cli-reference.md` -> `Programmatic API`
+- Errors and unexpected output:
+  - `references/troubleshooting.md`

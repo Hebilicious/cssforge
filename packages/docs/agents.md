@@ -38,6 +38,10 @@ Each release publishes the same version to npm and to JSR.
 - Run: the package exposes a `cssforge` executable, so run it directly (`cssforge --mode all`,
   or `npx cssforge --mode all` with npm). `cssforge mcp` serves the same commands to an agent
   as MCP tools.
+- Bundler plugin: `@hebilicious/cssforge-unplugin` is a separate package that generates the tokens
+  inside a Vite, webpack, Rollup or other unplugin-supported build, and so in any framework built
+  on one of them. It is an option next to the CLI, which also works without a dev server or a
+  build. The README's `Bundler Plugin` section lists the supported bundlers and the options.
 - JSR: `npx jsr add @hebilicious/cssforge` or `pnpm i jsr:@hebilicious/cssforge`
 - Runtime: Node 24 or newer, which loads `cssforge.config.ts` without a loader or `tsx`
 

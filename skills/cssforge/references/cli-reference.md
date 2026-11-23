@@ -1,9 +1,9 @@
 # CLI Reference
 
 The command line, the MCP server and the library target come from the capabilities in
-`packages/cssforge/src/capabilities.ts`. Its catalog is `packages/cssforge/cssforge.acidcat.json`. The
-entry point is `packages/cssforge/src/cli.ts`, and the operations are in
-`packages/cssforge/src/forge.ts`.
+`node_modules/@hebilicious/cssforge/src/capabilities.ts`. Its catalog is `node_modules/@hebilicious/cssforge/cssforge.acidcat.json`. The
+entry point is `node_modules/@hebilicious/cssforge/src/cli.ts`, and the operations are in
+`node_modules/@hebilicious/cssforge/src/forge.ts`.
 
 ## Commands
 
@@ -49,7 +49,7 @@ On a terminal, each command writes text for a person. For a script, in CI or for
   `ConfigLoadFailed`, `InvalidConfig`, `WriteFailed`.
 - An invalid flag or value exits with `3`, with the message on stderr.
 
-## Typical commands from docs
+## Typical commands
 
 The npm package exposes a `cssforge` executable, so consumers run it directly (`npx cssforge`
 with npm, `pnpm cssforge` with pnpm):
@@ -63,8 +63,6 @@ with npm, `pnpm cssforge` with pnpm):
 - MCP server for an agent: `claude mcp add cssforge -- npx cssforge mcp`
 
 ## Programmatic API
-
-From `README.md`:
 
 - `import { generateCSS } from "@hebilicious/cssforge";`
 - `const css = generateCSS(config);`

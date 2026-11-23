@@ -1,11 +1,10 @@
-# Troubleshooting (Docs-Driven)
+# Troubleshooting
 
 ## Config import fails
 
 - Use package import in config:
   - `import { defineConfig } from "@hebilicious/cssforge";`
-- If using local repo examples, run local package dry-run first:
-  - `moon run <project>:cssforge-build-local`
+- Check that `@hebilicious/cssforge` is installed in the project that holds the config.
 
 ## Generated output missing
 
@@ -14,13 +13,13 @@
 
 ## Variables do not resolve
 
-- Verify reference syntax from README `## Referencing Variables`:
+- Verify reference syntax from `references/token-patterns.md` -> `Reference syntax`:
   - No `.value` in references
   - Fluid scales require `@label`
 
 ## Unexpected variable names
 
-- Check README notes on naming behavior, including theme options such as
+- Check `references/token-patterns.md` -> `Variable names`, including theme options such as
   `variantNameOnly`.
 
 ## Need authoritative schema answer

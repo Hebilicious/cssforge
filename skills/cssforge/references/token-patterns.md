@@ -1,6 +1,4 @@
-# Token Patterns From Official Docs
-
-All patterns below are derived from README configuration examples.
+# Token Patterns
 
 ## Colors
 
@@ -42,8 +40,23 @@ All patterns below are derived from README configuration examples.
 
 ## Reference syntax
 
-- Use dot notation without `.value` segments.
-- Fluid references use `@`, for example:
+- Use dot notation without `.value` segments: `spacing.custom.size.value.1` is referenced
+  as `spacing.custom.size.1`.
+- Fluid references use `@` and the step label, without the scale's `prefix`, for example:
   - spacing: `spacing_fluid.base@xs`
   - typography: `typography_fluid.comicsans@a`
+- The default step labels are `3xs`, `2xs`, `xs`, `s`, `m`, `l`, `xl`, `2xl`, `3xl`; a scale
+  with custom labels uses its own.
+- The pow representation of a typography step adds a `pow` segment:
+  `typography_fluid.comicsans.pow@a`, and its inputs and helpers are
+  `typography_fluid.comicsans.pow.<name>`, such as `typography_fluid.comicsans.pow.max-type-scale`.
 - Motion references: `motion.duration.ui.press`, `motion.easing.ui.out`
+
+## Variable names
+
+- A theme variable is `--theme-<theme>-<color>-<variant>`, at the path
+  `theme.<theme>.<color>.<variant>`.
+- `variantNameOnly: true` in a theme color's settings shortens the variable to `--<variant>`;
+  the path does not change. Use it with `selector` to apply a theme conditionally.
+- `atRule` or `selector` on a color, gradient or theme applies it conditionally: the variables
+  are wrapped in `:root`, and the selector is placed outside it.
