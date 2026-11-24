@@ -141,12 +141,31 @@ test("mcp - cssforge mcp serves the capabilities as tools", async () => {
 		send({ jsonrpc: "2.0", method: "notifications/initialized" });
 
 		send({ jsonrpc: "2.0", id: 2, method: "tools/list" });
-		const listed = (await nextLine()).result as { tools: { name: string }[] };
+		const listed = (await nextLine()).result as {
+			tools: { name: string; annotations?: Record<string, boolean> }[];
+		};
 		expect(listed.tools.map((tool) => tool.name).sort()).toEqual([
 			"config.check",
+			"sync.fetch",
+			"sync.inbox.adopt",
+			"sync.inbox.list",
+			"sync.inbox.overwrite",
+			"sync.inbox.reject",
+			"sync.plan",
+			"sync.push",
+			"sync.remote.add",
 			"tokens.build",
 			"tokens.generate",
 		]);
+		// An agent client asks before a destructive tool, and not before a read-only one.
+		const annotations = (name: string) =>
+			listed.tools.find((tool) => tool.name === name)?.annotations;
+		expect(annotations("sync.push")).toMatchObject({
+			destructiveHint: true,
+			idempotentHint: true,
+		});
+		expect(annotations("sync.inbox.reject")).toMatchObject({ destructiveHint: false });
+		expect(annotations("sync.plan")).toMatchObject({ readOnlyHint: true });
 
 		send({
 			jsonrpc: "2.0",

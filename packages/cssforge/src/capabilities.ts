@@ -65,6 +65,8 @@ import {
 } from "./forge.ts";
 import { type ColorFormat, diagnosticCodes } from "./lib.ts";
 import { supportedColorFormats } from "./modules/colors.ts";
+import { syncCapabilities } from "./sync/capabilities.ts";
+import type { RemoteAdapter } from "./sync/remote.ts";
 
 /**
  * `createSession` opens a session on {@link cssforge}, for typed calls from
@@ -73,6 +75,27 @@ import { supportedColorFormats } from "./modules/colors.ts";
  * cancellation or a defect.
  */
 export { CallFailureError, createSession } from "@acid-cat/core-ts";
+export type { ListedToken, TokenKind } from "./generator.ts";
+export * from "./sync/capabilities.ts";
+export { type PaperOptions, paperAdapter } from "./sync/paper.ts";
+export type {
+	BaseEntry,
+	Decision,
+	InboxItem,
+	ModeValues,
+	Operation,
+	RemoteToken,
+} from "./sync/plan.ts";
+export { DEFAULT_MODE } from "./sync/plan.ts";
+export type {
+	ApplyResult,
+	RemoteAdapter,
+	RemoteOptions,
+	RemoteSession,
+	RemoteTarget,
+	TokenMapping,
+} from "./sync/remote.ts";
+export { RemoteError } from "./sync/remote.ts";
 
 /** The JSON Schema of a schema of {@link cssforge}, for the catalog and the bindings. */
 export const toJsonSchema: ToJsonSchema = (schema) => {
@@ -86,6 +109,8 @@ export const toJsonSchema: ToJsonSchema = (schema) => {
 export interface ForgeContext {
 	/** The directory that relative paths resolve against, when an input gives no `root`. */
 	cwd: string;
+	/** The remotes that token sync knows. The default is the Paper remote. */
+	remotes?: readonly RemoteAdapter[];
 }
 
 // --- Schemas -------------------------------------------------------------------------------
@@ -354,6 +379,8 @@ export const tokensBuild: Capability<
 	description:
 		"Generate the outputs of a CSS Forge configuration and write them to files: CSS custom properties, JSON, TypeScript and Style Dictionary tokens. Every output is generated before the first file is written, so an invalid configuration leaves the previous files in place. The result lists the files written and the warnings of the configuration.",
 	audience: everyone,
+	destructive: true,
+	idempotent: true,
 	input: buildInput,
 	output: buildReport,
 	failures: buildFailures,
@@ -450,7 +477,7 @@ export const tokensBuilt: EventDefinition<
 export const cssforge: App<ForgeContext> = defineApp<ForgeContext>({
 	title: "CSS Forge",
 	description:
-		"Generate CSS custom properties, JSON, TypeScript and Style Dictionary tokens from a CSS Forge configuration.",
+		"Generate CSS custom properties, JSON, TypeScript and Style Dictionary tokens from a CSS Forge configuration, and keep the tokens of a design tool in sync with it.",
 	targets: {
 		cli: {
 			bindings: ["cli"],
@@ -474,6 +501,6 @@ export const cssforge: App<ForgeContext> = defineApp<ForgeContext>({
 			description: "Typed calls from code, through @hebilicious/cssforge/capabilities.",
 		},
 	},
-	capabilities: [tokensBuild, tokensGenerate, configCheck],
+	capabilities: [tokensBuild, tokensGenerate, configCheck, ...syncCapabilities],
 	events: [tokensBuilt],
 });

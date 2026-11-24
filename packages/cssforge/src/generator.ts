@@ -508,6 +508,55 @@ export function generateStyleDictionaryJSON(
 	return JSON.stringify(styleDictionaryValues, null, 2);
 }
 
+/** The kind of a token, as the Style Dictionary output and token sync infer it. */
+export type TokenKind = StyleDictionaryTokenType;
+
+/** One generated custom property, as token sync reads it. */
+export interface ListedToken {
+	/** The custom property name, e.g. `--color-red-100`. */
+	name: string;
+	/** The CSS value as generated. It may contain `var(...)` references. */
+	value: string;
+	/** The value with every reference to another token of the configuration substituted. */
+	resolvedValue: string;
+	/** The kind inferred from the path and the resolved value. */
+	kind: TokenKind;
+	/** The configuration path of the token. */
+	sourcePath: string;
+	/** The CSS scope it is emitted into: `:root`, or the wrapper chain of a selector or an at-rule. */
+	scope: string;
+}
+
+/**
+ * Lists every custom property of a configuration in output order, with its
+ * resolved value and inferred kind, for tools that copy tokens elsewhere.
+ * @example
+ * ```ts
+ * const [token] = listTokens({ spacing: { size: { value: { 1: "4px" } } } });
+ * // token.name: "--spacing-size-1", token.kind: "spacing"
+ * ```
+ */
+export function listTokens(
+	config: Partial<CSSForgeConfig>,
+	options: GenerateOptions = {},
+): ListedToken[] {
+	const resolveMap = collectResolveMap(config, options);
+	const tokensByCssVariable = new Map(
+		[...resolveMap.values()].map((token) => [token.key, token]),
+	);
+	return [...resolveMap.values()].map((token) => {
+		const resolvedValue = resolveTokenValue(token, tokensByCssVariable);
+		return {
+			name: token.key,
+			value: token.value,
+			resolvedValue,
+			kind: inferValueKind(token.sourcePath, resolvedValue, token.type),
+			sourcePath: token.sourcePath,
+			scope: getTokenScope(token),
+		};
+	});
+}
+
 /**
  * Generates a JSON string from the CSSForge configuration.
  * This can be used to create a JSON file with all the design tokens.

@@ -24,6 +24,7 @@ import {
 	ROOT_SCOPE,
 	resolveValue,
 	resolveVariable,
+	scopeOf,
 	withTokenScope,
 } from "../lib.ts";
 
@@ -48,8 +49,7 @@ const describeScope = (settings: WithCondition | undefined): string => {
 	const { atRule, selector } = readCondition(settings);
 	const scopedSelector = selector === ROOT_SCOPE ? "" : selector;
 
-	if (!atRule && !scopedSelector) return ROOT_SCOPE;
-	return `${atRule}|${scopedSelector}`;
+	return scopeOf({ atRule, selector: scopedSelector });
 };
 
 type ExactlyOne<T> = {

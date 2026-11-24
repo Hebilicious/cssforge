@@ -66,6 +66,27 @@ export interface TokenMetadata {
  */
 export const ROOT_SCOPE = ":root";
 
+/** The wrappers of a scope: an at-rule, a selector, or both. An empty string is no wrapper. */
+export interface ScopeParts {
+	atRule: string;
+	selector: string;
+}
+
+/**
+ * The scope of a declaration under `atRule` and `selector`. Both are kept whole, in a form
+ * that never confuses them: a selector may contain any character, `|` included
+ * (`[lang|=en]`). No wrapper gives `ROOT_SCOPE`.
+ */
+export const scopeOf = ({ atRule, selector }: ScopeParts): string =>
+	!atRule && !selector ? ROOT_SCOPE : JSON.stringify([atRule, selector]);
+
+/** The wrappers of a scope that {@link scopeOf} made. `ROOT_SCOPE` has none. */
+export const scopeParts = (scope: string): ScopeParts => {
+	if (scope === ROOT_SCOPE) return { atRule: "", selector: "" };
+	const [atRule, selector] = JSON.parse(scope) as [string, string];
+	return { atRule, selector };
+};
+
 export interface ResolvedToken extends TokenMetadata {
 	/** CSS custom property name, e.g. `--theme-light-content-primary`. */
 	key: string;

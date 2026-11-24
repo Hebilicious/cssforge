@@ -21,8 +21,44 @@ On a terminal, each command writes text for a person. For a script, in CI or for
 - `cssforge --watch [flags]` (`--watch` first): build now and after each change of the config or a
   local module it imports. One JSON line per build: `{ data: { ok: true, files, … } }` or
   `{ data: { ok: false, failure } }`. Exits with `130` when interrupted.
-- `cssforge mcp`: serve the same capabilities as MCP tools through stdio.
+- `cssforge mcp`: serve the same capabilities as MCP tools through stdio. `sync.push` and
+  `tokens.build` are marked destructive; `sync.plan`, `sync.inbox.list`, `tokens.generate`
+  and `config.check` read only.
 - `cssforge list`: every command with its flags.
+
+## Token sync
+
+Sync keeps the tokens of a design file (Paper, through `paper-design mcp`) in sync with the
+config. The config is the source of truth; what the file changes waits in an inbox. The
+capabilities are in `packages/cssforge/src/sync/capabilities.ts`, the three-way plan in
+`packages/cssforge/src/sync/plan.ts`, and the Paper mapping in `packages/cssforge/src/sync/paper.ts`.
+State: `.cssforge/sync/<remote>.json` (commit it). Every command takes `--remote` (default `paper`).
+
+- `cssforge sync remote add --file <id or URL> [--name] [--kind paper]`: bind the file. 1 request.
+- `cssforge sync fetch`: read the file, record it, report the plan. 1 request.
+- `cssforge sync plan`: the plan against the last fetch. No request.
+- `cssforge sync push [--dry-run]`: read, send the plan, read back. 1 to 4 requests.
+- `cssforge sync inbox list`: the items of the last fetch. No request.
+- `cssforge sync inbox adopt --item <id> --path <token path>`: a `new` item becomes the config token at
+  the path (add it to the config first). The next push renames it in the file.
+- `cssforge sync inbox reject --item <id>`: the next push deletes a `new` item from the file. Paper
+  replaces each use of a deleted token with its last value; a renamed token keeps its uses.
+- `cssforge sync inbox overwrite --item <id>`: the next push writes the config value for an `edited`,
+  `deleted` or `collision` item. To keep the file's value, change the config instead.
+
+Results: `{ remote, target, fetchedAt, operations, inbox, skipped, callsUsed }`, and `applied`
+for `push`. Values are per mode (`{ default: "8px" }`): `default` at `:root`, `light` and `dark`
+for `light-dark()`, the selector or at-rule for other scopes. The target lists the modes it holds
+(Paper: `default`); the others are in `skipped` with `mode`. A remote token has a `key` (Paper: its
+name; other tools: an id) and a `label`; operations address it by key.
+`sync remote add --options '<json>'` passes adapter options (Paper takes none: `InvalidOptions`). An item id is the token name without `--`. A token path is the path in each pushed token's
+description (`cssforge: palette.brand.500`). Failure tags: `RemoteNotConfigured`, `InvalidState`,
+`RemoteUnavailable`, `RemoteFailed`, `NotFetched`, `UnknownItem`, `InvalidDecision`,
+`UnknownKind`, `InvalidOptions`. Paper's free plan limits MCP calls: prefer `sync plan` and `sync inbox list` (no request)
+after one `sync fetch`.
+
+Agent loop: `sync fetch` → read `sync inbox list` → edit the config →
+`sync inbox adopt|reject|overwrite` → `sync plan` → `sync push`.
 
 ## Flags
 
